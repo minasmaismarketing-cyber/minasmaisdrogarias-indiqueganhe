@@ -70,4 +70,30 @@ class Validator
     {
         return preg_replace('/\D/', '', $value) ?? '';
     }
+
+    public static function validateCpf(string $cpf): bool
+    {
+        return self::cpf($cpf);
+    }
+
+    public static function validateTelefone(string $telefone): bool
+    {
+        return self::telefone($telefone);
+    }
+
+    public static function validateEmail(string $email): bool
+    {
+        return self::email($email);
+    }
+
+    public static function sanitizeEmail(string $email): string
+    {
+        $email = trim(strip_tags($email));
+
+        if (mb_strlen($email) > 255) {
+            $email = mb_substr($email, 0, 255);
+        }
+
+        return mb_strtolower($email);
+    }
 }

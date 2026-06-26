@@ -73,6 +73,55 @@ class RateLimiter
         return max(0, strtotime($record['bloqueado_ate']) - time());
     }
 
+    public function attempt(string $key, int $maxAttempts, int $windowSeconds): bool
+    {
+        $record = self::find($key);
+
+        if ($record !== null) {
+            if ($record['bloqueado_ate'] !== null && strtotime($record['bloqueado_ate']) > time()) {
+                return false;
+            }
+
+            if ($record['bloqueado_ate'] !== null && strtotime($record['bloqueado_ate']) <= time()) {
+                self::clear($key);
+                $record = null;
+            } elseif ((int) $record['tentativas'] >= $maxAttempts) {
+                return false;
+            }
+        }
+
+        $db = Database::getConnection();
+
+        if ($record === null) {
+            $stmt = $db->prepare(
+                'INSERT INTO login_tentativas (chave, tentativas) VALUES (:chave, 1)'
+            );
+            $stmt->execute(['chave' => $key]);
+
+            return true;
+        }
+
+        $attempts = (int) $record['tentativas'] + 1;
+        $blockedUntil = null;
+
+        if ($attempts >= $maxAttempts) {
+            $blockedUntil = date('Y-m-d H:i:s', time() + $windowSeconds);
+        }
+
+        $stmt = $db->prepare(
+            'UPDATE login_tentativas
+             SET tentativas = :tentativas, bloqueado_ate = :bloqueado_ate
+             WHERE chave = :chave'
+        );
+        $stmt->execute([
+            'tentativas' => $attempts,
+            'bloqueado_ate' => $blockedUntil,
+            'chave' => $key,
+        ]);
+
+        return true;
+    }
+
     /** @return array<string, mixed>|null */
     private static function find(string $key): ?array
     {
