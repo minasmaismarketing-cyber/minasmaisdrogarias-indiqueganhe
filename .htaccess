@@ -1,0 +1,26 @@
+Options -Indexes
+
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+
+# proteger arquivos sensíveis
+RewriteRule ^(\.env|composer\.json|composer\.lock)$ - [F,L]
+
+# bloquear pastas internas
+RewriteRule ^(core|database|controllers|models|config)/ - [F,L]
+
+# enviar tudo para index
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule mod_authz_core.c>
+<Files ".env">
+Require all denied
+</Files>
+</IfModule>

@@ -1,0 +1,187 @@
+<?php
+
+declare(strict_types=1);
+
+class Usuario extends Model
+{
+    /** @param array<string, mixed> $data */
+    public function create(array $data): int
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO usuarios
+            (nome, cpf, telefone, email, senha_hash, aceite_lgpd, codigo_indicador, cupom_recebido, whatsapp)
+            VALUES
+            (:nome, :cpf, :telefone, :email, :senha_hash, :aceite_lgpd, :codigo_indicador, 0, :whatsapp)'
+        );
+
+        $stmt->execute([
+            'nome' => $data['nome'],
+            'cpf' => $data['cpf'],
+            'telefone' => $data['telefone'],
+            'email' => $data['email'],
+            'senha_hash' => $data['senha_hash'],
+            'aceite_lgpd' => $data['aceite_lgpd'],
+            'codigo_indicador' => $data['codigo_indicador'],
+            'whatsapp' => $data['whatsapp'],
+        ]);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findById(int $id): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM usuarios WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByCpf(string $cpf): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM usuarios WHERE cpf = :cpf LIMIT 1');
+        $stmt->execute(['cpf' => $cpf]);
+
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByEmail(string $email): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM usuarios WHERE email = :email LIMIT 1');
+        $stmt->execute(['email' => $email]);
+
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByCodigo(string $codigo): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM usuarios WHERE codigo_indicador = :codigo LIMIT 1');
+        $stmt->execute(['codigo' => strtoupper(trim($codigo))]);
+
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByLogin(string $login): ?array
+    {
+        $login = trim($login);
+
+        if (str_contains($login, '@')) {
+            return $this->findByEmail(strtolower($login));
+        }
+
+        $cpf = Validator::onlyDigits($login);
+
+        return $this->findByCpf($cpf);
+    }
+
+    public function cpfExists(string $cpf): bool
+    {
+        return $this->findByCpf($cpf) !== null;
+    }
+
+    public function emailExists(string $email): bool
+    {
+        return $this->findByEmail(strtolower($email)) !== null;
+    }
+
+    public function telefoneExists(string $telefone): bool
+    {
+        $stmt = $this->db->prepare('SELECT id FROM usuarios WHERE telefone = :telefone LIMIT 1');
+        $stmt->execute(['telefone' => $telefone]);
+
+        return (bool) $stmt->fetch();
+    }
+
+    public function codigoExists(string $codigo): bool
+    {
+        $stmt = $this->db->prepare('SELECT id FROM usuarios WHERE codigo_indicador = :codigo LIMIT 1');
+        $stmt->execute(['codigo' => $codigo]);
+
+        return (bool) $stmt->fetch();
+    }
+
+    public function generateCodigoIndicador(): string
+    {
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+        do {
+            $code = 'MM';
+            for ($i = 0; $i < 6; $i++) {
+                $code .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+        } while ($this->codigoExists($code));
+
+        return $code;
+    }
+
+    public function updatePassword(int $userId, string $hash): void
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE usuarios SET senha_hash = :senha_hash, updated_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute(['senha_hash' => $hash, 'id' => $userId]);
+    }
+
+    public function updateRememberToken(int $userId, ?string $tokenHash): void
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE usuarios SET remember_token = :remember_token, updated_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute(['remember_token' => $tokenHash, 'id' => $userId]);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function updateProfile(int $userId, array $data): void
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE usuarios
+             SET nome = :nome, telefone = :telefone, whatsapp = :whatsapp, updated_at = NOW()
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'nome' => $data['nome'],
+            'telefone' => $data['telefone'],
+            'whatsapp' => $data['whatsapp'],
+            'id' => $userId,
+        ]);
+    }
+
+    public function countAll(): int
+    {
+        $stmt = $this->db->prepare('SELECT COUNT(*) as total FROM usuarios');
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return (int) ($row['total'] ?? 0);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function listAll(int $limit = 100): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT id, nome, email, telefone, created_at FROM usuarios ORDER BY created_at DESC LIMIT :limit'
+        );
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function softDelete(int $userId): void
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE usuarios SET ativo = 0, deleted_at = NOW(), updated_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute(['id' => $userId]);
+    }
+}

@@ -1,0 +1,14 @@
+# Ambiente
+.env
+
+# Uploads (mantém a pasta, ignora arquivos enviados)
+uploads/*
+!uploads/.gitkeep
+!uploads/logs/
+uploads/logs/*
+!uploads/logs/.gitkeep
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
