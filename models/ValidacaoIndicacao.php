@@ -112,8 +112,19 @@ class ValidacaoIndicacao extends Model
         ];
     }
 
+    public function countByUsuarioIndicador(int $usuarioId): int
+    {
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*) as total FROM validacao_indicacoes WHERE usuario_indicador_id = :usuario_id'
+        );
+        $stmt->execute(['usuario_id' => $usuarioId]);
+        $row = $stmt->fetch();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
     /** @return array<int, array<string, mixed>> */
-    public function listByUsuarioIndicador(int $usuarioId, int $limit = 50): array
+    public function listByUsuarioIndicador(int $usuarioId, int $limit = 50, int $offset = 0): array
     {
         $stmt = $this->db->prepare(
             'SELECT v.*, i.nome_indicado, i.telefone_indicado, i.status as indicacao_status
@@ -121,10 +132,11 @@ class ValidacaoIndicacao extends Model
              LEFT JOIN indicacoes i ON v.indicacao_id = i.id
              WHERE v.usuario_indicador_id = :usuario_id
              ORDER BY v.created_at DESC
-             LIMIT :limit'
+             LIMIT :limit OFFSET :offset'
         );
         $stmt->bindValue('usuario_id', $usuarioId, PDO::PARAM_INT);
         $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }

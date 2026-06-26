@@ -4,6 +4,9 @@
 </section>
 
 <?php $errors = $errors ?? []; require BASE_PATH . '/views/partials/alerts.php'; ?>
+<?php if (!empty($errors['senha'])): ?>
+    <div class="alert alert--error"><?= e($errors['senha']) ?></div>
+<?php endif; ?>
 
 <section class="mm-card">
     <div class="profile-header">
@@ -131,7 +134,7 @@
 
 <script>
 document.getElementById('btn-delete-account').addEventListener('click', function() {
-    document.getElementById('delete-modal').style.display = 'block';
+    document.getElementById('delete-modal').style.display = 'flex';
 });
 
 document.getElementById('btn-cancel-delete').addEventListener('click', function() {
@@ -141,66 +144,9 @@ document.getElementById('btn-cancel-delete').addEventListener('click', function(
 document.querySelector('.modal__overlay').addEventListener('click', function() {
     document.getElementById('delete-modal').style.display = 'none';
 });
+
+<?php if (!empty($errors['senha'])): ?>
+document.getElementById('delete-modal').style.display = 'flex';
+<?php endif; ?>
 </script>
 
-<?php if ($validacaoStats['total'] > 0): ?>
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Histórico de Participação</h2>
-        <p class="mm-card__subtitle">Acompanhe o status das suas indicações validadas.</p>
-    </div>
-
-    <div class="validacao-stats-compact">
-        <div class="validacao-stat-compact">
-            <span class="validacao-stat-compact__value"><?= (int) $validacaoStats['total'] ?></span>
-            <span class="validacao-stat-compact__label">Total</span>
-        </div>
-        <div class="validacao-stat-compact validacao-stat-compact--success">
-            <span class="validacao-stat-compact__value"><?= (int) $validacaoStats['aprovados'] ?></span>
-            <span class="validacao-stat-compact__label">Aprovados</span>
-        </div>
-        <div class="validacao-stat-compact validacao-stat-compact--error">
-            <span class="validacao-stat-compact__value"><?= (int) $validacaoStats['reprovados'] ?></span>
-            <span class="validacao-stat-compact__label">Reprovados</span>
-        </div>
-        <div class="validacao-stat-compact validacao-stat-compact--success">
-            <span class="validacao-stat-compact__value"><?= (int) $validacaoStats['beneficios_liberados'] ?></span>
-            <span class="validacao-stat-compact__label">Benefícios</span>
-        </div>
-    </div>
-
-    <?php if (!empty($historicoValidacoes)): ?>
-        <div class="validacao-historico">
-            <h3 class="validacao-historico__title">Suas indicações</h3>
-            <ul class="validacao-list-compact">
-                <?php foreach ($historicoValidacoes as $v): ?>
-                    <li class="validacao-list-compact__item">
-                        <div class="validacao-list-compact__row">
-                            <div class="validacao-list-compact__status">
-                                <span class="validacao-status-badge validacao-status-badge--<?= strtolower($v['status']) ?>">
-                                    <?= e(ValidacaoIndicacao::statusLabel($v['status'])) ?>
-                                </span>
-                            </div>
-                            <div class="validacao-list-compact__info">
-                                <?php if (!empty($v['nome_indicado'])): ?>
-                                    <strong><?= e($v['nome_indicado']) ?></strong>
-                                <?php else: ?>
-                                    <strong>Aguardando cadastro</strong>
-                                <?php endif; ?>
-                                <span class="validacao-list-compact__date">
-                                    <?= e(date('d/m/Y', strtotime($v['created_at']))) ?>
-                                </span>
-                            </div>
-                        </div>
-                        <?php if (!empty($v['motivo_bloqueio'])): ?>
-                            <p class="validacao-list-compact__motivo">
-                                ⚠️ <?= e(ValidacaoIndicacao::motivoLabel($v['motivo_bloqueio'])) ?>
-                            </p>
-                        <?php endif; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    <?php endif; ?>
-</section>
-<?php endif; ?>

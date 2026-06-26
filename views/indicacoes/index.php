@@ -4,101 +4,69 @@ declare(strict_types=1);
 ?>
 <section class="page-hero animate-slide">
     <h1 class="page-hero__title">Minhas indicações</h1>
-    <p class="page-hero__subtitle">Acompanhe o progresso das suas indicações.</p>
 </section>
 
 <section class="mm-card">
     <div class="mm-card__header">
-        <h2 class="mm-card__title">Filtros</h2>
+        <h2 class="mm-card__title">Histórico de Participação</h2>
+        <p class="mm-card__subtitle">Acompanhe o status das suas indicações validadas.</p>
     </div>
-    
-    <div class="filters-bar">
-        <form method="GET" action="<?= url('/indicacoes') ?>" class="filters-form">
-            <div class="filters-form__group">
-                <select name="filtro" class="filters-form__select">
-                    <option value="todas" <?= ($filtro ?? 'todas') === 'todas' ? 'selected' : '' ?>>Todas</option>
-                    <option value="pendentes" <?= ($filtro ?? '') === 'pendentes' ? 'selected' : '' ?>>Pendentes</option>
-                    <option value="validadas" <?= ($filtro ?? '') === 'validadas' ? 'selected' : '' ?>>Validadas</option>
-                    <option value="premiadas" <?= ($filtro ?? '') === 'premiadas' ? 'selected' : '' ?>>Premiadas</option>
-                </select>
-            </div>
-            
-            <div class="filters-form__group">
-                <input type="text" name="busca" placeholder="Buscar por nome ou telefone" value="<?= e($busca ?? '') ?>" class="filters-form__input">
-            </div>
-            
-            <button type="submit" class="btn btn--primary">Filtrar</button>
-            <a href="<?= url('/indicacoes') ?>" class="btn btn--ghost">Limpar</a>
-        </form>
-    </div>
-</section>
 
+    <?php if (($validacaoStats['total'] ?? 0) > 0): ?>
+        <div class="validacao-stats-compact">
+            <div class="validacao-stat-compact">
+                <span class="validacao-stat-compact__value"><?= (int) $validacaoStats['total'] ?></span>
+                <span class="validacao-stat-compact__label">Total</span>
+            </div>
+            <div class="validacao-stat-compact validacao-stat-compact--success">
+                <span class="validacao-stat-compact__value"><?= (int) $validacaoStats['aprovados'] ?></span>
+                <span class="validacao-stat-compact__label">Aprovados</span>
+            </div>
+            <div class="validacao-stat-compact validacao-stat-compact--error">
+                <span class="validacao-stat-compact__value"><?= (int) $validacaoStats['reprovados'] ?></span>
+                <span class="validacao-stat-compact__label">Reprovados</span>
+            </div>
+            <div class="validacao-stat-compact validacao-stat-compact--success">
+                <span class="validacao-stat-compact__value"><?= (int) $validacaoStats['beneficios_liberados'] ?></span>
+                <span class="validacao-stat-compact__label">Benefícios</span>
+            </div>
+        </div>
+    <?php endif; ?>
 
-<section class="indicacoes-list">
-    <?php if ($indicacoes === [] && $indicados === []): ?>
-        <div class="mm-card">
-            <p class="mm-card__placeholder">Nenhuma indicação registrada ainda.</p>
+    <?php if (!empty($historicoValidacoes)): ?>
+        <div class="validacao-historico">
+            <h3 class="validacao-historico__title">Suas indicações</h3>
+            <ul class="validacao-list-compact">
+                <?php foreach ($historicoValidacoes as $v): ?>
+                    <li class="validacao-list-compact__item">
+                        <div class="validacao-list-compact__row">
+                            <div class="validacao-list-compact__status">
+                                <span class="validacao-status-badge validacao-status-badge--<?= strtolower($v['status']) ?>">
+                                    <?= e(ValidacaoIndicacao::statusLabel($v['status'])) ?>
+                                </span>
+                            </div>
+                            <div class="validacao-list-compact__info">
+                                <?php if (!empty($v['nome_indicado'])): ?>
+                                    <strong><?= e($v['nome_indicado']) ?></strong>
+                                <?php else: ?>
+                                    <strong>Aguardando cadastro</strong>
+                                <?php endif; ?>
+                                <span class="validacao-list-compact__date">
+                                    <?= e(date('d/m/Y', strtotime($v['created_at']))) ?>
+                                </span>
+                            </div>
+                        </div>
+                        <?php if (!empty($v['motivo_bloqueio'])): ?>
+                            <p class="validacao-list-compact__motivo">
+                                ⚠️ <?= e(ValidacaoIndicacao::motivoLabel($v['motivo_bloqueio'])) ?>
+                            </p>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
         </div>
     <?php else: ?>
-        <?php 
-        // Use indicados if available, otherwise fall back to indicacoes
-        $items = $indicados !== [] ? $indicados : $indicacoes;
-        foreach ($items as $item): 
-            $isIndicado = isset($item['status']) && in_array($item['status'], [
-                Indicado::STATUS_LINK_ACESSADO,
-                Indicado::STATUS_CADASTRO_INICIADO,
-                Indicado::STATUS_CADASTRO_CONCLUIDO,
-                Indicado::STATUS_AGUARDANDO_VALIDACAO,
-                Indicado::STATUS_VALIDADO,
-                Indicado::STATUS_INVALIDADO,
-            ]);
-            $status = $isIndicado ? $item['status'] : ($item['status'] ?? 'AGUARDANDO');
-            $nome = $isIndicado ? Indicado::maskName($item['nome']) : ($item['nome_indicado'] ?? 'Aguardando cadastro');
-            $telefone = $isIndicado ? $item['telefone'] : ($item['telefone_indicado'] ?? '');
-            $timeline = $item['timeline'] ?? [];
-            $created = $item['created_at'] ?? '';
-        ?>
-            <article class="referral-card">
-                <div class="referral-card__header">
-                    <span class="referral-card__icon"><?= $isIndicado ? '👤' : Indicacao::statusIcon((string) $status) ?></span>
-                    <div class="referral-card__info">
-                        <h3 class="referral-card__name"><?= e($nome) ?></h3>
-                        <?php if (!empty($telefone)): ?>
-                            <p class="referral-card__phone"><?= e(format_phone((string) $telefone)) ?></p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                
-                <?php if (!empty($timeline)): ?>
-                    <div class="referral-card__timeline">
-                        <h4 class="timeline-title">Progresso</h4>
-                        <div class="timeline">
-                            <?php foreach ($timeline as $step): ?>
-                                <div class="timeline__item timeline__item--<?= $step['status'] ?>">
-                                    <span class="timeline__icon"><?= $step['icon'] ?></span>
-                                    <div class="timeline__content">
-                                        <span class="timeline__label"><?= e($step['label']) ?></span>
-                                        <span class="timeline__date"><?= e(date('d/m/Y H:i', strtotime($step['date']))) ?></span>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
-                
-                <div class="referral-card__footer">
-                    <span class="badge badge--status badge--<?= strtolower((string) $status) ?>">
-                        <?= e($isIndicado ? Indicado::statusLabel((string) $status) : Indicacao::statusLabel((string) $status)) ?>
-                    </span>
-                    <?php if ($isIndicado && $status === Indicado::STATUS_INVALIDADO && !empty($item['motivo'])): ?>
-                        <span class="referral-card__motivo" title="<?= e($item['motivo']) ?>">
-                            <?= e(substr($item['motivo'], 0, 50)) ?><?= strlen($item['motivo']) > 50 ? '...' : '' ?>
-                        </span>
-                    <?php endif; ?>
-                    <span class="referral-card__date"><?= e(date('d/m/Y', strtotime((string) $created))) ?></span>
-                </div>
-            </article>
-        <?php endforeach; ?>
+        <p class="mm-card__placeholder">Nenhuma indicação registrada ainda.</p>
     <?php endif; ?>
 </section>
 

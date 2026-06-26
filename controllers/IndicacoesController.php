@@ -15,66 +15,34 @@ class IndicacoesController extends Controller
         }
 
         $page = max(1, (int) ($_GET['page'] ?? 1));
-        $limit = 10;
+        $limit = 20;
         $offset = ($page - 1) * $limit;
-
-        $filtro = $_GET['filtro'] ?? 'todas';
-        $busca = $_GET['busca'] ?? '';
-
-        $indicacaoModel = new Indicacao();
         $userId = (int) $user['id'];
 
+        $historicoValidacoes = [];
+        $validacaoStats = ['total' => 0, 'aprovados' => 0, 'reprovados' => 0, 'beneficios_liberados' => 0];
+        $total = 0;
+
         try {
-            $stats = $indicacaoModel->statsByUsuario($userId);
-            
-            // Apply filter and search
-            $indicacoes = $indicacaoModel->listByUsuario($userId, $limit);
-            
-            if ($filtro !== 'todas') {
-                $indicacoes = array_filter($indicacoes, function($item) use ($filtro) {
-                    return match ($filtro) {
-                        'pendentes' => in_array($item['status'], [Indicacao::STATUS_AGUARDANDO, Indicacao::STATUS_LINK_ACESSADO, Indicacao::STATUS_CADASTRO_PENDENTE]),
-                        'validadas' => $item['status'] === Indicacao::STATUS_VALIDADO,
-                        'premiadas' => $item['status'] === Indicacao::STATUS_PREMIO_LIBERADO,
-                        default => true,
-                    };
-                });
-            }
-            
-            if ($busca !== '') {
-                $buscaLower = strtolower($busca);
-                $indicacoes = array_filter($indicacoes, function($item) use ($buscaLower) {
-                    $nome = strtolower($item['nome_indicado'] ?? '');
-                    $telefone = strtolower($item['telefone_indicado'] ?? '');
-                    return str_contains($nome, $buscaLower) || str_contains($telefone, $buscaLower);
-                });
-            }
-            
-            $total = count($indicacoes);
-        } catch (PDOException $e) {
-            $stats = ['total' => 0, 'validadas' => 0, 'pendentes' => 0, 'liberadas' => 0];
-            $indicacoes = [];
-            $total = 0;
+            $validacaoModel = new ValidacaoIndicacao();
+            $validacaoStats = $validacaoModel->statsUsuarioIndicador($userId);
+            $total = $validacaoModel->countByUsuarioIndicador($userId);
+            $historicoValidacoes = $validacaoModel->listByUsuarioIndicador($userId, $limit, $offset);
+        } catch (Throwable $e) {
+            Logger::warning('Validacao table not found or error', ['error' => $e->getMessage()]);
         }
 
-        // Add timeline data to each indication
-        foreach ($indicacoes as &$indicacao) {
-            $indicacao['timeline'] = $indicacaoModel->getTimeline((int) $indicacao['id']);
-        }
-
-        $totalPages = (int) ceil($total / $limit);
+        $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
 
         $this->view('indicacoes.index', [
             'title' => 'Minhas Indicações',
             'user' => $user,
-            'stats' => $stats,
-            'indicacoes' => $indicacoes,
+            'historicoValidacoes' => $historicoValidacoes,
+            'validacaoStats' => $validacaoStats,
             'currentPage' => $page,
             'totalPages' => $totalPages,
             'hasNext' => $page < $totalPages,
             'hasPrev' => $page > 1,
-            'filtro' => $filtro,
-            'busca' => $busca,
         ], 'app');
     }
 }

@@ -20,24 +20,11 @@ class ProfileController extends Controller
             $this->redirect('/login');
         }
 
-        $historicoValidacoes = [];
-        $validacaoStats = ['total' => 0, 'aprovados' => 0, 'reprovados' => 0, 'beneficios_liberados' => 0];
-
-        try {
-            $validacaoModel = new ValidacaoIndicacao();
-            $validacaoStats = $validacaoModel->statsUsuarioIndicador((int) $user['id']);
-            $historicoValidacoes = $validacaoModel->listByUsuarioIndicador((int) $user['id'], 20);
-        } catch (Throwable $e) {
-            Logger::warning('Validacao table not found or error', ['error' => $e->getMessage()]);
-        }
-
         $this->view('perfil.index', [
             'title' => 'Perfil — Indique e Ganhe',
             'user' => $user,
             'errors' => Session::flash('errors') ?? [],
             'success' => Session::flash('success'),
-            'historicoValidacoes' => $historicoValidacoes,
-            'validacaoStats' => $validacaoStats,
         ], 'app');
     }
 
@@ -183,7 +170,14 @@ class ProfileController extends Controller
         }
 
         $userId = (int) $user['id'];
-        (new Usuario())->softDelete($userId);
+
+        try {
+            (new Usuario())->softDelete($userId);
+        } catch (PDOException $e) {
+            Logger::error('Account delete failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
+            Session::flash('errors', ['senha' => 'Não foi possível excluir a conta. Tente novamente.']);
+            $this->redirect('/perfil');
+        }
 
         $this->eventLogger->logPerfilEditado($userId, ['action' => 'account_deleted']);
 

@@ -26,49 +26,36 @@ class DashboardController extends Controller
         $userId = (int) $user['id'];
         $codigo = (string) $user['codigo_indicador'];
 
-        // Check if indicacoes table exists
         $stats = ['total' => 0, 'validadas' => 0, 'pendentes' => 0, 'liberadas' => 0];
-        $indicacoes = [];
-        $indicados = [];
-        $validacoes = [];
         $validacaoStats = ['total' => 0, 'aprovados' => 0, 'reprovados' => 0, 'beneficios_liberados' => 0];
 
-        // Get real stats from indicados table
+        try {
+            $indicacaoModel = new Indicacao();
+            $stats = $indicacaoModel->statsByUsuario($userId);
+        } catch (PDOException $e) {
+            Logger::warning('Indicacoes table not found', ['error' => $e->getMessage()]);
+        }
+
         try {
             $indicadoModel = new Indicado();
-            $indicados = $indicadoModel->listByIndicador($codigo);
-            
-            // Calculate real stats
-            $stats['total'] = count($indicados);
-            $stats['pendentes'] = 0;
-            $stats['validadas'] = 0;
-            $stats['liberadas'] = 0;
-            
-            foreach ($indicados as $indicado) {
-                if ($indicado['status'] === Indicado::STATUS_AGUARDANDO_VALIDACAO) {
-                    $stats['pendentes']++;
-                } elseif ($indicado['status'] === Indicado::STATUS_VALIDADO) {
+            foreach ($indicadoModel->listByIndicador($codigo) as $indicado) {
+                if (($indicado['nome'] ?? '') === '' && ($indicado['cpf'] ?? '') === '') {
+                    continue;
+                }
+
+                $stats['total']++;
+
+                if ($indicado['status'] === Indicado::STATUS_VALIDADO) {
                     $stats['validadas']++;
                     $stats['liberadas']++;
+                } elseif ($indicado['status'] === Indicado::STATUS_AGUARDANDO_VALIDACAO) {
+                    $stats['pendentes']++;
+                } elseif ($indicado['status'] !== Indicado::STATUS_INVALIDADO) {
+                    $stats['pendentes']++;
                 }
-            }
-            
-            // Add timeline data to each indicado
-            foreach ($indicados as &$indicado) {
-                $indicado['timeline'] = $indicadoModel->getTimeline((int) $indicado['id']);
             }
         } catch (PDOException $e) {
             Logger::warning('Indicados table not found', ['error' => $e->getMessage()]);
-        }
-
-        // Legacy indicacoes table (for backward compatibility)
-        try {
-            $indicacaoModel = new Indicacao();
-            $legacyIndicacoes = $indicacaoModel->listByUsuario($userId);
-            $indicacoes = $legacyIndicacoes;
-        } catch (PDOException $e) {
-            // Table doesn't exist yet
-            Logger::warning('Indicacoes table not found', ['error' => $e->getMessage()]);
         }
 
         // Get or create user's link
@@ -90,10 +77,7 @@ class DashboardController extends Controller
             'inviteLink' => $linkUrl,
             'codigo' => $codigo,
             'stats' => $stats,
-            'indicacoes' => $indicacoes,
-            'indicados' => $indicados,
             'linkStats' => $linkStats,
-            'validacoes' => $validacoes,
             'validacaoStats' => $validacaoStats,
         ], 'app');
     }
