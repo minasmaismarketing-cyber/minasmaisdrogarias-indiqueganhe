@@ -66,11 +66,20 @@ class ValidacaoIndicacao extends Model
         return $stmt->fetchAll();
     }
 
-    public function countByUsuarioIndicador(int $usuarioId, string $status): int
+    public function countByUsuarioIndicador(int $usuarioId, ?string $status = null): int
     {
-        $stmt = $this->db->prepare('SELECT COUNT(*) as total FROM validacao_indicacoes WHERE usuario_indicador_id = :usuario_id AND status = :status');
-        $stmt->execute(['usuario_id' => $usuarioId, 'status' => $status]);
+        if ($status !== null) {
+            $stmt = $this->db->prepare('SELECT COUNT(*) as total FROM validacao_indicacoes WHERE usuario_indicador_id = :usuario_id AND status = :status');
+            $stmt->execute(['usuario_id' => $usuarioId, 'status' => $status]);
+        } else {
+            $stmt = $this->db->prepare(
+                'SELECT COUNT(*) as total FROM validacao_indicacoes WHERE usuario_indicador_id = :usuario_id'
+            );
+            $stmt->execute(['usuario_id' => $usuarioId]);
+        }
+
         $row = $stmt->fetch();
+
         return (int) ($row['total'] ?? 0);
     }
 
@@ -110,17 +119,6 @@ class ValidacaoIndicacao extends Model
             'reprovados' => (int) ($row['reprovados'] ?? 0),
             'beneficios_liberados' => (int) ($row['beneficios_liberados'] ?? 0),
         ];
-    }
-
-    public function countByUsuarioIndicador(int $usuarioId): int
-    {
-        $stmt = $this->db->prepare(
-            'SELECT COUNT(*) as total FROM validacao_indicacoes WHERE usuario_indicador_id = :usuario_id'
-        );
-        $stmt->execute(['usuario_id' => $usuarioId]);
-        $row = $stmt->fetch();
-
-        return (int) ($row['total'] ?? 0);
     }
 
     /** @return array<int, array<string, mixed>> */
