@@ -299,6 +299,34 @@ class Usuario extends Model
     }
 
     /** @param array<string, mixed> $usuario */
+    public static function accountStatusIcon(array $usuario): string
+    {
+        if (!empty($usuario['deleted_at'])) {
+            return '⚫';
+        }
+
+        if ((int) ($usuario['ativo'] ?? 1) === 0) {
+            return '🔴';
+        }
+
+        return '🟢';
+    }
+
+    /** @param array<string, mixed> $usuario */
+    public static function accountStatusBadgeClass(array $usuario): string
+    {
+        if (!empty($usuario['deleted_at'])) {
+            return 'badge--usuario-excluido';
+        }
+
+        if ((int) ($usuario['ativo'] ?? 1) === 0) {
+            return 'badge--usuario-bloqueado';
+        }
+
+        return 'badge--usuario-ativo';
+    }
+
+    /** @param array<string, mixed> $usuario */
     public static function formatCpfDisplay(array $usuario): string
     {
         $cpf = (string) ($usuario['cpf'] ?? '');

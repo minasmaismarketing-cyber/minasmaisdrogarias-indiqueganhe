@@ -1,50 +1,58 @@
 <?php declare(strict_types=1); ?>
 <?php $subtitle = 'Consulte informações e atividades do usuário.'; ?>
 
-<section class="mm-card">
+<section class="mm-card mm-card--usuario-info">
     <div class="mm-card__header">
         <h2 class="mm-card__title">Informações do Usuário</h2>
-        <span class="badge"><?= e(Usuario::accountStatusLabel($usuario)) ?></span>
+        <span class="badge <?= Usuario::accountStatusBadgeClass($usuario) ?>">
+            <?= Usuario::accountStatusIcon($usuario) ?>
+            <?= e(Usuario::accountStatusLabel($usuario)) ?>
+        </span>
     </div>
 
-    <div class="info-grid">
-        <div class="info-grid__item">
-            <span class="info-grid__label">Nome</span>
-            <span class="info-grid__value"><?= e($usuario['nome']) ?></span>
+    <dl class="usuario-details">
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">Nome</dt>
+            <dd class="usuario-details__value"><?= e($usuario['nome']) ?></dd>
         </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">CPF</span>
-            <span class="info-grid__value"><?= e(Usuario::formatCpfDisplay($usuario)) ?></span>
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">CPF</dt>
+            <dd class="usuario-details__value"><?= e(Usuario::formatCpfDisplay($usuario)) ?></dd>
         </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">E-mail</span>
-            <span class="info-grid__value"><?= e($usuario['email']) ?></span>
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">E-mail</dt>
+            <dd class="usuario-details__value"><?= e($usuario['email']) ?></dd>
         </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Telefone</span>
-            <span class="info-grid__value"><?= e($usuario['telefone'] ? format_phone((string) $usuario['telefone']) : '—') ?></span>
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">Telefone</dt>
+            <dd class="usuario-details__value"><?= e($usuario['telefone'] ? format_phone((string) $usuario['telefone']) : '—') ?></dd>
         </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">WhatsApp</span>
-            <span class="info-grid__value"><?= e($usuario['whatsapp'] ? format_phone((string) $usuario['whatsapp']) : '—') ?></span>
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">WhatsApp</dt>
+            <dd class="usuario-details__value"><?= e($usuario['whatsapp'] ? format_phone((string) $usuario['whatsapp']) : '—') ?></dd>
         </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Código de Indicação</span>
-            <span class="info-grid__value"><?= e($usuario['codigo_indicador'] ?? '—') ?></span>
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">Código de Indicação</dt>
+            <dd class="usuario-details__value"><?= e($usuario['codigo_indicador'] ?? '—') ?></dd>
         </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Role</span>
-            <span class="info-grid__value"><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></span>
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">Perfil</dt>
+            <dd class="usuario-details__value"><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></dd>
         </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Status</span>
-            <span class="info-grid__value"><?= e(Usuario::accountStatusLabel($usuario)) ?></span>
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">Status</dt>
+            <dd class="usuario-details__value">
+                <span class="badge <?= Usuario::accountStatusBadgeClass($usuario) ?>">
+                    <?= Usuario::accountStatusIcon($usuario) ?>
+                    <?= e(Usuario::accountStatusLabel($usuario)) ?>
+                </span>
+            </dd>
         </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Data de Cadastro</span>
-            <span class="info-grid__value"><?= e(date('d/m/Y H:i:s', strtotime($usuario['created_at']))) ?></span>
+        <div class="usuario-details__row">
+            <dt class="usuario-details__label">Data de Cadastro</dt>
+            <dd class="usuario-details__value"><?= e(date('d/m/Y H:i:s', strtotime($usuario['created_at']))) ?></dd>
         </div>
-    </div>
+    </dl>
 </section>
 
 <section class="mm-card">
