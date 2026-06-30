@@ -222,6 +222,130 @@ class Usuario extends Model
         return (int) ($row['total'] ?? 0);
     }
 
+    public const FILTER_TODOS = 'todos';
+    public const FILTER_ATIVOS = 'ativos';
+    public const FILTER_BLOQUEADOS = 'bloqueados';
+    public const FILTER_EXCLUIDOS = 'excluidos';
+
+    /** @param array<string, mixed> $filters
+     *  @return array<int, array<string, mixed>>
+     */
+    public function findAllAdmin(array $filters = [], int $limit = 20, int $offset = 0): array
+    {
+        $sql = 'SELECT u.*,
+                       (SELECT COUNT(*) FROM indicacoes i WHERE i.usuario_id = u.id) AS total_indicacoes,
+                       (SELECT COUNT(*) FROM cupons c WHERE c.usuario_id = u.id) AS total_cupons
+                FROM usuarios u
+                WHERE 1=1';
+        $params = [];
+
+        $this->applyAdminFilters($sql, $params, $filters);
+
+        $sql .= ' ORDER BY u.created_at DESC LIMIT :limit OFFSET :offset';
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function countAllAdmin(array $filters = []): int
+    {
+        $sql = 'SELECT COUNT(*) AS total FROM usuarios u WHERE 1=1';
+        $params = [];
+
+        $this->applyAdminFilters($sql, $params, $filters);
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    public function setAtivo(int $userId, bool $ativo): bool
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE usuarios
+             SET ativo = :ativo, updated_at = NOW()
+             WHERE id = :id AND deleted_at IS NULL'
+        );
+        $stmt->execute([
+            'ativo' => $ativo ? 1 : 0,
+            'id' => $userId,
+        ]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    /** @param array<string, mixed> $usuario */
+    public static function accountStatusLabel(array $usuario): string
+    {
+        if (!empty($usuario['deleted_at'])) {
+            return 'Excluído';
+        }
+
+        if ((int) ($usuario['ativo'] ?? 1) === 0) {
+            return 'Bloqueado';
+        }
+
+        return 'Ativo';
+    }
+
+    /** @param array<string, mixed> $usuario */
+    public static function formatCpfDisplay(array $usuario): string
+    {
+        $cpf = (string) ($usuario['cpf'] ?? '');
+
+        if ($cpf === '' || str_starts_with($cpf, 'DEL_')) {
+            return '—';
+        }
+
+        $digits = preg_replace('/\D/', '', $cpf) ?? '';
+
+        return strlen($digits) === 11 ? format_cpf($digits) : $cpf;
+    }
+
+    /** @param array<string, mixed> $filters
+     *  @param array<string, mixed> $params
+     */
+    private function applyAdminFilters(string &$sql, array &$params, array $filters): void
+    {
+        $statusFilter = (string) ($filters['status'] ?? self::FILTER_TODOS);
+
+        if ($statusFilter === self::FILTER_ATIVOS) {
+            $sql .= ' AND u.ativo = 1 AND u.deleted_at IS NULL';
+        } elseif ($statusFilter === self::FILTER_BLOQUEADOS) {
+            $sql .= ' AND u.ativo = 0 AND u.deleted_at IS NULL';
+        } elseif ($statusFilter === self::FILTER_EXCLUIDOS) {
+            $sql .= ' AND u.deleted_at IS NOT NULL';
+        }
+
+        if (!empty($filters['nome'])) {
+            $sql .= ' AND u.nome LIKE :nome';
+            $params['nome'] = '%' . $filters['nome'] . '%';
+        }
+
+        if (!empty($filters['email'])) {
+            $sql .= ' AND u.email LIKE :email';
+            $params['email'] = '%' . strtolower((string) $filters['email']) . '%';
+        }
+
+        if (!empty($filters['cpf'])) {
+            $cpfDigits = preg_replace('/\D/', '', (string) $filters['cpf']) ?? '';
+            if ($cpfDigits !== '') {
+                $sql .= ' AND u.cpf LIKE :cpf';
+                $params['cpf'] = '%' . $cpfDigits . '%';
+            }
+        }
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function listAll(int $limit = 100): array
     {

@@ -38,6 +38,9 @@ $router->post('/configuracoes', 'ConfiguracoesController', 'update');
 // Admin routes
 $router->get('/admin', 'AdminController', 'index');
 $router->get('/admin/usuarios', 'AdminController', 'usuarios');
+$router->get('/admin/usuarios/{id}', 'AdminController', 'showUsuario');
+$router->post('/admin/usuarios/bloquear', 'AdminController', 'blockUsuario');
+$router->post('/admin/usuarios/desbloquear', 'AdminController', 'unblockUsuario');
 $router->get('/admin/campanhas', 'AdminController', 'campanhas');
 $router->get('/admin/indicacoes', 'AdminController', 'indicacoes');
 $router->get('/admin/configuracoes', 'AdminController', 'configuracoes');

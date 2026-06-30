@@ -434,6 +434,36 @@ class ValidacaoIndicacao extends Model
         ];
     }
 
+    /** @return array<string, int> */
+    public function statsAdminUsuario(int $usuarioId): array
+    {
+        $pendentes = implode("','", self::STATUSES_PENDENTES);
+        $aprovados = implode("','", self::STATUSES_APROVADOS);
+
+        $stmt = $this->db->prepare(
+            "SELECT
+                SUM(CASE WHEN status IN ('{$pendentes}') THEN 1 ELSE 0 END) AS pendentes,
+                SUM(CASE WHEN status = :em_analise THEN 1 ELSE 0 END) AS em_analise,
+                SUM(CASE WHEN status IN ('{$aprovados}') THEN 1 ELSE 0 END) AS aprovadas,
+                SUM(CASE WHEN status = :reprovado THEN 1 ELSE 0 END) AS reprovadas
+             FROM validacao_indicacoes
+             WHERE usuario_indicador_id = :usuario_id"
+        );
+        $stmt->execute([
+            'em_analise' => self::STATUS_EM_ANALISE,
+            'reprovado' => self::STATUS_REPROVADO,
+            'usuario_id' => $usuarioId,
+        ]);
+        $row = $stmt->fetch();
+
+        return [
+            'pendentes' => (int) ($row['pendentes'] ?? 0),
+            'em_analise' => (int) ($row['em_analise'] ?? 0),
+            'aprovadas' => (int) ($row['aprovadas'] ?? 0),
+            'reprovadas' => (int) ($row['reprovadas'] ?? 0),
+        ];
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function listByUsuarioIndicador(int $usuarioId, int $limit = 50, int $offset = 0): array
     {

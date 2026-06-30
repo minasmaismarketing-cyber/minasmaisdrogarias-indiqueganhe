@@ -305,6 +305,17 @@ class Indicacao extends Model
         return (int) ($row['total'] ?? 0);
     }
 
+    public function countByUsuario(int $usuarioId): int
+    {
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*) as total FROM indicacoes WHERE usuario_id = :usuario_id'
+        );
+        $stmt->execute(['usuario_id' => $usuarioId]);
+        $row = $stmt->fetch();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function listAll(int $limit = 100): array
     {

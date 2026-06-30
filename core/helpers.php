@@ -234,6 +234,12 @@ function admin_breadcrumbs(): array
         return $crumbs;
     }
 
+    if (preg_match('#^/admin/usuarios/(\d+)$#', $path) === 1) {
+        $crumbs[] = ['label' => 'Usuários', 'url' => url('/admin/usuarios')];
+        $crumbs[] = ['label' => 'Detalhes', 'url' => null];
+        return $crumbs;
+    }
+
     if (preg_match('#^/admin/cupons/(\d+)$#', $path) === 1) {
         $crumbs[] = ['label' => 'Cupons', 'url' => url('/admin/cupons')];
         $crumbs[] = ['label' => 'Detalhes', 'url' => null];

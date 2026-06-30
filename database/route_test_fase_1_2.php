@@ -36,6 +36,7 @@ $tests = [
     // Admin estático
     ['method' => 'GET', 'path' => '/admin', 'expect' => 'AdminController@index', 'middleware' => null, 'params' => []],
     ['method' => 'GET', 'path' => '/admin/usuarios', 'expect' => 'AdminController@usuarios', 'middleware' => null, 'params' => []],
+    ['method' => 'GET', 'path' => '/admin/usuarios/5', 'expect' => 'AdminController@showUsuario', 'middleware' => null, 'params' => ['id' => '5']],
     ['method' => 'GET', 'path' => '/admin/campanhas', 'expect' => 'AdminController@campanhas', 'middleware' => null, 'params' => []],
     ['method' => 'GET', 'path' => '/admin/campanhas/criar', 'expect' => 'CampanhasController@create', 'middleware' => null, 'params' => []],
     ['method' => 'GET', 'path' => '/admin/validacoes', 'expect' => 'ValidacaoController@adminIndex', 'middleware' => null, 'params' => []],

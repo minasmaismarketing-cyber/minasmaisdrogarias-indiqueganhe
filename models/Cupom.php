@@ -161,6 +161,17 @@ class Cupom extends Model
         return (int) ($row['total'] ?? 0);
     }
 
+    public function countByUsuario(int $usuarioId): int
+    {
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*) as total FROM cupons WHERE usuario_id = :usuario_id'
+        );
+        $stmt->execute(['usuario_id' => $usuarioId]);
+        $row = $stmt->fetch();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
     public function checkExpirados(): int
     {
         $stmt = $this->db->prepare(
