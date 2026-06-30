@@ -208,7 +208,7 @@ class IndicadosController extends Controller
             $errors['email'] = 'Este email já está cadastrado.';
         }
 
-        if ($indicadoModel->telefoneExists($telefone) || $usuarioModel->telefoneExists($telefone)) {
+        if ($indicadoModel->telefoneExists($telefone)) {
             $errors['telefone'] = 'Este telefone já está cadastrado.';
         }
 

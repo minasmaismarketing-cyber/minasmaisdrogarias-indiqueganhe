@@ -57,10 +57,6 @@ class ConfiguracoesController extends Controller
 
         $usuarioModel = new Usuario();
 
-        if ($telefone !== (string) $user['telefone'] && $usuarioModel->telefoneExists($telefone)) {
-            $errors['telefone'] = 'Telefone já cadastrado.';
-        }
-
         if ($email !== (string) $user['email'] && $usuarioModel->emailExists($email)) {
             $errors['email'] = 'E-mail já cadastrado.';
         }

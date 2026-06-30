@@ -88,20 +88,28 @@ class Usuario extends Model
 
     public function cpfExists(string $cpf): bool
     {
-        return $this->findByCpf($cpf) !== null;
+        $stmt = $this->db->prepare(
+            'SELECT id FROM usuarios WHERE cpf = :cpf AND ativo = 1 LIMIT 1'
+        );
+        $stmt->execute(['cpf' => $cpf]);
+
+        return (bool) $stmt->fetch();
     }
 
     public function emailExists(string $email): bool
     {
-        return $this->findByEmail(strtolower($email)) !== null;
-    }
-
-    public function telefoneExists(string $telefone): bool
-    {
-        $stmt = $this->db->prepare('SELECT id FROM usuarios WHERE telefone = :telefone LIMIT 1');
-        $stmt->execute(['telefone' => $telefone]);
+        $stmt = $this->db->prepare(
+            'SELECT id FROM usuarios WHERE email = :email AND ativo = 1 LIMIT 1'
+        );
+        $stmt->execute(['email' => strtolower($email)]);
 
         return (bool) $stmt->fetch();
+    }
+
+    /** @deprecated Telefone não é mais único; mantido apenas por compatibilidade de chamadas legadas. */
+    public function telefoneExists(string $telefone): bool
+    {
+        return false;
     }
 
     public function codigoExists(string $codigo): bool
@@ -177,11 +185,35 @@ class Usuario extends Model
         return $stmt->fetchAll();
     }
 
-    public function softDelete(int $userId): void
+    /**
+     * Exclusão completa da conta: soft delete + anonimização de dados pessoais.
+     * Indicações, eventos, cupons, validações e logs permanecem vinculados ao id.
+     */
+    public function excluirConta(int $userId): void
     {
+        $timestamp = time();
+        $cpfAnon = sprintf('DEL_%d_%d', $userId, $timestamp);
+        $emailAnon = sprintf('deleted_%d_%d@deleted.local', $userId, $timestamp);
+
         $stmt = $this->db->prepare(
-            'UPDATE usuarios SET ativo = 0, deleted_at = NOW(), updated_at = NOW() WHERE id = :id'
+            'UPDATE usuarios SET
+                ativo = 0,
+                deleted_at = NOW(),
+                nome = :nome,
+                cpf = :cpf,
+                email = :email,
+                telefone = NULL,
+                whatsapp = NULL,
+                remember_token = NULL,
+                codigo_indicador = NULL,
+                updated_at = NOW()
+             WHERE id = :id'
         );
-        $stmt->execute(['id' => $userId]);
+        $stmt->execute([
+            'nome' => 'Usuário Excluído',
+            'cpf' => $cpfAnon,
+            'email' => $emailAnon,
+            'id' => $userId,
+        ]);
     }
 }

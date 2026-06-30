@@ -254,3 +254,9 @@
 5. Admin RBAC (TD-012) — segurança
 6. SMTP (TD-021) — feature essencial produção
 7. Demais itens médios/baixos
+
+---
+
+## TODO — Backlog funcional
+
+- **Futuro:** implementar histórico de participação por hash do CPF para prevenção de fraude em campanhas.

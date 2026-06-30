@@ -63,10 +63,6 @@ class ProfileController extends Controller
 
         $usuarioModel = new Usuario();
 
-        if ($telefone !== (string) $user['telefone'] && $usuarioModel->telefoneExists($telefone)) {
-            $errors['telefone'] = 'Telefone já cadastrado.';
-        }
-
         if ($errors !== []) {
             Session::flash('errors', $errors);
             $this->redirect('/perfil');
@@ -172,7 +168,7 @@ class ProfileController extends Controller
         $userId = (int) $user['id'];
 
         try {
-            (new Usuario())->softDelete($userId);
+            (new Usuario())->excluirConta($userId);
         } catch (PDOException $e) {
             Logger::error('Account delete failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
             Session::flash('errors', ['senha' => 'Não foi possível excluir a conta. Tente novamente.']);

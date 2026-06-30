@@ -323,8 +323,6 @@ class AuthController extends Controller
 
         if (!Validator::telefone($input['telefone'])) {
             $errors['telefone'] = 'Telefone inválido.';
-        } elseif ($usuarioModel->telefoneExists($input['telefone'])) {
-            $errors['telefone'] = 'Telefone já cadastrado.';
         }
 
         if (!Validator::telefone($input['whatsapp'])) {

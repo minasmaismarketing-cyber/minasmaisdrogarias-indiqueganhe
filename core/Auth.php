@@ -65,8 +65,12 @@ class Auth
         $usuario = (new Usuario())->findById($id);
 
         if ($usuario === null) {
-            Session::remove(self::SESSION_KEY);
-            self::forgetRememberCookie();
+            self::invalidateAuthState();
+            return null;
+        }
+
+        if (self::isAccountExcluded($usuario)) {
+            self::invalidateAuthState();
             return null;
         }
 
@@ -103,9 +107,48 @@ class Auth
             return null;
         }
 
+        if (!self::canRestoreRememberSession($usuario)) {
+            self::forgetRememberCookie();
+            return null;
+        }
+
         Session::set(self::SESSION_KEY, $userId);
 
         return $userId;
+    }
+
+    /** @param array<string, mixed> $usuario */
+    private static function isAccountExcluded(array $usuario): bool
+    {
+        if (isset($usuario['deleted_at']) && $usuario['deleted_at'] !== null && $usuario['deleted_at'] !== '') {
+            return true;
+        }
+
+        if (isset($usuario['ativo']) && (int) $usuario['ativo'] === 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /** @param array<string, mixed> $usuario */
+    private static function canRestoreRememberSession(array $usuario): bool
+    {
+        if (!isset($usuario['ativo']) || (int) $usuario['ativo'] !== 1) {
+            return false;
+        }
+
+        if (isset($usuario['deleted_at']) && $usuario['deleted_at'] !== null && $usuario['deleted_at'] !== '') {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static function invalidateAuthState(): void
+    {
+        Session::remove(self::SESSION_KEY);
+        self::forgetRememberCookie();
     }
 
     private static function setRememberToken(int $userId): void
