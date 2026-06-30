@@ -10,56 +10,39 @@ $buildPageUrl = static function (int $page) use ($filters): string {
 
     return url('/admin/usuarios' . ($query !== '' ? '?' . $query : ''));
 };
-$hasActiveFilters = $filters['nome'] !== ''
-    || $filters['cpf'] !== ''
-    || $filters['email'] !== ''
-    || $filters['status'] !== Usuario::FILTER_TODOS;
 ?>
 
-<section class="admin-filter-panel mm-card<?= $hasActiveFilters ? ' is-open' : '' ?>" data-admin-filter-panel>
-    <button
-        type="button"
-        class="admin-filter-panel__toggle"
-        aria-expanded="<?= $hasActiveFilters ? 'true' : 'false' ?>"
-        aria-controls="admin-usuarios-filters"
-        data-admin-filter-toggle
-    >
-        <span class="admin-filter-panel__toggle-label">🔎 FILTRAR</span>
-        <span class="admin-filter-panel__toggle-icon" aria-hidden="true"></span>
-    </button>
-
-    <div class="admin-filter-panel__body" id="admin-usuarios-filters">
-        <form method="GET" action="<?= url('/admin/usuarios') ?>" class="form admin-filter-panel__form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="nome">Nome</label>
-                    <input type="text" id="nome" name="nome" value="<?= e($filters['nome']) ?>">
-                </div>
-                <div class="form-group">
-                    <label for="cpf">CPF</label>
-                    <input type="text" id="cpf" name="cpf" value="<?= e($filters['cpf']) ?>">
-                </div>
-                <div class="form-group">
-                    <label for="email">E-mail</label>
-                    <input type="email" id="email" name="email" value="<?= e($filters['email']) ?>">
-                </div>
-                <div class="form-group">
-                    <label for="status">Status</label>
-                    <select id="status" name="status">
-                        <option value="<?= Usuario::FILTER_TODOS ?>" <?= $filters['status'] === Usuario::FILTER_TODOS ? 'selected' : '' ?>>Todos</option>
-                        <option value="<?= Usuario::FILTER_ATIVOS ?>" <?= $filters['status'] === Usuario::FILTER_ATIVOS ? 'selected' : '' ?>>Ativos</option>
-                        <option value="<?= Usuario::FILTER_BLOQUEADOS ?>" <?= $filters['status'] === Usuario::FILTER_BLOQUEADOS ? 'selected' : '' ?>>Bloqueados</option>
-                        <option value="<?= Usuario::FILTER_EXCLUIDOS ?>" <?= $filters['status'] === Usuario::FILTER_EXCLUIDOS ? 'selected' : '' ?>>Excluídos</option>
-                    </select>
-                </div>
+<?php admin_filter_panel('admin-usuarios-filters', $filters, static function () use ($filters): void { ?>
+    <form method="GET" action="<?= url('/admin/usuarios') ?>" class="form admin-filter-panel__form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nome">Nome</label>
+                <input type="text" id="nome" name="nome" value="<?= e($filters['nome']) ?>">
             </div>
-            <div class="admin-filter-panel__actions">
-                <button type="submit" class="btn btn--primary">Buscar</button>
-                <a href="<?= url('/admin/usuarios') ?>" class="btn btn--ghost">Limpar</a>
+            <div class="form-group">
+                <label for="cpf">CPF</label>
+                <input type="text" id="cpf" name="cpf" value="<?= e($filters['cpf']) ?>">
             </div>
-        </form>
-    </div>
-</section>
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" value="<?= e($filters['email']) ?>">
+            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="<?= Usuario::FILTER_TODOS ?>" <?= $filters['status'] === Usuario::FILTER_TODOS ? 'selected' : '' ?>>Todos</option>
+                    <option value="<?= Usuario::FILTER_ATIVOS ?>" <?= $filters['status'] === Usuario::FILTER_ATIVOS ? 'selected' : '' ?>>Ativos</option>
+                    <option value="<?= Usuario::FILTER_BLOQUEADOS ?>" <?= $filters['status'] === Usuario::FILTER_BLOQUEADOS ? 'selected' : '' ?>>Bloqueados</option>
+                    <option value="<?= Usuario::FILTER_EXCLUIDOS ?>" <?= $filters['status'] === Usuario::FILTER_EXCLUIDOS ? 'selected' : '' ?>>Excluídos</option>
+                </select>
+            </div>
+        </div>
+        <div class="admin-filter-panel__actions">
+            <a href="<?= url('/admin/usuarios') ?>" class="btn btn--ghost">Limpar</a>
+            <button type="submit" class="btn btn--primary">Buscar</button>
+        </div>
+    </form>
+<?php }); ?>
 
 <section class="mm-card">
     <div class="mm-card__header">
@@ -119,16 +102,3 @@ $hasActiveFilters = $filters['nome'] !== ''
         <?php endif; ?>
     </nav>
 <?php endif; ?>
-
-<script>
-(function () {
-    var panel = document.querySelector('[data-admin-filter-panel]');
-    var toggle = document.querySelector('[data-admin-filter-toggle]');
-    if (!panel || !toggle) return;
-
-    toggle.addEventListener('click', function () {
-        var isOpen = panel.classList.toggle('is-open');
-        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    });
-})();
-</script>

@@ -81,11 +81,8 @@
     <?php endif; ?>
 </section>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Filtros</h2>
-    </div>
-    <form method="GET" action="<?= url('/admin/appsflyer') ?>" class="form">
+<?php admin_filter_panel('admin-appsflyer-filters', $filters, static function () use ($filters): void { ?>
+    <form method="GET" action="<?= url('/admin/appsflyer') ?>" class="form admin-filter-panel__form">
         <div class="form-row">
             <div class="form-group">
                 <label for="status">Status</label>
@@ -125,10 +122,12 @@
                 <input type="date" id="data_fim" name="data_fim" value="<?= e($filters['data_fim']) ?>">
             </div>
         </div>
-        <button type="submit" class="btn btn--primary">Filtrar</button>
-        <a href="<?= url('/admin/appsflyer') ?>" class="btn btn--ghost">Limpar</a>
+        <div class="admin-filter-panel__actions">
+            <a href="<?= url('/admin/appsflyer') ?>" class="btn btn--ghost">Limpar</a>
+            <button type="submit" class="btn btn--primary">Filtrar</button>
+        </div>
     </form>
-</section>
+<?php }); ?>
 
 <section class="mm-card">
     <div class="mm-card__header">

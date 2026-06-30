@@ -86,6 +86,7 @@ $breadcrumbs = admin_breadcrumbs();
     <div class="admin-sidebar-backdrop" data-admin-nav-backdrop hidden></div>
 
     <script src="<?= asset('js/components.js') ?>"></script>
+    <script src="<?= asset('js/admin-filters.js') ?>"></script>
     <script src="<?= asset('js/app.js') ?>"></script>
     <script>
         (function () {

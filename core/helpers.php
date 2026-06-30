@@ -270,3 +270,42 @@ function admin_breadcrumbs(): array
 
     return $crumbs;
 }
+
+/**
+ * @param array<string, mixed> $filters
+ * @param list<string> $ignoreKeys
+ */
+function admin_has_active_filters(array $filters, array $ignoreKeys = ['page']): bool
+{
+    foreach ($filters as $key => $value) {
+        if (in_array((string) $key, $ignoreKeys, true)) {
+            continue;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        if ($value === '' || $value === null) {
+            continue;
+        }
+
+        if (in_array($value, ['todos', 'TODOS'], true)) {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * @param array<string, mixed> $filters
+ */
+function admin_filter_panel(string $id, array $filters, callable $renderForm): void
+{
+    $filterPanelId = $id;
+    $filterPanelOpen = admin_has_active_filters($filters);
+    require BASE_PATH . '/views/partials/admin-filter-panel.php';
+}

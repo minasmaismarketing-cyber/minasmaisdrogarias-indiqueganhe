@@ -3778,7 +3778,7 @@ code {
     min-height: 3.125rem;
 }
 
-/* Admin Usuários — Sprint 1.6 visual */
+/* Admin Filter Panel — Sprint 1.6.3 */
 .admin-filter-panel {
     padding: 0;
     overflow: hidden;
@@ -3834,7 +3834,7 @@ code {
 }
 
 .admin-filter-panel.is-open .admin-filter-panel__body {
-    max-height: 24rem;
+    max-height: 48rem;
     opacity: 1;
     padding: 0 1.125rem 1.125rem;
 }
@@ -3844,11 +3844,17 @@ code {
     border-top: 1px solid var(--gray-100);
 }
 
+.admin-filter-panel__body > .form {
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--gray-100);
+}
+
 .admin-filter-panel__actions {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 0.5rem;
-    margin-top: 0.5rem;
+    margin-top: 1rem;
 }
 
 .admin-list--usuarios .admin-list__title-row {

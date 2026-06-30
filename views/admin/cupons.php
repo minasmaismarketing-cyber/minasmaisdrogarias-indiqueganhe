@@ -1,11 +1,8 @@
 <?php declare(strict_types=1); ?>
 <?php $subtitle = 'Gerencie os cupons do programa Indique e Ganhe.'; ?>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Filtros</h2>
-    </div>
-    <form method="GET" action="<?= url('/admin/cupons') ?>" class="form">
+<?php admin_filter_panel('admin-cupons-filters', $filters, static function () use ($filters): void { ?>
+    <form method="GET" action="<?= url('/admin/cupons') ?>" class="form admin-filter-panel__form">
         <div class="form-row">
             <div class="form-group">
                 <label for="codigo">Código</label>
@@ -31,10 +28,12 @@
                 <input type="date" id="data_fim" name="data_fim" value="<?= e($filters['data_fim']) ?>">
             </div>
         </div>
-        <button type="submit" class="btn btn--primary">Filtrar</button>
-        <a href="<?= url('/admin/cupons') ?>" class="btn btn--ghost">Limpar</a>
+        <div class="admin-filter-panel__actions">
+            <a href="<?= url('/admin/cupons') ?>" class="btn btn--ghost">Limpar</a>
+            <button type="submit" class="btn btn--primary">Filtrar</button>
+        </div>
     </form>
-</section>
+<?php }); ?>
 
 <section class="stats-grid">
     <div class="stat-card">
