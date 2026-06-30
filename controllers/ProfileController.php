@@ -44,17 +44,12 @@ class ProfileController extends Controller
         }
 
         $nome = Validator::sanitizeString($_POST['nome'] ?? '', 150);
-        $telefone = Validator::onlyDigits($_POST['telefone'] ?? '');
         $whatsapp = Validator::onlyDigits($_POST['whatsapp'] ?? '');
 
         $errors = [];
 
         if ($nome === '') {
             $errors['nome'] = 'Informe seu nome.';
-        }
-
-        if (!Validator::telefone($telefone)) {
-            $errors['telefone'] = 'Telefone inválido.';
         }
 
         if (!Validator::telefone($whatsapp)) {
@@ -70,13 +65,11 @@ class ProfileController extends Controller
 
         $usuarioModel->updateProfile((int) $user['id'], [
             'nome' => $nome,
-            'telefone' => $telefone,
             'whatsapp' => $whatsapp,
         ]);
 
         $this->eventLogger->logPerfilEditado((int) $user['id'], [
             'nome' => $nome,
-            'telefone' => $telefone,
             'whatsapp' => $whatsapp,
         ]);
 

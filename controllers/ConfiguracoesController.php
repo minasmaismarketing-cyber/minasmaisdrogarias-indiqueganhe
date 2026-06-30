@@ -37,15 +37,10 @@ class ConfiguracoesController extends Controller
             $this->redirect('/login');
         }
 
-        $telefone = Validator::onlyDigits($_POST['telefone'] ?? '');
         $email = strtolower(Validator::sanitizeString($_POST['email'] ?? '', 180));
         $whatsapp = Validator::onlyDigits($_POST['whatsapp'] ?? '');
 
         $errors = [];
-
-        if (!Validator::telefone($telefone)) {
-            $errors['telefone'] = 'Telefone inválido.';
-        }
 
         if (!Validator::email($email)) {
             $errors['email'] = 'E-mail inválido.';
@@ -68,7 +63,6 @@ class ConfiguracoesController extends Controller
 
         $usuarioModel->updateProfile((int) $user['id'], [
             'nome' => (string) $user['nome'],
-            'telefone' => $telefone,
             'whatsapp' => $whatsapp,
         ]);
 

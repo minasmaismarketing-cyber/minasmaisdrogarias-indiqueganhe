@@ -160,7 +160,7 @@ class IndicadosController extends Controller
 
         $nome = Validator::sanitizeString($_POST['nome'] ?? '', 150);
         $cpf = Validator::onlyDigits($_POST['cpf'] ?? '');
-        $telefone = Validator::onlyDigits($_POST['telefone'] ?? '');
+        $whatsapp = Validator::onlyDigits($_POST['whatsapp'] ?? '');
         $email = Validator::sanitizeEmail($_POST['email'] ?? '');
         $senha = $_POST['senha'] ?? '';
         $aceiteLgpd = isset($_POST['aceite_lgpd']) ? 1 : 0;
@@ -177,9 +177,9 @@ class IndicadosController extends Controller
             $errors['cpf'] = 'CPF inválido.';
         }
 
-        // Validate telefone
-        if (!Validator::validateTelefone($telefone)) {
-            $errors['telefone'] = 'Telefone inválido.';
+        // Validate WhatsApp
+        if (!Validator::validateTelefone($whatsapp)) {
+            $errors['whatsapp'] = 'WhatsApp inválido.';
         }
 
         // Validate email
@@ -208,8 +208,8 @@ class IndicadosController extends Controller
             $errors['email'] = 'Este email já está cadastrado.';
         }
 
-        if ($indicadoModel->telefoneExists($telefone)) {
-            $errors['telefone'] = 'Este telefone já está cadastrado.';
+        if ($indicadoModel->telefoneExists($whatsapp)) {
+            $errors['whatsapp'] = 'Este WhatsApp já está cadastrado.';
         }
 
         // Check self-indication
@@ -234,7 +234,7 @@ class IndicadosController extends Controller
             $indicadoModel->update($existingIndicado['id'], [
                 'nome' => $nome,
                 'cpf' => $cpf,
-                'telefone' => $telefone,
+                'telefone' => $whatsapp,
                 'email' => $email,
                 'senha_hash' => $senhaHash,
                 'status' => Indicado::STATUS_AGUARDANDO_VALIDACAO,
@@ -247,7 +247,7 @@ class IndicadosController extends Controller
                 'usuario_indicador_id' => $indicador['id'],
                 'nome' => $nome,
                 'cpf' => $cpf,
-                'telefone' => $telefone,
+                'telefone' => $whatsapp,
                 'email' => $email,
                 'senha_hash' => $senhaHash,
                 'status' => Indicado::STATUS_AGUARDANDO_VALIDACAO,
@@ -260,12 +260,11 @@ class IndicadosController extends Controller
         $userId = $usuarioModel->create([
             'nome' => $nome,
             'cpf' => $cpf,
-            'telefone' => $telefone,
             'email' => $email,
             'senha_hash' => $senhaHash,
             'aceite_lgpd' => $aceiteLgpd,
             'codigo_indicador' => $usuarioCodigo,
-            'whatsapp' => $telefone,
+            'whatsapp' => $whatsapp,
         ]);
 
         // Update indicado with usuario_id if needed

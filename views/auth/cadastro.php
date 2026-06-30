@@ -25,12 +25,6 @@
             </div>
 
             <div class="form-group">
-                <label for="telefone">Telefone</label>
-                <input type="text" id="telefone" name="telefone" value="<?= e(old('telefone')) ?>" inputmode="tel" placeholder="(00) 00000-0000" required>
-                <?php if (!empty($errors['telefone'])): ?><span class="form-error"><?= e($errors['telefone']) ?></span><?php endif; ?>
-            </div>
-
-            <div class="form-group">
                 <label for="whatsapp">WhatsApp</label>
                 <input type="text" id="whatsapp" name="whatsapp" value="<?= e(old('whatsapp')) ?>" inputmode="tel" placeholder="(00) 00000-0000" required>
                 <?php if (!empty($errors['whatsapp'])): ?><span class="form-error"><?= e($errors['whatsapp']) ?></span><?php endif; ?>

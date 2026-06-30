@@ -22,7 +22,7 @@ class ValidacaoController extends Controller
             'cpf' => $_GET['cpf'] ?? '',
             'nome' => $_GET['nome'] ?? '',
             'email' => $_GET['email'] ?? '',
-            'telefone' => $_GET['telefone'] ?? '',
+            'whatsapp' => $_GET['whatsapp'] ?? '',
             'data_inicio' => $_GET['data_inicio'] ?? '',
             'data_fim' => $_GET['data_fim'] ?? '',
         ];

@@ -65,7 +65,7 @@ class Usuario extends Model
         $stmt->execute([
             'nome' => $data['nome'],
             'cpf' => $data['cpf'],
-            'telefone' => $data['telefone'],
+            'telefone' => $data['telefone'] ?? null,
             'email' => $data['email'],
             'senha_hash' => $data['senha_hash'],
             'aceite_lgpd' => $data['aceite_lgpd'],
@@ -203,12 +203,11 @@ class Usuario extends Model
     {
         $stmt = $this->db->prepare(
             'UPDATE usuarios
-             SET nome = :nome, telefone = :telefone, whatsapp = :whatsapp, updated_at = NOW()
+             SET nome = :nome, whatsapp = :whatsapp, updated_at = NOW()
              WHERE id = :id'
         );
         $stmt->execute([
             'nome' => $data['nome'],
-            'telefone' => $data['telefone'],
             'whatsapp' => $data['whatsapp'],
             'id' => $userId,
         ]);

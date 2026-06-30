@@ -30,8 +30,8 @@
                 <input type="email" id="email" name="email" value="<?= e($filters['email']) ?>">
             </div>
             <div class="form-group">
-                <label for="telefone">Telefone</label>
-                <input type="text" id="telefone" name="telefone" value="<?= e($filters['telefone']) ?>">
+                <label for="whatsapp">WhatsApp</label>
+                <input type="text" id="whatsapp" name="whatsapp" value="<?= e($filters['whatsapp']) ?>">
             </div>
             <div class="form-group">
                 <label for="data_inicio">Data Início</label>

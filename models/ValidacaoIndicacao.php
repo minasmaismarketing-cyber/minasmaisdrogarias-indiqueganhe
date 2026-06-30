@@ -120,9 +120,10 @@ class ValidacaoIndicacao extends Model
             $params['nome'] = '%' . $filters['nome'] . '%';
         }
 
-        if (!empty($filters['telefone'])) {
-            $sql .= ' AND (u.telefone LIKE :telefone OR i.telefone_indicado LIKE :telefone)';
-            $params['telefone'] = '%' . $filters['telefone'] . '%';
+        if (!empty($filters['whatsapp'])) {
+            $whatsapp = preg_replace('/\D/', '', (string) $filters['whatsapp']);
+            $sql .= ' AND (u.whatsapp LIKE :whatsapp OR i.telefone_indicado LIKE :whatsapp)';
+            $params['whatsapp'] = '%' . $whatsapp . '%';
         }
 
         if (!empty($filters['email'])) {

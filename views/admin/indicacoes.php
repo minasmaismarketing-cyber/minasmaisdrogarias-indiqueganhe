@@ -6,7 +6,7 @@
     'emptyMessage' => 'Nenhuma indicação registrada.',
     'columns' => [
         ['label' => 'Indicado'],
-        ['label' => 'Telefone'],
+        ['label' => 'WhatsApp'],
         ['label' => 'Código'],
         ['label' => 'Status'],
         ['label' => 'Data'],

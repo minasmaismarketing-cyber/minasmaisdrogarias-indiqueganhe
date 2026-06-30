@@ -46,7 +46,6 @@ class AuthController extends Controller
         $userId = $usuarioModel->create([
             'nome' => $input['nome'],
             'cpf' => $input['cpf'],
-            'telefone' => $input['telefone'],
             'email' => $input['email'],
             'senha_hash' => password_hash($input['senha'], PASSWORD_BCRYPT),
             'aceite_lgpd' => 1,
@@ -66,7 +65,7 @@ class AuthController extends Controller
         (new ReferralService())->attachRegistrationToReferral(
             $userId,
             $input['nome'],
-            $input['telefone'],
+            $input['whatsapp'],
             $input['cpf']
         );
 
@@ -294,7 +293,6 @@ class AuthController extends Controller
         return [
             'nome' => Validator::sanitizeString($_POST['nome'] ?? '', 150),
             'cpf' => Validator::onlyDigits($_POST['cpf'] ?? ''),
-            'telefone' => Validator::onlyDigits($_POST['telefone'] ?? ''),
             'whatsapp' => Validator::onlyDigits($_POST['whatsapp'] ?? ''),
             'email' => strtolower(Validator::sanitizeString($_POST['email'] ?? '', 180)),
             'senha' => (string) ($_POST['senha'] ?? ''),
@@ -319,10 +317,6 @@ class AuthController extends Controller
             $errors['cpf'] = 'CPF inválido.';
         } elseif ($usuarioModel->cpfExists($input['cpf'])) {
             $errors['cpf'] = 'CPF já cadastrado.';
-        }
-
-        if (!Validator::telefone($input['telefone'])) {
-            $errors['telefone'] = 'Telefone inválido.';
         }
 
         if (!Validator::telefone($input['whatsapp'])) {

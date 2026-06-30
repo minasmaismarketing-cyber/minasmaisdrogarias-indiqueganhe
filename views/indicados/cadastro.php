@@ -28,9 +28,9 @@
         </div>
         
         <div class="form-group">
-            <label for="telefone">Telefone</label>
-            <input type="tel" id="telefone" name="telefone" value="<?= e($old['telefone'] ?? '') ?>" placeholder="(00) 00000-0000" required>
-            <?php if (!empty($errors['telefone'])): ?><span class="form-error"><?= e($errors['telefone']) ?></span><?php endif; ?>
+            <label for="whatsapp">WhatsApp</label>
+            <input type="tel" id="whatsapp" name="whatsapp" value="<?= e($old['whatsapp'] ?? '') ?>" placeholder="(00) 00000-0000" required>
+            <?php if (!empty($errors['whatsapp'])): ?><span class="form-error"><?= e($errors['whatsapp']) ?></span><?php endif; ?>
         </div>
         
         <div class="form-group">
@@ -89,7 +89,7 @@ document.getElementById('cpf').addEventListener('input', function(e) {
     e.target.value = value;
 });
 
-document.getElementById('telefone').addEventListener('input', function(e) {
+document.getElementById('whatsapp').addEventListener('input', function(e) {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 11) value = value.slice(0, 11);
     

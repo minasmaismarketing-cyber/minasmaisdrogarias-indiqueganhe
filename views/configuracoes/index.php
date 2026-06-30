@@ -20,12 +20,6 @@ declare(strict_types=1);
         </div>
 
         <div class="form-group">
-            <label for="telefone">Telefone</label>
-            <input type="text" id="telefone" name="telefone" value="<?= e((string) $user['telefone']) ?>" inputmode="tel" required>
-            <?php if (!empty($errors['telefone'])): ?><span class="form-error"><?= e($errors['telefone']) ?></span><?php endif; ?>
-        </div>
-
-        <div class="form-group">
             <label for="email">E-mail</label>
             <input type="email" id="email" name="email" value="<?= e((string) $user['email']) ?>" required>
             <?php if (!empty($errors['email'])): ?><span class="form-error"><?= e($errors['email']) ?></span><?php endif; ?>

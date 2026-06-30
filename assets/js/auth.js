@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const cpfInputs = document.querySelectorAll('#cpf');
-    const phoneInputs = document.querySelectorAll('#telefone, #whatsapp');
+    const phoneInputs = document.querySelectorAll('#whatsapp');
 
     cpfInputs.forEach((input) => maskCpf(input));
     phoneInputs.forEach((input) => maskPhone(input));

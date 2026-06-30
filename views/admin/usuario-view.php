@@ -20,10 +20,6 @@
             <span class="usuario-info-lines__value"><?= e($usuario['email']) ?></span>
         </li>
         <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">Telefone:</span>
-            <span class="usuario-info-lines__value"><?= e($usuario['telefone'] ? format_phone((string) $usuario['telefone']) : '—') ?></span>
-        </li>
-        <li class="usuario-info-lines__item">
             <span class="usuario-info-lines__label">WhatsApp:</span>
             <span class="usuario-info-lines__value"><?= e($usuario['whatsapp'] ? format_phone((string) $usuario['whatsapp']) : '—') ?></span>
         </li>
