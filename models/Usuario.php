@@ -4,6 +4,54 @@ declare(strict_types=1);
 
 class Usuario extends Model
 {
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_CLIENTE = 'cliente';
+
+    /** @param array<string, mixed>|int $userOrId */
+    public function isAdmin(array|int $userOrId): bool
+    {
+        if (is_int($userOrId)) {
+            $user = $this->findById($userOrId);
+
+            return $user !== null && $this->isAdmin($user);
+        }
+
+        return ($userOrId['role'] ?? self::ROLE_CLIENTE) === self::ROLE_ADMIN;
+    }
+
+    /** @param array<string, mixed>|int $userOrId */
+    public function isCliente(array|int $userOrId): bool
+    {
+        if (is_int($userOrId)) {
+            $user = $this->findById($userOrId);
+
+            return $user !== null && $this->isCliente($user);
+        }
+
+        return ($userOrId['role'] ?? self::ROLE_CLIENTE) === self::ROLE_CLIENTE;
+    }
+
+    public function setRole(int $userId, string $role): void
+    {
+        if (!in_array($role, [self::ROLE_ADMIN, self::ROLE_CLIENTE], true)) {
+            throw new InvalidArgumentException('Role inválida.');
+        }
+
+        $stmt = $this->db->prepare(
+            'UPDATE usuarios SET role = :role, updated_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute(['role' => $role, 'id' => $userId]);
+    }
+
+    public static function roleLabel(string $role): string
+    {
+        return match ($role) {
+            self::ROLE_ADMIN => 'Administrador',
+            self::ROLE_CLIENTE => 'Cliente',
+            default => $role,
+        };
+    }
+
     /** @param array<string, mixed> $data */
     public function create(array $data): int
     {

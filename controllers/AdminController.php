@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 class AdminController extends Controller
 {
-    public const ADMIN_EMAIL = 'admin@minasmais.com.br';
     private EventLogger $eventLogger;
 
     public function __construct()
@@ -14,7 +13,7 @@ class AdminController extends Controller
 
     public function index(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $usuarioModel = new Usuario();
         $indicacaoModel = new Indicacao();
@@ -77,7 +76,7 @@ class AdminController extends Controller
 
     public function usuarios(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $usuarioModel = new Usuario();
         $usuarios = $usuarioModel->listAll();
@@ -90,7 +89,7 @@ class AdminController extends Controller
 
     public function campanhas(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $campanhaModel = new Campanha();
         $campanhas = $campanhaModel->findAll();
@@ -103,7 +102,7 @@ class AdminController extends Controller
 
     public function indicacoes(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $indicacaoModel = new Indicacao();
         $indicacoes = $indicacaoModel->listAll();
@@ -116,22 +115,10 @@ class AdminController extends Controller
 
     public function configuracoes(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $this->view('admin.configuracoes', [
             'title' => 'Configurações',
         ], 'admin');
-    }
-
-    private function requireAdmin(): void
-    {
-        AuthMiddleware::requireAuth();
-
-        $user = Auth::user();
-
-        if ($user === null || $user['email'] !== self::ADMIN_EMAIL) {
-            Session::flash('error', 'Acesso negado. Apenas administradores podem acessar esta página.');
-            $this->redirect('/dashboard');
-        }
     }
 }

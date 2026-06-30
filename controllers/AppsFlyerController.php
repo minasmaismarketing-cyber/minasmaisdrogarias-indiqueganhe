@@ -15,7 +15,7 @@ class AppsFlyerController extends Controller
 
     public function adminIndex(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $filters = [
             'af_status' => $_GET['status'] ?? '',
@@ -42,7 +42,7 @@ class AppsFlyerController extends Controller
 
     public function view(int $id): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $event = $this->appsFlyerRepository->findById($id);
         if ($event === null) {
@@ -58,7 +58,7 @@ class AppsFlyerController extends Controller
 
     public function validate(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -83,7 +83,7 @@ class AppsFlyerController extends Controller
 
     public function reject(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -105,17 +105,5 @@ class AppsFlyerController extends Controller
         }
 
         $this->redirect('/admin/appsflyer');
-    }
-
-    private function requireAdmin(): void
-    {
-        AuthMiddleware::requireAuth();
-
-        $user = Auth::user();
-
-        if ($user === null || $user['email'] !== AdminController::ADMIN_EMAIL) {
-            Session::flash('error', 'Acesso negado. Apenas administradores podem acessar esta página.');
-            $this->redirect('/dashboard');
-        }
     }
 }

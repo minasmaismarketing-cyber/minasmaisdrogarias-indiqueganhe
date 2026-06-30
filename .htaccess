@@ -12,6 +12,9 @@ RewriteRule ^(\.env|composer\.json|composer\.lock)$ - [F,L]
 # bloquear pastas internas
 RewriteRule ^(core|database|controllers|models|config)/ - [F,L]
 
+# Painel admin: front controller tem prioridade sobre a pasta admin/ legada
+RewriteRule ^admin/?$ index.php [QSA,L]
+
 # enviar tudo para index
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

@@ -6,7 +6,7 @@ class CampanhasController extends Controller
 {
     public function index(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $campanhaModel = new Campanha();
         $campanhas = $campanhaModel->findAll();
@@ -19,7 +19,7 @@ class CampanhasController extends Controller
 
     public function create(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!Csrf::validateRequest()) {
@@ -113,7 +113,7 @@ class CampanhasController extends Controller
 
     public function edit(int $id): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $campanhaModel = new Campanha();
         $campanha = $campanhaModel->findById($id);
@@ -215,7 +215,7 @@ class CampanhasController extends Controller
 
     public function duplicate(int $id): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -236,7 +236,7 @@ class CampanhasController extends Controller
 
     public function delete(int $id): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -252,7 +252,7 @@ class CampanhasController extends Controller
 
     public function activate(int $id): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -268,7 +268,7 @@ class CampanhasController extends Controller
 
     public function deactivate(int $id): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -280,17 +280,5 @@ class CampanhasController extends Controller
 
         Session::flash('success', 'Campanha desativada com sucesso!');
         $this->redirect('/admin/campanhas');
-    }
-
-    private function requireAdmin(): void
-    {
-        AuthMiddleware::requireAuth();
-
-        $user = Auth::user();
-
-        if ($user === null || $user['email'] !== AdminController::ADMIN_EMAIL) {
-            Session::flash('error', 'Acesso negado. Apenas administradores podem acessar esta página.');
-            $this->redirect('/dashboard');
-        }
     }
 }

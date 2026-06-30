@@ -8,8 +8,8 @@
     
     <div class="config-list">
         <div class="config-list__item">
-            <span class="config-list__label">Email do Administrador</span>
-            <span class="config-list__value"><?= e(AdminController::ADMIN_EMAIL) ?></span>
+            <span class="config-list__label">Papel do usuário logado</span>
+            <span class="config-list__value"><?= e(Usuario::roleLabel((string) (Auth::user()['role'] ?? Usuario::ROLE_CLIENTE))) ?></span>
         </div>
         <div class="config-list__item">
             <span class="config-list__label">Versão do Sistema</span>

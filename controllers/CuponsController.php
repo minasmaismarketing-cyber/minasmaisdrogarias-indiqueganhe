@@ -17,7 +17,7 @@ class CuponsController extends Controller
 
     public function adminIndex(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $filters = [
             'codigo' => $_GET['codigo'] ?? '',
@@ -41,7 +41,7 @@ class CuponsController extends Controller
 
     public function view(int $id): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $cupom = $this->cupomRepository->findById($id);
         if ($cupom === null) {
@@ -60,7 +60,7 @@ class CuponsController extends Controller
 
     public function cancel(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -89,7 +89,7 @@ class CuponsController extends Controller
 
     public function expire(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -117,7 +117,7 @@ class CuponsController extends Controller
 
     public function reactivate(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -158,17 +158,5 @@ class CuponsController extends Controller
             'title' => 'Meus Cupons',
             'cupons' => $cupons,
         ], 'app');
-    }
-
-    private function requireAdmin(): void
-    {
-        AuthMiddleware::requireAuth();
-
-        $user = Auth::user();
-
-        if ($user === null || $user['email'] !== AdminController::ADMIN_EMAIL) {
-            Session::flash('error', 'Acesso negado. Apenas administradores podem acessar esta página.');
-            $this->redirect('/dashboard');
-        }
     }
 }

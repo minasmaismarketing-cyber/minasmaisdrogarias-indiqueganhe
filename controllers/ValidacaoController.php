@@ -17,7 +17,7 @@ class ValidacaoController extends Controller
 
     public function adminIndex(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $filters = [
             'status' => $_GET['status'] ?? '',
@@ -42,7 +42,7 @@ class ValidacaoController extends Controller
 
     public function view(int $id): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         $validacao = $this->validacaoModel->findById($id);
         if ($validacao === null) {
@@ -61,7 +61,7 @@ class ValidacaoController extends Controller
 
     public function start(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -88,7 +88,7 @@ class ValidacaoController extends Controller
 
     public function approve(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -117,7 +117,7 @@ class ValidacaoController extends Controller
 
     public function reject(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -151,7 +151,7 @@ class ValidacaoController extends Controller
 
     public function cancel(): void
     {
-        $this->requireAdmin();
+        Auth::requireAdmin();
 
         if (!Csrf::validateRequest()) {
             Session::flash('error', 'Token de segurança inválido.');
@@ -176,17 +176,5 @@ class ValidacaoController extends Controller
         }
 
         $this->redirect('/admin/validacoes');
-    }
-
-    private function requireAdmin(): void
-    {
-        AuthMiddleware::requireAuth();
-
-        $user = Auth::user();
-
-        if ($user === null || $user['email'] !== AdminController::ADMIN_EMAIL) {
-            Session::flash('error', 'Acesso negado. Apenas administradores podem acessar esta página.');
-            $this->redirect('/dashboard');
-        }
     }
 }

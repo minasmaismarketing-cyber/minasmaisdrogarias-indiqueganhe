@@ -77,6 +77,26 @@ class Auth
         return $usuario;
     }
 
+    public static function isAdmin(): bool
+    {
+        $user = self::user();
+
+        return $user !== null && (new Usuario())->isAdmin($user);
+    }
+
+    public static function requireAdmin(): void
+    {
+        AuthMiddleware::requireAuth();
+
+        $user = self::user();
+
+        if ($user === null || !(new Usuario())->isAdmin($user)) {
+            Session::flash('error', 'Acesso negado. Apenas administradores podem acessar esta página.');
+            header('Location: ' . url('/dashboard'));
+            exit;
+        }
+    }
+
     public static function attemptFromRememberCookie(): void
     {
         self::loginFromRememberCookie();
