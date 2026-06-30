@@ -72,7 +72,7 @@ class Cupom extends Model
         $sql = 'SELECT c.*, u.nome as usuario_nome, i.nome_indicado, cam.nome as campanha_nome
                 FROM cupons c
                 LEFT JOIN usuarios u ON c.usuario_id = u.id
-                LEFT JOIN indicados i ON c.indicacao_id = i.id
+                LEFT JOIN indicacoes i ON c.indicacao_id = i.id
                 LEFT JOIN campanhas cam ON c.campanha_id = cam.id
                 WHERE 1=1';
         $params = [];

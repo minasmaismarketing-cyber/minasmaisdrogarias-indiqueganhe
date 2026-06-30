@@ -3750,6 +3750,34 @@ code {
     color: var(--gray-700);
 }
 
+/* Admin Dashboard (Hotfix 1.6.1) */
+.stats-grid--admin-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stats-grid--admin-dashboard .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 5.5rem;
+    height: 100%;
+}
+
+.admin-dashboard-activities__scroll {
+    max-height: calc(25 * 3.875rem - 0.75rem);
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.admin-dashboard-activities__scroll .activity-timeline {
+    margin: 0;
+}
+
+.admin-dashboard-activities__scroll .activity-timeline__item {
+    min-height: 3.125rem;
+}
+
 /* Admin Shell (Sprint 1.4.1 + Hotfix 1.6.0) */
 .page--admin {
     background: var(--gray-100);
