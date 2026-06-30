@@ -43,7 +43,7 @@ $router->get('/admin/indicacoes', 'AdminController', 'indicacoes');
 $router->get('/admin/configuracoes', 'AdminController', 'configuracoes');
 // Validação de indicações (Etapa 13 - Motor de Validação)
 $router->get('/admin/validacoes', 'ValidacaoController', 'adminIndex');
-$router->get('/admin/validacoes/{id}', 'ValidacaoController', 'view');
+$router->get('/admin/validacoes/{id}', 'ValidacaoController', 'show');
 $router->post('/admin/validacoes/iniciar', 'ValidacaoController', 'start');
 $router->post('/admin/validacoes/aprovar', 'ValidacaoController', 'approve');
 $router->post('/admin/validacoes/rejeitar', 'ValidacaoController', 'reject');
@@ -51,7 +51,7 @@ $router->post('/admin/validacoes/cancelar', 'ValidacaoController', 'cancel');
 
 // Cupons (Etapa 14 - Sistema de Cupons)
 $router->get('/admin/cupons', 'CuponsController', 'adminIndex');
-$router->get('/admin/cupons/{id}', 'CuponsController', 'view');
+$router->get('/admin/cupons/{id}', 'CuponsController', 'show');
 $router->post('/admin/cupons/cancelar', 'CuponsController', 'cancel');
 $router->post('/admin/cupons/expirar', 'CuponsController', 'expire');
 $router->post('/admin/cupons/reativar', 'CuponsController', 'reactivate');
@@ -62,7 +62,7 @@ $router->post('/api/indicacao/confirmar-cadastro', 'ApiIndicacaoController', 'co
 
 // AppsFlyer (Etapa 16 - Preparação para Integração AppsFlyer)
 $router->get('/admin/appsflyer', 'AppsFlyerController', 'adminIndex');
-$router->get('/admin/appsflyer/{id}', 'AppsFlyerController', 'view');
+$router->get('/admin/appsflyer/{id}', 'AppsFlyerController', 'show');
 $router->post('/admin/appsflyer/validar', 'AppsFlyerController', 'validate');
 $router->post('/admin/appsflyer/rejeitar', 'AppsFlyerController', 'reject');
 

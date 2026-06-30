@@ -43,9 +43,9 @@ $tests = [
     ['method' => 'GET', 'path' => '/admin/appsflyer', 'expect' => 'AppsFlyerController@adminIndex', 'middleware' => null, 'params' => []],
 
     // Admin dinâmico — {id}
-    ['method' => 'GET', 'path' => '/admin/validacoes/12', 'expect' => 'ValidacaoController@view', 'middleware' => null, 'params' => ['id' => '12']],
-    ['method' => 'GET', 'path' => '/admin/cupons/7', 'expect' => 'CuponsController@view', 'middleware' => null, 'params' => ['id' => '7']],
-    ['method' => 'GET', 'path' => '/admin/appsflyer/3', 'expect' => 'AppsFlyerController@view', 'middleware' => null, 'params' => ['id' => '3']],
+    ['method' => 'GET', 'path' => '/admin/validacoes/12', 'expect' => 'ValidacaoController@show', 'middleware' => null, 'params' => ['id' => '12']],
+    ['method' => 'GET', 'path' => '/admin/cupons/7', 'expect' => 'CuponsController@show', 'middleware' => null, 'params' => ['id' => '7']],
+    ['method' => 'GET', 'path' => '/admin/appsflyer/3', 'expect' => 'AppsFlyerController@show', 'middleware' => null, 'params' => ['id' => '3']],
     ['method' => 'GET', 'path' => '/admin/campanhas/editar/5', 'expect' => 'CampanhasController@edit', 'middleware' => null, 'params' => ['id' => '5']],
     ['method' => 'POST', 'path' => '/admin/campanhas/editar/5', 'expect' => 'CampanhasController@edit', 'middleware' => null, 'params' => ['id' => '5']],
     ['method' => 'POST', 'path' => '/admin/campanhas/ativar/1', 'expect' => 'CampanhasController@activate', 'middleware' => null, 'params' => ['id' => '1']],

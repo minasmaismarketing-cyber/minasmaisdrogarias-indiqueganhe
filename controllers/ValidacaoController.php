@@ -38,7 +38,7 @@ class ValidacaoController extends Controller
         ], 'admin');
     }
 
-    public function view(int $id): void
+    public function show(int $id): void
     {
         Auth::requireAdmin();
 
