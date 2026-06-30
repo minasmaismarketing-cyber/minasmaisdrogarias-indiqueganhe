@@ -183,3 +183,84 @@ function format_phone(string $phone): string
 
     return $phone;
 }
+
+/** @return list<array{label: string, path: string}> */
+function admin_nav_items(): array
+{
+    return [
+        ['label' => 'Dashboard', 'path' => '/admin'],
+        ['label' => 'Usuários', 'path' => '/admin/usuarios'],
+        ['label' => 'Indicações', 'path' => '/admin/indicacoes'],
+        ['label' => 'Validações', 'path' => '/admin/validacoes'],
+        ['label' => 'Cupons', 'path' => '/admin/cupons'],
+        ['label' => 'Campanhas', 'path' => '/admin/campanhas'],
+        ['label' => 'AppsFlyer', 'path' => '/admin/appsflyer'],
+        ['label' => 'Configurações', 'path' => '/admin/configuracoes'],
+    ];
+}
+
+function admin_nav_is_active(string $path): bool
+{
+    $current = request_path();
+
+    if ($path === '/admin') {
+        return $current === '/admin';
+    }
+
+    return str_starts_with($current, $path);
+}
+
+/** @return list<array{label: string, url: ?string}> */
+function admin_breadcrumbs(): array
+{
+    $path = request_path();
+    $crumbs = [
+        ['label' => 'Admin', 'url' => url('/admin')],
+    ];
+
+    $static = [
+        '/admin/usuarios' => 'Usuários',
+        '/admin/indicacoes' => 'Indicações',
+        '/admin/validacoes' => 'Validações',
+        '/admin/cupons' => 'Cupons',
+        '/admin/campanhas' => 'Campanhas',
+        '/admin/appsflyer' => 'AppsFlyer',
+        '/admin/configuracoes' => 'Configurações',
+        '/admin/campanhas/criar' => 'Nova campanha',
+    ];
+
+    if (isset($static[$path])) {
+        $crumbs[] = ['label' => $static[$path], 'url' => null];
+        return $crumbs;
+    }
+
+    if (preg_match('#^/admin/cupons/(\d+)$#', $path) === 1) {
+        $crumbs[] = ['label' => 'Cupons', 'url' => url('/admin/cupons')];
+        $crumbs[] = ['label' => 'Detalhes', 'url' => null];
+        return $crumbs;
+    }
+
+    if (preg_match('#^/admin/validacoes/(\d+)$#', $path) === 1) {
+        $crumbs[] = ['label' => 'Validações', 'url' => url('/admin/validacoes')];
+        $crumbs[] = ['label' => 'Detalhes', 'url' => null];
+        return $crumbs;
+    }
+
+    if (preg_match('#^/admin/appsflyer/(\d+)$#', $path) === 1) {
+        $crumbs[] = ['label' => 'AppsFlyer', 'url' => url('/admin/appsflyer')];
+        $crumbs[] = ['label' => 'Detalhes', 'url' => null];
+        return $crumbs;
+    }
+
+    if (preg_match('#^/admin/campanhas/editar/(\d+)$#', $path) === 1) {
+        $crumbs[] = ['label' => 'Campanhas', 'url' => url('/admin/campanhas')];
+        $crumbs[] = ['label' => 'Editar', 'url' => null];
+        return $crumbs;
+    }
+
+    if ($path === '/admin') {
+        $crumbs[count($crumbs) - 1]['url'] = null;
+    }
+
+    return $crumbs;
+}

@@ -1,9 +1,5 @@
 <?php declare(strict_types=1); ?>
-
-<section class="page-hero">
-    <h1 class="page-hero__title">Usuários</h1>
-    <p class="page-hero__subtitle">Gerencie os usuários do sistema.</p>
-</section>
+<?php $subtitle = 'Gerencie os usuários do sistema.'; ?>
 
 <section class="mm-card">
     <div class="mm-card__header">

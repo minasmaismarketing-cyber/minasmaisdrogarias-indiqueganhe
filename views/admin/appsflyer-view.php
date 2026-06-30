@@ -1,10 +1,5 @@
 <?php declare(strict_types=1); ?>
-<?php require BASE_PATH . '/views/partials/alerts.php'; ?>
-
-<section class="page-hero">
-    <h1 class="page-hero__title">Detalhes do Evento AppsFlyer</h1>
-    <a href="<?= url('/admin/appsflyer') ?>" class="btn btn--sm btn--ghost">Voltar</a>
-</section>
+<?php $subtitle = 'Consulte informações do evento recebido.'; ?>
 
 <section class="mm-card">
     <div class="mm-card__header">

@@ -1,9 +1,5 @@
 <?php declare(strict_types=1); ?>
-
-<section class="page-hero">
-    <h1 class="page-hero__title">Configurações</h1>
-    <p class="page-hero__subtitle">Configure o sistema.</p>
-</section>
+<?php $subtitle = 'Configure o sistema.'; ?>
 
 <section class="mm-card">
     <div class="mm-card__header">
@@ -48,15 +44,5 @@
             <span class="config-list__label">KOBE</span>
             <span class="config-list__value config-list__value--inactive">Não integrado</span>
         </div>
-    </div>
-</section>
-
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Ações</h2>
-    </div>
-    
-    <div class="config-actions">
-        <a href="<?= url('/admin') ?>" class="btn btn--block">Voltar ao Dashboard</a>
     </div>
 </section>

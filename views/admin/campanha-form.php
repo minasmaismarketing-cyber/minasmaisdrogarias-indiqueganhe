@@ -1,10 +1,10 @@
 <?php declare(strict_types=1); ?>
-<?php $errors = $errors ?? []; require BASE_PATH . '/views/partials/alerts.php'; ?>
-
-<section class="page-hero">
-    <h1 class="page-hero__title"><?= $campanha['nome'] ?? 'Nova Campanha' ?></h1>
-    <p class="page-hero__subtitle">Configure os detalhes da campanha.</p>
-</section>
+<?php
+$errors = $errors ?? [];
+$subtitle = isset($campanha)
+    ? 'Atualize os detalhes da campanha.'
+    : 'Configure os detalhes da nova campanha.';
+?>
 
 <section class="mm-card">
     <form method="POST" action="<?= url('/admin/campanhas' . (isset($campanha) ? '/editar/' . $campanha['id'] : '/criar')) ?>" class="form">

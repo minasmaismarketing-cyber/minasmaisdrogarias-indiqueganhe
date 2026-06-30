@@ -1,9 +1,5 @@
 <?php declare(strict_types=1); ?>
-
-<section class="page-hero">
-    <h1 class="page-hero__title">Validação de Indicações</h1>
-    <p class="page-hero__subtitle">Gerencie o fluxo de validações da campanha.</p>
-</section>
+<?php $subtitle = 'Gerencie o fluxo de validações da campanha.'; ?>
 
 <section class="mm-card">
     <div class="mm-card__header">

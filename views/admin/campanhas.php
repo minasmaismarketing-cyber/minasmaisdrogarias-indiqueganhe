@@ -1,10 +1,5 @@
 <?php declare(strict_types=1); ?>
-<?php require BASE_PATH . '/views/partials/alerts.php'; ?>
-
-<section class="page-hero">
-    <h1 class="page-hero__title">Campanhas</h1>
-    <p class="page-hero__subtitle">Gerencie as campanhas de indicação.</p>
-</section>
+<?php $subtitle = 'Gerencie as campanhas de indicação.'; ?>
 
 <section class="mm-card">
     <div class="mm-card__header">

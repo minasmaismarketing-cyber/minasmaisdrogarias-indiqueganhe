@@ -1,8 +1,5 @@
 <?php declare(strict_types=1); ?>
-<section class="page-hero">
-    <h1 class="page-hero__title">Admin Dashboard</h1>
-    <p class="page-hero__subtitle">Gerencie o sistema de indicações.</p>
-</section>
+<?php $subtitle = 'Gerencie o sistema de indicações.'; ?>
 
 <section class="stats-grid">
     <article class="stat-card">
