@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 class ValidacaoController extends Controller
 {
-    private ValidationService $validationService;
-    private Validacao $validacaoModel;
-    private EventLogger $eventLogger;
+    private ValidacaoIndicacao $validacaoModel;
+    private HistoricoValidacao $historicoModel;
 
     public function __construct()
     {
-        $this->validationService = new ValidationService();
-        $this->validacaoModel = new Validacao();
-        $this->eventLogger = new EventLogger();
+        $this->validacaoModel = new ValidacaoIndicacao();
+        $this->historicoModel = new HistoricoValidacao();
     }
 
     public function adminIndex(): void
@@ -50,7 +48,7 @@ class ValidacaoController extends Controller
             $this->redirect('/admin/validacoes');
         }
 
-        $history = $this->validationService->getHistory($id);
+        $history = $this->historicoModel->findByValidacao($id);
 
         $this->view('admin.validacao-view', [
             'title' => 'Detalhes da Validação',
@@ -77,7 +75,7 @@ class ValidacaoController extends Controller
         $user = Auth::user();
         $adminEmail = $user !== null ? $user['email'] : null;
 
-        if ($this->validationService->startValidation($id, $adminEmail)) {
+        if ($this->validacaoModel->startReview($id, $adminEmail)) {
             Session::flash('success', 'Validação iniciada com sucesso.');
         } else {
             Session::flash('error', 'Erro ao iniciar validação.');
@@ -106,7 +104,7 @@ class ValidacaoController extends Controller
         $user = Auth::user();
         $adminEmail = $user !== null ? $user['email'] : null;
 
-        if ($this->validationService->approveValidation($id, $observacao, $adminEmail)) {
+        if ($this->validacaoModel->approve($id, $observacao, $adminEmail)) {
             Session::flash('success', 'Validação aprovada com sucesso.');
         } else {
             Session::flash('error', 'Erro ao aprovar validação.');
@@ -140,7 +138,7 @@ class ValidacaoController extends Controller
         $user = Auth::user();
         $adminEmail = $user !== null ? $user['email'] : null;
 
-        if ($this->validationService->rejectValidation($id, $motivo, $adminEmail)) {
+        if ($this->validacaoModel->reject($id, $motivo, $adminEmail)) {
             Session::flash('success', 'Validação rejeitada com sucesso.');
         } else {
             Session::flash('error', 'Erro ao rejeitar validação.');
@@ -169,7 +167,7 @@ class ValidacaoController extends Controller
         $user = Auth::user();
         $adminEmail = $user !== null ? $user['email'] : null;
 
-        if ($this->validationService->cancelValidation($id, $motivo, $adminEmail)) {
+        if ($this->validacaoModel->cancel($id, $motivo, $adminEmail)) {
             Session::flash('success', 'Validação cancelada com sucesso.');
         } else {
             Session::flash('error', 'Erro ao cancelar validação.');

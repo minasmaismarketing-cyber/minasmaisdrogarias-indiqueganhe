@@ -5,8 +5,8 @@
     <div class="mm-card__header">
         <h2 class="mm-card__title">Informações da Validação</h2>
         <span class="badge badge--<?= strtolower($validacao['status']) ?>">
-            <?= Validacao::statusIcon($validacao['status']) ?>
-            <?= e(Validacao::statusLabel($validacao['status'])) ?>
+            <?= ValidacaoIndicacao::statusIcon($validacao['status']) ?>
+            <?= e(ValidacaoIndicacao::statusLabel($validacao['status'])) ?>
         </span>
     </div>
 
@@ -54,12 +54,12 @@
             <?php foreach ($history as $item): ?>
                 <li class="timeline__item">
                     <span class="timeline__icon">
-                        <?= Validacao::statusIcon($item['status_novo']) ?>
+                        <?= ValidacaoIndicacao::statusIcon($item['status_novo']) ?>
                     </span>
                     <div class="timeline__content">
                         <span class="timeline__label">
-                            <?= e(Validacao::statusLabel($item['status_anterior'])) ?> → 
-                            <?= e(Validacao::statusLabel($item['status_novo'])) ?>
+                            <?= e(ValidacaoIndicacao::statusLabel($item['status_anterior'])) ?> → 
+                            <?= e(ValidacaoIndicacao::statusLabel($item['status_novo'])) ?>
                         </span>
                         <?php if ($item['descricao']): ?>
                             <span class="timeline__description"><?= e($item['descricao']) ?></span>
@@ -75,7 +75,7 @@
     <?php endif; ?>
 </section>
 
-<?php if ($validacao['status'] === Validacao::STATUS_PENDENTE): ?>
+<?php if (ValidacaoIndicacao::canStartReview($validacao['status'])): ?>
     <section class="mm-card">
         <div class="mm-card__header">
             <h2 class="mm-card__title">Ações</h2>
@@ -85,8 +85,17 @@
             <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
             <button type="submit" class="btn btn--block btn--primary">Iniciar Análise</button>
         </form>
+        <form method="POST" action="<?= url('/admin/validacoes/cancelar') ?>" class="form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
+            <div class="form-group">
+                <label for="motivo_cancelar">Motivo do Cancelamento (opcional)</label>
+                <textarea id="motivo_cancelar" name="motivo" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn--block btn--ghost" onsubmit="return confirm('Tem certeza que deseja cancelar esta validação?');">Cancelar Validação</button>
+        </form>
     </section>
-<?php elseif ($validacao['status'] === Validacao::STATUS_EM_ANALISE): ?>
+<?php elseif (ValidacaoIndicacao::canDecide($validacao['status'])): ?>
     <section class="mm-card">
         <div class="mm-card__header">
             <h2 class="mm-card__title">Ações</h2>
@@ -109,21 +118,6 @@
             </div>
             <button type="submit" class="btn btn--block btn--danger" onsubmit="return confirm('Tem certeza que deseja rejeitar esta validação?');">Rejeitar Validação</button>
         </form>
-        <form method="POST" action="<?= url('/admin/validacoes/cancelar') ?>" class="form">
-            <?= csrf_field() ?>
-            <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
-            <div class="form-group">
-                <label for="motivo_cancelar">Motivo do Cancelamento (opcional)</label>
-                <textarea id="motivo_cancelar" name="motivo" rows="2"></textarea>
-            </div>
-            <button type="submit" class="btn btn--block btn--ghost" onsubmit="return confirm('Tem certeza que deseja cancelar esta validação?');">Cancelar Validação</button>
-        </form>
-    </section>
-<?php elseif ($validacao['status'] === Validacao::STATUS_PENDENTE || $validacao['status'] === Validacao::STATUS_EM_ANALISE): ?>
-    <section class="mm-card">
-        <div class="mm-card__header">
-            <h2 class="mm-card__title">Ações</h2>
-        </div>
         <form method="POST" action="<?= url('/admin/validacoes/cancelar') ?>" class="form">
             <?= csrf_field() ?>
             <input type="hidden" name="id" value="<?= $validacao['id'] ?>">

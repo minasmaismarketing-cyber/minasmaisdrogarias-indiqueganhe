@@ -3,16 +3,16 @@
 
 <section class="stats-grid">
     <article class="stat-card">
-        <span class="stat-card__value"><?= $totalUsuarios ?></span>
-        <span class="stat-card__label">Usuários</span>
+        <span class="stat-card__value"><?= $totalIndicacoes ?></span>
+        <span class="stat-card__label">Total de Indicações</span>
     </article>
     <article class="stat-card">
-        <span class="stat-card__value"><?= $totalIndicacoes ?></span>
-        <span class="stat-card__label">Indicações</span>
+        <span class="stat-card__value"><?= $validacaoStats['pendentes'] ?? 0 ?></span>
+        <span class="stat-card__label">Pendentes 🟡</span>
     </article>
-    <article class="stat-card stat-card--accent">
-        <span class="stat-card__value"><?= $campanhaAtiva ? 'Ativa' : 'Inativa' ?></span>
-        <span class="stat-card__label">Campanha</span>
+    <article class="stat-card">
+        <span class="stat-card__value"><?= $validacaoStats['em_analise'] ?? 0 ?></span>
+        <span class="stat-card__label">Em Análise 🟠</span>
     </article>
 </section>
 
@@ -47,57 +47,25 @@
 
 <section class="stats-grid">
     <article class="stat-card">
-        <span class="stat-card__value"><?= $usuariosParticipantes ?></span>
-        <span class="stat-card__label">Usuários Participantes</span>
+        <span class="stat-card__value"><?= $validacaoStats['validadas'] ?? 0 ?></span>
+        <span class="stat-card__label">Aprovadas 🟢</span>
     </article>
     <article class="stat-card">
-        <span class="stat-card__value"><?= $totalIndicacoesCampanha ?></span>
-        <span class="stat-card__label">Total Indicações</span>
+        <span class="stat-card__value"><?= $validacaoStats['invalidadas'] ?? 0 ?></span>
+        <span class="stat-card__label">Reprovadas 🔴</span>
     </article>
     <article class="stat-card">
-        <span class="stat-card__value"><?= $indicacoesValidadas ?></span>
-        <span class="stat-card__label">Indicações Validadas</span>
+        <span class="stat-card__value"><?= $validacaoStats['canceladas'] ?? 0 ?></span>
+        <span class="stat-card__label">Canceladas ⚫</span>
     </article>
     <article class="stat-card">
-        <span class="stat-card__value"><?= $cuponsLiberados ?></span>
-        <span class="stat-card__label">Cupons Liberados</span>
+        <span class="stat-card__value"><?= $cuponsGerados ?></span>
+        <span class="stat-card__label">Cupons Gerados</span>
     </article>
     <article class="stat-card">
         <span class="stat-card__value"><?= $taxaConversao ?>%</span>
         <span class="stat-card__label">Taxa de Conversão</span>
     </article>
-</section>
-
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Status de Validações</h2>
-    </div>
-    <section class="stats-grid">
-        <article class="stat-card">
-            <span class="stat-card__value"><?= $validacaoStats['pendentes'] ?? 0 ?></span>
-            <span class="stat-card__label">Pendentes 🟡</span>
-        </article>
-        <article class="stat-card">
-            <span class="stat-card__value"><?= $validacaoStats['em_analise'] ?? 0 ?></span>
-            <span class="stat-card__label">Em Análise 🟠</span>
-        </article>
-        <article class="stat-card">
-            <span class="stat-card__value"><?= $validacaoStats['validadas'] ?? 0 ?></span>
-            <span class="stat-card__label">Validadas 🟢</span>
-        </article>
-        <article class="stat-card">
-            <span class="stat-card__value"><?= $validacaoStats['invalidadas'] ?? 0 ?></span>
-            <span class="stat-card__label">Inválidas 🔴</span>
-        </article>
-        <article class="stat-card">
-            <span class="stat-card__value"><?= $validacaoStats['canceladas'] ?? 0 ?></span>
-            <span class="stat-card__label">Canceladas ⚫</span>
-        </article>
-        <article class="stat-card">
-            <span class="stat-card__value"><?= $taxaAprovacao ?>%</span>
-            <span class="stat-card__label">Taxa de Aprovação</span>
-        </article>
-    </section>
 </section>
 
 <section class="mm-card">

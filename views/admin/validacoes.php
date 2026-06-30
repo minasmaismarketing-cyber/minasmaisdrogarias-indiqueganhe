@@ -11,11 +11,11 @@
                 <label for="status">Status</label>
                 <select id="status" name="status">
                     <option value="">Todos</option>
-                    <option value="<?= Validacao::STATUS_PENDENTE ?>" <?= $filters['status'] === Validacao::STATUS_PENDENTE ? 'selected' : '' ?>>Pendente</option>
-                    <option value="<?= Validacao::STATUS_EM_ANALISE ?>" <?= $filters['status'] === Validacao::STATUS_EM_ANALISE ? 'selected' : '' ?>>Em Análise</option>
-                    <option value="<?= Validacao::STATUS_VALIDADO ?>" <?= $filters['status'] === Validacao::STATUS_VALIDADO ? 'selected' : '' ?>>Validado</option>
-                    <option value="<?= Validacao::STATUS_INVALIDADO ?>" <?= $filters['status'] === Validacao::STATUS_INVALIDADO ? 'selected' : '' ?>>Invalidado</option>
-                    <option value="<?= Validacao::STATUS_CANCELADO ?>" <?= $filters['status'] === Validacao::STATUS_CANCELADO ? 'selected' : '' ?>>Cancelado</option>
+                    <option value="<?= ValidacaoIndicacao::STATUS_PENDENTE ?>" <?= $filters['status'] === ValidacaoIndicacao::STATUS_PENDENTE ? 'selected' : '' ?>>Pendente</option>
+                    <option value="<?= ValidacaoIndicacao::STATUS_EM_ANALISE ?>" <?= $filters['status'] === ValidacaoIndicacao::STATUS_EM_ANALISE ? 'selected' : '' ?>>Em Análise</option>
+                    <option value="<?= ValidacaoIndicacao::STATUS_APROVADO ?>" <?= $filters['status'] === ValidacaoIndicacao::STATUS_APROVADO ? 'selected' : '' ?>>Validado</option>
+                    <option value="<?= ValidacaoIndicacao::STATUS_REPROVADO ?>" <?= $filters['status'] === ValidacaoIndicacao::STATUS_REPROVADO ? 'selected' : '' ?>>Invalidado</option>
+                    <option value="<?= ValidacaoIndicacao::STATUS_CANCELADO ?>" <?= $filters['status'] === ValidacaoIndicacao::STATUS_CANCELADO ? 'selected' : '' ?>>Cancelado</option>
                 </select>
             </div>
             <div class="form-group">
@@ -106,7 +106,7 @@
             <?php foreach ($validacoes as $validacao): ?>
                 <li class="admin-list__item">
                     <div class="admin-list__info">
-                        <span class="admin-list__icon"><?= Validacao::statusIcon($validacao['status']) ?></span>
+                        <span class="admin-list__icon"><?= ValidacaoIndicacao::statusIcon($validacao['status']) ?></span>
                         <div>
                             <strong><?= e($validacao['usuario_nome'] ?? 'N/A') ?></strong>
                             <?php if ($validacao['nome_indicado']): ?>
@@ -124,16 +124,17 @@
                     </div>
                     <div class="admin-list__actions">
                         <span class="badge badge--<?= strtolower($validacao['status']) ?>">
-                            <?= e(Validacao::statusLabel($validacao['status'])) ?>
+                            <?= e(ValidacaoIndicacao::statusLabel($validacao['status'])) ?>
                         </span>
                         <a href="<?= url('/admin/validacoes/' . $validacao['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
-                        <?php if ($validacao['status'] === Validacao::STATUS_PENDENTE): ?>
+                        <?php if (ValidacaoIndicacao::canStartReview($validacao['status'])): ?>
                             <form method="POST" action="<?= url('/admin/validacoes/iniciar') ?>" class="inline-form">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
                                 <button type="submit" class="btn btn--sm btn--primary">Iniciar</button>
                             </form>
-                        <?php elseif ($validacao['status'] === Validacao::STATUS_EM_ANALISE): ?>
+                        <?php endif; ?>
+                        <?php if (ValidacaoIndicacao::canDecide($validacao['status'])): ?>
                             <form method="POST" action="<?= url('/admin/validacoes/aprovar') ?>" class="inline-form">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
@@ -144,7 +145,8 @@
                                 <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
                                 <button type="submit" class="btn btn--sm btn--danger">Rejeitar</button>
                             </form>
-                        <?php elseif ($validacao['status'] === Validacao::STATUS_EM_ANALISE || $validacao['status'] === Validacao::STATUS_PENDENTE): ?>
+                        <?php endif; ?>
+                        <?php if (ValidacaoIndicacao::canCancel($validacao['status'])): ?>
                             <form method="POST" action="<?= url('/admin/validacoes/cancelar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja cancelar?');">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="id" value="<?= $validacao['id'] ?>">

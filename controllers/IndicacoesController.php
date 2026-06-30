@@ -29,7 +29,7 @@ class IndicacoesController extends Controller
             $total = $validacaoModel->countByUsuarioIndicador($userId);
             $historicoValidacoes = $validacaoModel->listByUsuarioIndicador($userId, $limit, $offset);
         } catch (Throwable $e) {
-            Logger::warning('Validacao table not found or error', ['error' => $e->getMessage()]);
+            Logger::warning('Falha ao carregar validacao_indicacoes', ['error' => $e->getMessage()]);
         }
 
         $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;

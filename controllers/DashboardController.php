@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use PDOException;
-
 class DashboardController extends Controller
 {
     private EventLogger $eventLogger;

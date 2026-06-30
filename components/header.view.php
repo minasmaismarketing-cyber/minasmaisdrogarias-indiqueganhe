@@ -30,6 +30,9 @@ declare(strict_types=1);
                         <a href="<?= url('/dashboard') ?>" class="<?= request_path() === '/dashboard' ? 'is-active' : '' ?>">Início</a>
                         <a href="<?= url('/indicacoes') ?>" class="<?= request_path() === '/indicacoes' ? 'is-active' : '' ?>">Indicações</a>
                         <a href="<?= url('/perfil') ?>" class="<?= request_path() === '/perfil' ? 'is-active' : '' ?>">Perfil</a>
+                        <?php if (Auth::isAdmin()): ?>
+                            <a href="<?= url('/admin') ?>">Painel Administrativo</a>
+                        <?php endif; ?>
                     </nav>
                     <div class="mm-header__user-info">
                         <?php if ($userName): ?>

@@ -15,61 +15,31 @@ class AdminController extends Controller
     {
         Auth::requireAdmin();
 
-        $usuarioModel = new Usuario();
         $indicacaoModel = new Indicacao();
+        $validacaoModel = new ValidacaoIndicacao();
+        $cupomModel = new Cupom();
         $campanhaModel = new Campanha();
-        $indicadoModel = new Indicado();
-        $validacaoModel = new Validacao();
 
-        $totalUsuarios = $usuarioModel->countAll();
         $totalIndicacoes = $indicacaoModel->countAll();
-        $campanhaAtiva = $campanhaModel->findActive();
-        $campanhaStats = $campanhaModel->getStats();
         $validacaoStats = $validacaoModel->getStats();
+        $cupomStats = $cupomModel->getStats();
+        $cuponsGerados = (int) ($cupomStats['total'] ?? 0);
+
+        $aprovadas = (int) ($validacaoStats['validadas'] ?? 0);
+        $taxaConversao = $totalIndicacoes > 0
+            ? round(($aprovadas / $totalIndicacoes) * 100, 2)
+            : 0;
+
+        $campanhaAtiva = $campanhaModel->findActive();
         $recentEvents = $this->eventLogger->getRecentEvents(20);
-
-        // Get campaign-specific stats
-        $usuariosParticipantes = 0;
-        $totalIndicacoesCampanha = 0;
-        $indicacoesValidadas = 0;
-        $cuponsLiberados = 0;
-
-        if ($campanhaAtiva !== null) {
-            $indicados = $indicadoModel->listByIndicador($campanhaAtiva['slug']);
-            $usuariosParticipantes = count($indicados);
-            $totalIndicacoesCampanha = $usuariosParticipantes;
-            
-            foreach ($indicados as $indicado) {
-                if ($indicado['status'] === Indicado::STATUS_VALIDADO) {
-                    $indicacoesValidadas++;
-                    $cuponsLiberados++;
-                }
-            }
-        }
-
-        // Calculate conversion rate
-        $taxaConversao = $totalIndicacoesCampanha > 0 
-            ? round(($indicacoesValidadas / $totalIndicacoesCampanha) * 100, 2) 
-            : 0;
-
-        // Calculate approval rate
-        $taxaAprovacao = ($validacaoStats['total'] ?? 0) > 0 
-            ? round(($validacaoStats['validadas'] ?? 0) / ($validacaoStats['total'] ?? 1) * 100, 2) 
-            : 0;
 
         $this->view('admin.dashboard', [
             'title' => 'Admin Dashboard',
-            'totalUsuarios' => $totalUsuarios,
             'totalIndicacoes' => $totalIndicacoes,
-            'campanhaAtiva' => $campanhaAtiva,
-            'campanhaStats' => $campanhaStats,
-            'usuariosParticipantes' => $usuariosParticipantes,
-            'totalIndicacoesCampanha' => $totalIndicacoesCampanha,
-            'indicacoesValidadas' => $indicacoesValidadas,
-            'cuponsLiberados' => $cuponsLiberados,
-            'taxaConversao' => $taxaConversao,
             'validacaoStats' => $validacaoStats,
-            'taxaAprovacao' => $taxaAprovacao,
+            'cuponsGerados' => $cuponsGerados,
+            'taxaConversao' => $taxaConversao,
+            'campanhaAtiva' => $campanhaAtiva,
             'recentEvents' => $recentEvents,
         ], 'admin');
     }

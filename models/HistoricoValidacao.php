@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * Histórico de transições de validação.
+ * validacao_id referencia validacao_indicacoes.id no fluxo canônico.
+ * Registros antigos (IDs de validacoes) permanecem preservados.
+ */
 class HistoricoValidacao extends Model
 {
     public function create(array $data): int
@@ -34,8 +39,8 @@ class HistoricoValidacao extends Model
     {
         $sql = 'SELECT h.*, v.indicacao_id, u.nome as usuario_nome
                 FROM historico_validacoes h
-                LEFT JOIN validacoes v ON h.validacao_id = v.id
-                LEFT JOIN usuarios u ON v.usuario_id = u.id
+                LEFT JOIN validacao_indicacoes v ON h.validacao_id = v.id
+                LEFT JOIN usuarios u ON v.usuario_indicador_id = u.id
                 WHERE 1=1';
         $params = [];
 
