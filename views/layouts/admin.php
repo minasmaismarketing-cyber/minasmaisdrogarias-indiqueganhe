@@ -93,15 +93,23 @@ $breadcrumbs = admin_breadcrumbs();
             var backdrop = document.querySelector('[data-admin-nav-backdrop]');
             var shell = document.querySelector('.admin-shell');
             if (!toggle || !shell) return;
+            function setNavOpen(open) {
+                shell.classList.toggle('is-nav-open', open);
+                document.body.classList.toggle('is-nav-locked', open);
+                if (backdrop) backdrop.hidden = !open;
+            }
             function closeNav() {
-                shell.classList.remove('is-nav-open');
-                if (backdrop) backdrop.hidden = true;
+                setNavOpen(false);
             }
             toggle.addEventListener('click', function () {
-                shell.classList.toggle('is-nav-open');
-                if (backdrop) backdrop.hidden = !shell.classList.contains('is-nav-open');
+                setNavOpen(!shell.classList.contains('is-nav-open'));
             });
             if (backdrop) backdrop.addEventListener('click', closeNav);
+            window.addEventListener('resize', function () {
+                if (window.matchMedia('(min-width: 1025px)').matches) {
+                    closeNav();
+                }
+            });
         })();
     </script>
 </body>

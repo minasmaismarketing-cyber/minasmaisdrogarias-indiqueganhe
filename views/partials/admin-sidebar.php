@@ -7,7 +7,7 @@
         <span class="admin-sidebar__label">Painel Admin</span>
     </div>
 
-    <nav class="admin-sidebar__nav">
+    <nav class="admin-sidebar__nav" aria-label="Navegação principal">
         <ul class="admin-sidebar__list">
             <?php foreach (admin_nav_items() as $item): ?>
                 <?php $active = admin_nav_is_active($item['path']); ?>
