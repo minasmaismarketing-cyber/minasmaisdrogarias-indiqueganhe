@@ -44,42 +44,33 @@
     </div>
 </section>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Últimos Eventos</h2>
-    </div>
-
-    <?php if ($recentEvents === []): ?>
-        <p class="mm-card__placeholder">Nenhum evento recebido ainda.</p>
-    <?php else: ?>
-        <ul class="admin-list">
-            <?php foreach ($recentEvents as $event): ?>
-                <li class="admin-list__item">
-                    <div class="admin-list__info">
-                        <span class="admin-list__icon">
-                            <?= AppsFlyerStatus::from($event['af_status'])->icon() ?>
-                        </span>
-                        <div>
-                            <strong><?= e($event['event_name'] ?? 'N/A') ?></strong>
-                            <span class="admin-list__meta">
-                                <?= e($event['appsflyer_id'] ?? 'N/A') ?>
-                            </span>
-                            <span class="admin-list__meta">
-                                <?= e($event['platform'] ?? 'N/A') ?>
-                            </span>
-                            <span class="admin-list__meta">
-                                <?= e(date('d/m/Y H:i', strtotime($event['created_at']))) ?>
-                            </span>
-                        </div>
-                    </div>
-                    <span class="badge badge--<?= strtolower($event['af_status']) ?>">
-                        <?= e(AppsFlyerStatus::from($event['af_status'])->label()) ?>
-                    </span>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
-</section>
+<?php admin_table([
+    'title' => 'Últimos Eventos',
+    'emptyMessage' => 'Nenhum evento recebido ainda.',
+    'columns' => [
+        ['label' => 'Evento'],
+        ['label' => 'AppsFlyer ID'],
+        ['label' => 'Plataforma'],
+        ['label' => 'Data'],
+        ['label' => 'Status'],
+    ],
+    'rows' => $recentEvents,
+], static function (array $event): void { ?>
+    <tr>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary">
+            <?= AppsFlyerStatus::from($event['af_status'])->icon() ?>
+            <?= e($event['event_name'] ?? 'N/A') ?>
+        </td>
+        <td class="admin-table__td admin-table__td--wrap"><?= e($event['appsflyer_id'] ?? 'N/A') ?></td>
+        <td class="admin-table__td"><?= e($event['platform'] ?? 'N/A') ?></td>
+        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($event['created_at']))) ?></td>
+        <td class="admin-table__td">
+            <span class="badge badge--<?= strtolower($event['af_status']) ?>">
+                <?= e(AppsFlyerStatus::from($event['af_status'])->label()) ?>
+            </span>
+        </td>
+    </tr>
+<?php }); ?>
 
 <?php admin_filter_panel('admin-appsflyer-filters', $filters, static function () use ($filters): void { ?>
     <form method="GET" action="<?= url('/admin/appsflyer') ?>" class="form admin-filter-panel__form">
@@ -129,64 +120,54 @@
     </form>
 <?php }); ?>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Todos os Eventos</h2>
-    </div>
-
-    <?php if ($events === []): ?>
-        <p class="mm-card__placeholder">Nenhum evento encontrado.</p>
-    <?php else: ?>
-        <ul class="admin-list">
-            <?php foreach ($events as $event): ?>
-                <li class="admin-list__item">
-                    <div class="admin-list__info">
-                        <span class="admin-list__icon">
-                            <?= AppsFlyerStatus::from($event['af_status'])->icon() ?>
-                        </span>
-                        <div>
-                            <strong><?= e($event['event_name'] ?? 'N/A') ?></strong>
-                            <span class="admin-list__meta">
-                                <?= e($event['appsflyer_id'] ?? 'N/A') ?>
-                            </span>
-                            <span class="admin-list__meta">
-                                <?= e($event['platform'] ?? 'N/A') ?>
-                            </span>
-                            <?php if ($event['install_type']): ?>
-                                <span class="admin-list__meta">
-                                    <?= e(InstallType::from($event['install_type'])->label()) ?>
-                                </span>
-                            <?php endif; ?>
-                            <?php if ($event['media_source']): ?>
-                                <span class="admin-list__meta">
-                                    <?= e($event['media_source']) ?>
-                                </span>
-                            <?php endif; ?>
-                            <span class="admin-list__meta">
-                                <?= e(date('d/m/Y H:i', strtotime($event['created_at']))) ?>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="admin-list__actions">
-                        <span class="badge badge--<?= strtolower($event['af_status']) ?>">
-                            <?= e(AppsFlyerStatus::from($event['af_status'])->label()) ?>
-                        </span>
-                        <a href="<?= url('/admin/appsflyer/' . $event['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
-                        <?php if ($event['af_status'] === AppsFlyerStatus::PENDING->value || $event['af_status'] === AppsFlyerStatus::RECEIVED->value): ?>
-                            <form method="POST" action="<?= url('/admin/appsflyer/validar') ?>" class="inline-form">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $event['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--success">Validar</button>
-                            </form>
-                            <form method="POST" action="<?= url('/admin/appsflyer/rejeitar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja rejeitar este evento?');">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $event['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--danger">Rejeitar</button>
-                            </form>
-                        <?php endif; ?>
-                    </div>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
-</section>
+<?php admin_table([
+    'title' => 'Todos os Eventos',
+    'emptyMessage' => 'Nenhum evento encontrado.',
+    'columns' => [
+        ['label' => 'Evento'],
+        ['label' => 'AppsFlyer ID'],
+        ['label' => 'Plataforma'],
+        ['label' => 'Instalação'],
+        ['label' => 'Origem'],
+        ['label' => 'Data'],
+        ['label' => 'Status'],
+        ['label' => 'Ações', 'class' => 'admin-table__col--actions', 'align' => 'right'],
+    ],
+    'rows' => $events,
+], static function (array $event): void { ?>
+    <tr>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary">
+            <?= AppsFlyerStatus::from($event['af_status'])->icon() ?>
+            <?= e($event['event_name'] ?? 'N/A') ?>
+        </td>
+        <td class="admin-table__td admin-table__td--wrap"><?= e($event['appsflyer_id'] ?? 'N/A') ?></td>
+        <td class="admin-table__td"><?= e($event['platform'] ?? 'N/A') ?></td>
+        <td class="admin-table__td admin-table__td--wrap">
+            <?= $event['install_type'] ? e(InstallType::from($event['install_type'])->label()) : '—' ?>
+        </td>
+        <td class="admin-table__td admin-table__td--wrap"><?= e($event['media_source'] ?: '—') ?></td>
+        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($event['created_at']))) ?></td>
+        <td class="admin-table__td">
+            <span class="badge badge--<?= strtolower($event['af_status']) ?>">
+                <?= e(AppsFlyerStatus::from($event['af_status'])->label()) ?>
+            </span>
+        </td>
+        <td class="admin-table__td admin-table__col--actions">
+            <div class="admin-table__actions">
+                <a href="<?= url('/admin/appsflyer/' . $event['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
+                <?php if ($event['af_status'] === AppsFlyerStatus::PENDING->value || $event['af_status'] === AppsFlyerStatus::RECEIVED->value): ?>
+                    <form method="POST" action="<?= url('/admin/appsflyer/validar') ?>" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $event['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--success">Validar</button>
+                    </form>
+                    <form method="POST" action="<?= url('/admin/appsflyer/rejeitar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja rejeitar este evento?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $event['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--danger">Rejeitar</button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </td>
+    </tr>
+<?php }); ?>

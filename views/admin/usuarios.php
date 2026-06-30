@@ -44,52 +44,48 @@ $buildPageUrl = static function (int $page) use ($filters): string {
     </form>
 <?php }); ?>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Lista de Usuários</h2>
-        <span class="mm-card__meta"><?= $total ?> registro(s)</span>
-    </div>
-
-    <?php if ($usuarios === []): ?>
-        <p class="mm-card__placeholder">Nenhum usuário encontrado.</p>
-    <?php else: ?>
-        <ul class="admin-list admin-list--usuarios">
-            <?php foreach ($usuarios as $usuario): ?>
-                <li class="admin-list__item">
-                    <div class="admin-list__info">
-                        <div class="admin-list__title-row">
-                            <strong><?= e($usuario['nome']) ?></strong>
-                            <span class="badge <?= Usuario::accountStatusBadgeClass($usuario) ?>">
-                                <?= Usuario::accountStatusIcon($usuario) ?>
-                                <?= e(Usuario::accountStatusLabel($usuario)) ?>
-                            </span>
-                        </div>
-                        <span class="admin-list__meta">CPF: <?= e(Usuario::formatCpfDisplay($usuario)) ?></span>
-                        <span class="admin-list__meta"><?= e($usuario['email']) ?></span>
-                        <span class="admin-list__meta">
-                            Perfil: <?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?>
-                        </span>
-                        <span class="admin-list__meta">
-                            Indicações: <?= (int) ($usuario['total_indicacoes'] ?? 0) ?>
-                            · Cupons: <?= (int) ($usuario['total_cupons'] ?? 0) ?>
-                        </span>
-                        <span class="admin-list__meta">
-                            Cadastro: <?= e(date('d/m/Y H:i', strtotime($usuario['created_at']))) ?>
-                        </span>
-                    </div>
-                    <div class="admin-list__actions">
-                        <a
-                            href="<?= url('/admin/usuarios/' . $usuario['id']) ?>"
-                            class="btn btn--sm btn--ghost"
-                            aria-label="Ver detalhes de <?= e($usuario['nome']) ?>"
-                            title="Ver detalhes"
-                        >👁</a>
-                    </div>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
-</section>
+<?php admin_table([
+    'title' => 'Lista de Usuários',
+    'meta' => $total . ' registro(s)',
+    'emptyMessage' => 'Nenhum usuário encontrado.',
+    'columns' => [
+        ['label' => 'Nome'],
+        ['label' => 'CPF'],
+        ['label' => 'E-mail'],
+        ['label' => 'Perfil'],
+        ['label' => 'Indicações / Cupons'],
+        ['label' => 'Cadastro'],
+        ['label' => 'Ações', 'class' => 'admin-table__col--actions', 'align' => 'right'],
+    ],
+    'rows' => $usuarios,
+], static function (array $usuario): void { ?>
+    <tr>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary">
+            <?= e($usuario['nome']) ?>
+            <span class="badge <?= Usuario::accountStatusBadgeClass($usuario) ?>">
+                <?= Usuario::accountStatusIcon($usuario) ?>
+                <?= e(Usuario::accountStatusLabel($usuario)) ?>
+            </span>
+        </td>
+        <td class="admin-table__td"><?= e(Usuario::formatCpfDisplay($usuario)) ?></td>
+        <td class="admin-table__td admin-table__td--wrap"><?= e($usuario['email']) ?></td>
+        <td class="admin-table__td"><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></td>
+        <td class="admin-table__td">
+            <?= (int) ($usuario['total_indicacoes'] ?? 0) ?> / <?= (int) ($usuario['total_cupons'] ?? 0) ?>
+        </td>
+        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($usuario['created_at']))) ?></td>
+        <td class="admin-table__td admin-table__col--actions">
+            <div class="admin-table__actions">
+                <a
+                    href="<?= url('/admin/usuarios/' . $usuario['id']) ?>"
+                    class="btn btn--sm btn--ghost"
+                    aria-label="Ver detalhes de <?= e($usuario['nome']) ?>"
+                    title="Ver detalhes"
+                >👁</a>
+            </div>
+        </td>
+    </tr>
+<?php }); ?>
 
 <?php if ($totalPages > 1): ?>
     <nav class="pagination" aria-label="Paginação de usuários">

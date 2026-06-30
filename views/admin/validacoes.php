@@ -93,68 +93,68 @@
     </section>
 <?php endif; ?>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Lista de Validações</h2>
-    </div>
-
-    <?php if ($validacoes === []): ?>
-        <p class="mm-card__placeholder">Nenhuma validação encontrada.</p>
-    <?php else: ?>
-        <ul class="admin-list">
-            <?php foreach ($validacoes as $validacao): ?>
-                <li class="admin-list__item">
-                    <div class="admin-list__info">
-                        <span class="admin-list__icon"><?= ValidacaoIndicacao::statusIcon($validacao['status']) ?></span>
-                        <div>
-                            <strong><?= e($validacao['usuario_nome'] ?? 'N/A') ?></strong>
-                            <?php if ($validacao['nome_indicado']): ?>
-                                <span class="admin-list__meta">Indicado: <?= e($validacao['nome_indicado']) ?></span>
-                            <?php endif; ?>
-                            <span class="admin-list__meta">
-                                <?= e(date('d/m/Y H:i', strtotime($validacao['created_at']))) ?>
-                            </span>
-                            <?php if ($validacao['motivo']): ?>
-                                <span class="admin-list__meta admin-list__meta--error">
-                                    Motivo: <?= e($validacao['motivo']) ?>
-                                </span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="admin-list__actions">
-                        <span class="badge badge--<?= strtolower($validacao['status']) ?>">
-                            <?= e(ValidacaoIndicacao::statusLabel($validacao['status'])) ?>
-                        </span>
-                        <a href="<?= url('/admin/validacoes/' . $validacao['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
-                        <?php if (ValidacaoIndicacao::canStartReview($validacao['status'])): ?>
-                            <form method="POST" action="<?= url('/admin/validacoes/iniciar') ?>" class="inline-form">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--primary">Iniciar</button>
-                            </form>
-                        <?php endif; ?>
-                        <?php if (ValidacaoIndicacao::canDecide($validacao['status'])): ?>
-                            <form method="POST" action="<?= url('/admin/validacoes/aprovar') ?>" class="inline-form">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--success">Aprovar</button>
-                            </form>
-                            <form method="POST" action="<?= url('/admin/validacoes/rejeitar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja rejeitar?');">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--danger">Rejeitar</button>
-                            </form>
-                        <?php endif; ?>
-                        <?php if (ValidacaoIndicacao::canCancel($validacao['status'])): ?>
-                            <form method="POST" action="<?= url('/admin/validacoes/cancelar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja cancelar?');">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--ghost">Cancelar</button>
-                            </form>
-                        <?php endif; ?>
-                    </div>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
-</section>
+<?php admin_table([
+    'title' => 'Lista de Validações',
+    'emptyMessage' => 'Nenhuma validação encontrada.',
+    'columns' => [
+        ['label' => 'Usuário'],
+        ['label' => 'Indicado'],
+        ['label' => 'Data'],
+        ['label' => 'Motivo'],
+        ['label' => 'Status'],
+        ['label' => 'Ações', 'class' => 'admin-table__col--actions', 'align' => 'right'],
+    ],
+    'rows' => $validacoes,
+], static function (array $validacao): void { ?>
+    <tr>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary">
+            <?= ValidacaoIndicacao::statusIcon($validacao['status']) ?>
+            <?= e($validacao['usuario_nome'] ?? 'N/A') ?>
+        </td>
+        <td class="admin-table__td admin-table__td--wrap"><?= e($validacao['nome_indicado'] ?: '—') ?></td>
+        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($validacao['created_at']))) ?></td>
+        <td class="admin-table__td admin-table__td--wrap">
+            <?php if ($validacao['motivo']): ?>
+                <span class="admin-table__meta admin-table__meta--error"><?= e($validacao['motivo']) ?></span>
+            <?php else: ?>
+                —
+            <?php endif; ?>
+        </td>
+        <td class="admin-table__td">
+            <span class="badge badge--<?= strtolower($validacao['status']) ?>">
+                <?= e(ValidacaoIndicacao::statusLabel($validacao['status'])) ?>
+            </span>
+        </td>
+        <td class="admin-table__td admin-table__col--actions">
+            <div class="admin-table__actions">
+                <a href="<?= url('/admin/validacoes/' . $validacao['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
+                <?php if (ValidacaoIndicacao::canStartReview($validacao['status'])): ?>
+                    <form method="POST" action="<?= url('/admin/validacoes/iniciar') ?>" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--primary">Iniciar</button>
+                    </form>
+                <?php endif; ?>
+                <?php if (ValidacaoIndicacao::canDecide($validacao['status'])): ?>
+                    <form method="POST" action="<?= url('/admin/validacoes/aprovar') ?>" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--success">Aprovar</button>
+                    </form>
+                    <form method="POST" action="<?= url('/admin/validacoes/rejeitar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja rejeitar?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--danger">Rejeitar</button>
+                    </form>
+                <?php endif; ?>
+                <?php if (ValidacaoIndicacao::canCancel($validacao['status'])): ?>
+                    <form method="POST" action="<?= url('/admin/validacoes/cancelar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja cancelar?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--ghost">Cancelar</button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </td>
+    </tr>
+<?php }); ?>

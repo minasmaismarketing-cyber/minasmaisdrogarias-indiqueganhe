@@ -62,69 +62,63 @@
     </div>
 </section>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Lista de Cupons</h2>
-    </div>
-
-    <?php if ($cupons === []): ?>
-        <p class="mm-card__placeholder">Nenhum cupom encontrado.</p>
-    <?php else: ?>
-        <ul class="admin-list">
-            <?php foreach ($cupons as $cupom): ?>
-                <li class="admin-list__item">
-                    <div class="admin-list__info">
-                        <span class="admin-list__icon"><?= Cupom::statusIcon($cupom['status']) ?></span>
-                        <div>
-                            <strong><?= e($cupom['codigo']) ?></strong>
-                            <span class="admin-list__meta">
-                                <?= e($cupom['usuario_nome'] ?? 'N/A') ?>
-                            </span>
-                            <span class="admin-list__meta">
-                                <?= e($cupom['campanha_nome'] ?? 'N/A') ?>
-                            </span>
-                            <span class="admin-list__meta">
-                                <?= e($cupom['valor']) ?> <?= e(Cupom::tipoLabel($cupom['tipo'])) ?>
-                            </span>
-                            <?php if ($cupom['validade']): ?>
-                                <span class="admin-list__meta">
-                                    Validade: <?= e(date('d/m/Y', strtotime($cupom['validade']))) ?>
-                                </span>
-                            <?php endif; ?>
-                            <span class="admin-list__meta">
-                                <?= e(date('d/m/Y H:i', strtotime($cupom['created_at']))) ?>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="admin-list__actions">
-                        <span class="badge badge--<?= strtolower($cupom['status']) ?>">
-                            <?= e(Cupom::statusLabel($cupom['status'])) ?>
-                        </span>
-                        <a href="<?= url('/admin/cupons/' . $cupom['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
-                        <?php if ($cupom['status'] === Cupom::STATUS_DISPONIVEL || $cupom['status'] === Cupom::STATUS_RESERVADO): ?>
-                            <form method="POST" action="<?= url('/admin/cupons/cancelar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja cancelar este cupom?');">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $cupom['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--danger">Cancelar</button>
-                            </form>
-                        <?php endif; ?>
-                        <?php if ($cupom['status'] === Cupom::STATUS_DISPONIVEL): ?>
-                            <form method="POST" action="<?= url('/admin/cupons/expirar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja expirar este cupom?');">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $cupom['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--ghost">Expirar</button>
-                            </form>
-                        <?php endif; ?>
-                        <?php if ($cupom['status'] === Cupom::STATUS_CANCELADO || $cupom['status'] === Cupom::STATUS_EXPIRADO): ?>
-                            <form method="POST" action="<?= url('/admin/cupons/reativar') ?>" class="inline-form">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="id" value="<?= $cupom['id'] ?>">
-                                <button type="submit" class="btn btn--sm btn--success">Reativar</button>
-                            </form>
-                        <?php endif; ?>
-                    </div>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
-</section>
+<?php admin_table([
+    'title' => 'Lista de Cupons',
+    'emptyMessage' => 'Nenhum cupom encontrado.',
+    'columns' => [
+        ['label' => 'Código'],
+        ['label' => 'Usuário'],
+        ['label' => 'Campanha'],
+        ['label' => 'Valor'],
+        ['label' => 'Validade'],
+        ['label' => 'Criado em'],
+        ['label' => 'Status'],
+        ['label' => 'Ações', 'class' => 'admin-table__col--actions', 'align' => 'right'],
+    ],
+    'rows' => $cupons,
+], static function (array $cupom): void { ?>
+    <tr>
+        <td class="admin-table__td admin-table__td--primary">
+            <?= Cupom::statusIcon($cupom['status']) ?>
+            <?= e($cupom['codigo']) ?>
+        </td>
+        <td class="admin-table__td admin-table__td--wrap"><?= e($cupom['usuario_nome'] ?? 'N/A') ?></td>
+        <td class="admin-table__td admin-table__td--wrap"><?= e($cupom['campanha_nome'] ?? 'N/A') ?></td>
+        <td class="admin-table__td"><?= e($cupom['valor']) ?> <?= e(Cupom::tipoLabel($cupom['tipo'])) ?></td>
+        <td class="admin-table__td">
+            <?= $cupom['validade'] ? e(date('d/m/Y', strtotime($cupom['validade']))) : '—' ?>
+        </td>
+        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($cupom['created_at']))) ?></td>
+        <td class="admin-table__td">
+            <span class="badge badge--<?= strtolower($cupom['status']) ?>">
+                <?= e(Cupom::statusLabel($cupom['status'])) ?>
+            </span>
+        </td>
+        <td class="admin-table__td admin-table__col--actions">
+            <div class="admin-table__actions">
+                <a href="<?= url('/admin/cupons/' . $cupom['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
+                <?php if ($cupom['status'] === Cupom::STATUS_DISPONIVEL || $cupom['status'] === Cupom::STATUS_RESERVADO): ?>
+                    <form method="POST" action="<?= url('/admin/cupons/cancelar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja cancelar este cupom?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $cupom['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--danger">Cancelar</button>
+                    </form>
+                <?php endif; ?>
+                <?php if ($cupom['status'] === Cupom::STATUS_DISPONIVEL): ?>
+                    <form method="POST" action="<?= url('/admin/cupons/expirar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja expirar este cupom?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $cupom['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--ghost">Expirar</button>
+                    </form>
+                <?php endif; ?>
+                <?php if ($cupom['status'] === Cupom::STATUS_CANCELADO || $cupom['status'] === Cupom::STATUS_EXPIRADO): ?>
+                    <form method="POST" action="<?= url('/admin/cupons/reativar') ?>" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $cupom['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--success">Reativar</button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </td>
+    </tr>
+<?php }); ?>

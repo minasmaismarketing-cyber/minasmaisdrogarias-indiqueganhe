@@ -309,3 +309,30 @@ function admin_filter_panel(string $id, array $filters, callable $renderForm): v
     $filterPanelOpen = admin_has_active_filters($filters);
     require BASE_PATH . '/views/partials/admin-filter-panel.php';
 }
+
+/**
+ * @param array{
+ *   title: string,
+ *   meta?: ?string,
+ *   headerActions?: ?string,
+ *   emptyMessage: string,
+ *   columns: list<array{label: string, class?: string, align?: string}>,
+ *   rows: list<mixed>,
+ *   zebra?: bool,
+ *   class?: string,
+ * } $config
+ * @param callable(mixed, int): void $renderRow
+ */
+function admin_table(array $config, callable $renderRow): void
+{
+    $adminTableTitle = $config['title'];
+    $adminTableMeta = $config['meta'] ?? null;
+    $adminTableHeaderActions = $config['headerActions'] ?? null;
+    $adminTableEmptyMessage = $config['emptyMessage'];
+    $adminTableColumns = $config['columns'];
+    $adminTableRows = $config['rows'];
+    $adminTableZebra = $config['zebra'] ?? true;
+    $adminTableClass = trim('admin-table' . (isset($config['class']) ? ' ' . $config['class'] : ''));
+    $adminTableRenderRow = $renderRow;
+    require BASE_PATH . '/views/partials/admin-table.php';
+}
