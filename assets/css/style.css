@@ -3787,36 +3787,42 @@ code {
 .admin-filter-panel__toggle {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    position: relative;
     width: 100%;
     padding: 1rem 1.125rem;
     border: 0;
     background: var(--white);
     cursor: pointer;
-    text-align: left;
+    text-align: center;
     font: inherit;
     color: inherit;
 }
 
 .admin-filter-panel__toggle-label {
-    font-size: 0.9375rem;
-    font-weight: 600;
+    width: 100%;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     color: var(--black);
+    text-align: center;
 }
 
 .admin-filter-panel__toggle-icon {
+    position: absolute;
+    right: 1.125rem;
+    top: 50%;
     width: 0.625rem;
     height: 0.625rem;
     border-right: 2px solid var(--gray-700);
     border-bottom: 2px solid var(--gray-700);
-    transform: rotate(45deg);
+    transform: translateY(-65%) rotate(45deg);
     transition: transform 0.2s ease;
     flex-shrink: 0;
-    margin-left: 0.75rem;
 }
 
 .admin-filter-panel.is-open .admin-filter-panel__toggle-icon {
-    transform: rotate(-135deg);
+    transform: translateY(-35%) rotate(-135deg);
 }
 
 .admin-filter-panel__body {
@@ -3858,46 +3864,38 @@ code {
     gap: 0.75rem;
 }
 
-.usuario-details {
+.usuario-info-lines {
+    list-style: none;
     margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 0.625rem;
 }
 
-.usuario-details__row {
+.usuario-info-lines__item {
     display: grid;
-    grid-template-columns: minmax(8.5rem, 34%) 1fr;
-    gap: 0.75rem 1rem;
-    align-items: start;
-    padding: 0.875rem 0;
-    border-bottom: 1px solid var(--gray-100);
+    grid-template-columns: minmax(9.5rem, 11.5rem) 1fr;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    line-height: 1.45;
 }
 
-.usuario-details__row:first-child {
-    padding-top: 0.25rem;
+.usuario-info-lines__label {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--black);
 }
 
-.usuario-details__row:last-child {
-    border-bottom: 0;
-    padding-bottom: 0.25rem;
-}
-
-.usuario-details__label {
-    margin: 0;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--gray-700);
-    line-height: 1.4;
-}
-
-.usuario-details__value {
-    margin: 0;
+.usuario-info-lines__value {
     font-size: 0.9375rem;
     font-weight: 500;
     color: var(--black);
-    line-height: 1.45;
     word-break: break-word;
+}
+
+.usuario-info-lines__value .badge {
+    vertical-align: middle;
 }
 
 .badge--usuario-ativo {
@@ -3916,10 +3914,9 @@ code {
 }
 
 @media (max-width: 640px) {
-    .usuario-details__row {
+    .usuario-info-lines__item {
         grid-template-columns: 1fr;
-        gap: 0.25rem;
-        padding: 0.75rem 0;
+        gap: 0.125rem;
     }
 }
 

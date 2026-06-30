@@ -24,7 +24,7 @@ $hasActiveFilters = $filters['nome'] !== ''
         aria-controls="admin-usuarios-filters"
         data-admin-filter-toggle
     >
-        <span class="admin-filter-panel__toggle-label">🔎 Filtrar usuários</span>
+        <span class="admin-filter-panel__toggle-label">🔎 FILTRAR</span>
         <span class="admin-filter-panel__toggle-icon" aria-hidden="true"></span>
     </button>
 

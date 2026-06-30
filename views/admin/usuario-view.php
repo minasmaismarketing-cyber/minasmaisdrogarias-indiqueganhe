@@ -4,55 +4,51 @@
 <section class="mm-card mm-card--usuario-info">
     <div class="mm-card__header">
         <h2 class="mm-card__title">Informações do Usuário</h2>
-        <span class="badge <?= Usuario::accountStatusBadgeClass($usuario) ?>">
-            <?= Usuario::accountStatusIcon($usuario) ?>
-            <?= e(Usuario::accountStatusLabel($usuario)) ?>
-        </span>
     </div>
 
-    <dl class="usuario-details">
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">Nome</dt>
-            <dd class="usuario-details__value"><?= e($usuario['nome']) ?></dd>
-        </div>
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">CPF</dt>
-            <dd class="usuario-details__value"><?= e(Usuario::formatCpfDisplay($usuario)) ?></dd>
-        </div>
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">E-mail</dt>
-            <dd class="usuario-details__value"><?= e($usuario['email']) ?></dd>
-        </div>
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">Telefone</dt>
-            <dd class="usuario-details__value"><?= e($usuario['telefone'] ? format_phone((string) $usuario['telefone']) : '—') ?></dd>
-        </div>
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">WhatsApp</dt>
-            <dd class="usuario-details__value"><?= e($usuario['whatsapp'] ? format_phone((string) $usuario['whatsapp']) : '—') ?></dd>
-        </div>
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">Código de Indicação</dt>
-            <dd class="usuario-details__value"><?= e($usuario['codigo_indicador'] ?? '—') ?></dd>
-        </div>
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">Perfil</dt>
-            <dd class="usuario-details__value"><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></dd>
-        </div>
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">Status</dt>
-            <dd class="usuario-details__value">
+    <ul class="usuario-info-lines">
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">Nome:</span>
+            <span class="usuario-info-lines__value"><?= e($usuario['nome']) ?></span>
+        </li>
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">CPF:</span>
+            <span class="usuario-info-lines__value"><?= e(Usuario::formatCpfDisplay($usuario)) ?></span>
+        </li>
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">E-mail:</span>
+            <span class="usuario-info-lines__value"><?= e($usuario['email']) ?></span>
+        </li>
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">Telefone:</span>
+            <span class="usuario-info-lines__value"><?= e($usuario['telefone'] ? format_phone((string) $usuario['telefone']) : '—') ?></span>
+        </li>
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">WhatsApp:</span>
+            <span class="usuario-info-lines__value"><?= e($usuario['whatsapp'] ? format_phone((string) $usuario['whatsapp']) : '—') ?></span>
+        </li>
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">Código de Indicação:</span>
+            <span class="usuario-info-lines__value"><?= e($usuario['codigo_indicador'] ?? '—') ?></span>
+        </li>
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">Perfil:</span>
+            <span class="usuario-info-lines__value"><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></span>
+        </li>
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">Status:</span>
+            <span class="usuario-info-lines__value">
                 <span class="badge <?= Usuario::accountStatusBadgeClass($usuario) ?>">
                     <?= Usuario::accountStatusIcon($usuario) ?>
                     <?= e(Usuario::accountStatusLabel($usuario)) ?>
                 </span>
-            </dd>
-        </div>
-        <div class="usuario-details__row">
-            <dt class="usuario-details__label">Data de Cadastro</dt>
-            <dd class="usuario-details__value"><?= e(date('d/m/Y H:i:s', strtotime($usuario['created_at']))) ?></dd>
-        </div>
-    </dl>
+            </span>
+        </li>
+        <li class="usuario-info-lines__item">
+            <span class="usuario-info-lines__label">Cadastro:</span>
+            <span class="usuario-info-lines__value"><?= e(date('d/m/Y H:i', strtotime($usuario['created_at']))) ?></span>
+        </li>
+    </ul>
 </section>
 
 <section class="mm-card">
