@@ -482,7 +482,13 @@
     margin-top: var(--admin-space-md);
 }
 
-/* ── Form fields (select = input parity) ── */
+/* ── Form fields (shared tokens: inputs + select) ── */
+.page--admin input[type="text"],
+.page--admin input[type="email"],
+.page--admin input[type="password"],
+.page--admin input[type="number"],
+.page--admin input[type="search"],
+.page--admin input[type="date"],
 .page--admin select {
     min-height: var(--admin-field-min-height);
     padding: var(--admin-field-padding);
@@ -495,6 +501,12 @@
     transition: var(--admin-field-transition);
 }
 
+.page--admin input[type="text"]:focus,
+.page--admin input[type="email"]:focus,
+.page--admin input[type="password"]:focus,
+.page--admin input[type="number"]:focus,
+.page--admin input[type="search"]:focus,
+.page--admin input[type="date"]:focus,
 .page--admin select:focus {
     outline: none;
     border-color: var(--admin-field-focus-border);
