@@ -8,7 +8,9 @@ if ($valid && $ref !== '') {
     $indicadorUsuarioId = $indicadorRow ? (string) ($indicadorRow['id'] ?? '') : '';
 }
 ?>
-<section class="convite-page convite-landing animate-slide">
+<div class="convite-landing__curve" aria-hidden="true"></div>
+
+<section class="convite-page convite-landing">
     <?php if (!$valid): ?>
         <div class="convite-card convite-landing__card convite-landing__card--error">
             <div class="convite-logo convite-landing__logo">
@@ -16,8 +18,8 @@ if ($valid && $ref !== '') {
                     src="<?= e(brand_logo_url()) ?>"
                     alt="Minas Mais Drogaria e Perfumaria"
                     class="convite-landing__logo-img"
-                    width="180"
-                    height="48"
+                    width="220"
+                    height="56"
                     loading="eager"
                 >
             </div>
@@ -32,63 +34,100 @@ if ($valid && $ref !== '') {
                     src="<?= e(brand_logo_url()) ?>"
                     alt="Minas Mais Drogaria e Perfumaria"
                     class="convite-landing__logo-img"
-                    width="180"
-                    height="48"
+                    width="220"
+                    height="56"
                     loading="eager"
                 >
             </div>
 
-            <div class="convite-landing__gift-wrap" aria-hidden="true">
-                <span class="convite-landing__gift-icon">🎁</span>
-            </div>
-
             <p class="convite-badge convite-landing__badge">🎁 Você foi indicado!</p>
 
-            <h1 class="convite-title convite-landing__title">
+            <h1 class="convite-title convite-landing__hero-title">
                 <?php if ($indicadorPrimeiroNome !== ''): ?>
-                    <span class="convite-highlight convite-landing__referrer"><?= e($indicadorPrimeiroNome) ?></span>
-                    quer dividir um benefício com você!
+                    <span class="convite-highlight convite-landing__hero-name"><?= e($indicadorPrimeiroNome) ?></span>
+                    <span class="convite-landing__hero-line">quer dividir um</span>
+                    <span class="convite-landing__hero-line">benefício com você!</span>
                 <?php else: ?>
-                    Alguém especial quer dividir um benefício com você!
+                    <span class="convite-landing__hero-line">Alguém especial quer dividir um</span>
+                    <span class="convite-landing__hero-line">benefício com você!</span>
                 <?php endif; ?>
             </h1>
 
             <div class="convite-landing__benefits">
-                <div class="convite-landing__section-header">
-                    <h2 id="convite-benefits-title" class="convite-landing__section-title">Você ganha:</h2>
+                <div class="convite-landing__divider convite-landing__divider--neutral">
+                    <span class="convite-landing__divider-line" aria-hidden="true"></span>
+                    <h2 id="convite-benefits-title" class="convite-landing__section-title">Você ganha</h2>
+                    <span class="convite-landing__divider-line" aria-hidden="true"></span>
                 </div>
-                <div class="benefits-grid convite-landing__benefit-list" role="list">
-                    <div class="benefit-card convite-landing__benefit-item" role="listitem">
-                        <span class="benefit-icon convite-landing__benefit-icon" aria-hidden="true">✔</span>
-                        <span class="benefit-description">5% OFF na primeira compra</span>
-                    </div>
-                    <div class="benefit-card convite-landing__benefit-item" role="listitem">
-                        <span class="benefit-icon convite-landing__benefit-icon" aria-hidden="true">✔</span>
-                        <span class="benefit-description">Entrega rápida em até 30 minutos</span>
-                    </div>
-                    <div class="benefit-card convite-landing__benefit-item" role="listitem">
-                        <span class="benefit-icon convite-landing__benefit-icon" aria-hidden="true">✔</span>
-                        <span class="benefit-description">Promoções exclusivas no aplicativo</span>
-                    </div>
+
+                <div class="benefits-grid convite-landing__benefit-list">
+                    <article class="benefit-card convite-landing__benefit-item" data-animate="benefit">
+                        <div class="convite-landing__benefit-emoji" aria-hidden="true">🏷</div>
+                        <h3 class="benefit-title convite-landing__benefit-title">5% OFF</h3>
+                        <p class="benefit-description convite-landing__benefit-desc">na primeira compra</p>
+                    </article>
+                    <article class="benefit-card convite-landing__benefit-item" data-animate="benefit">
+                        <div class="convite-landing__benefit-emoji" aria-hidden="true">🛵</div>
+                        <h3 class="benefit-title convite-landing__benefit-title">Entrega rápida</h3>
+                        <p class="benefit-description convite-landing__benefit-desc">em até 30 minutos</p>
+                    </article>
+                    <article class="benefit-card convite-landing__benefit-item" data-animate="benefit">
+                        <div class="convite-landing__benefit-emoji" aria-hidden="true">⭐</div>
+                        <h3 class="benefit-title convite-landing__benefit-title">Promoções exclusivas</h3>
+                        <p class="benefit-description convite-landing__benefit-desc">no aplicativo</p>
+                    </article>
                 </div>
             </div>
 
             <div class="convite-landing__steps">
-                <div class="convite-landing__section-header">
-                    <h2 id="convite-steps-title" class="convite-landing__section-title">Como funciona?</h2>
+                <div class="convite-landing__divider convite-landing__divider--accent">
+                    <span class="convite-landing__divider-line" aria-hidden="true"></span>
+                    <h2 id="convite-steps-title" class="convite-landing__section-title convite-landing__section-title--accent">Como funciona?</h2>
+                    <span class="convite-landing__divider-line" aria-hidden="true"></span>
                 </div>
-                <div class="stepper convite-stepper" role="list">
-                    <div class="step convite-stepper__step" role="listitem">
-                        <span class="step-number convite-stepper__index" aria-hidden="true">①</span>
-                        <span class="step-content convite-stepper__label">Baixe o aplicativo</span>
+
+                <div class="stepper convite-stepper">
+                    <div class="step convite-stepper__step" data-animate="step">
+                        <div class="convite-stepper__track">
+                            <span class="step-number convite-stepper__index">1</span>
+                            <span class="convite-stepper__connector" aria-hidden="true"></span>
+                        </div>
+                        <div class="step-content convite-stepper__content">
+                            <span class="convite-stepper__icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3v10m0 0l4-4m-4 4l-4-4M5 19h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <div class="convite-stepper__copy">
+                                <h3 class="convite-stepper__title">Baixe o aplicativo</h3>
+                                <p class="convite-stepper__desc">Clique no botão abaixo para baixar o app.</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="step convite-stepper__step" role="listitem">
-                        <span class="step-number convite-stepper__index" aria-hidden="true">②</span>
-                        <span class="step-content convite-stepper__label"><strong>Faça seu cadastro</strong></span>
+                    <div class="step convite-stepper__step" data-animate="step">
+                        <div class="convite-stepper__track">
+                            <span class="step-number convite-stepper__index">2</span>
+                            <span class="convite-stepper__connector" aria-hidden="true"></span>
+                        </div>
+                        <div class="step-content convite-stepper__content">
+                            <span class="convite-stepper__icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 21a8 8 0 10-16 0M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <div class="convite-stepper__copy">
+                                <h3 class="convite-stepper__title"><strong>Faça seu cadastro</strong></h3>
+                                <p class="convite-stepper__desc">Cadastre-se utilizando seus dados.</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="step convite-stepper__step" role="listitem">
-                        <span class="step-number convite-stepper__index" aria-hidden="true">③</span>
-                        <span class="step-content convite-stepper__label">Seu desconto será liberado automaticamente</span>
+                    <div class="step convite-stepper__step" data-animate="step">
+                        <div class="convite-stepper__track">
+                            <span class="step-number convite-stepper__index">3</span>
+                        </div>
+                        <div class="step-content convite-stepper__content">
+                            <span class="convite-stepper__icon" aria-hidden="true">🎁</span>
+                            <div class="convite-stepper__copy">
+                                <h3 class="convite-stepper__title">Seu desconto será liberado automaticamente</h3>
+                                <p class="convite-stepper__desc">Finalize seu cadastro e aproveite seu benefício.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -100,10 +139,11 @@ if ($valid && $ref !== '') {
                 data-fallback-url="<?= e($appDownloadUrl) ?>"
                 <?= $appDownloadUrl === '#' ? 'aria-disabled="true"' : 'target="_blank" rel="noopener noreferrer"' ?>
             >
-                BAIXAR O APP
+                ⬇ BAIXAR O APP
             </a>
 
             <p class="convite-footer convite-landing__footnote">
+                <span class="convite-landing__footnote-icon" aria-hidden="true">🛡</span>
                 Oferta válida para novos cadastros realizados através desta indicação.
             </p>
         </div>

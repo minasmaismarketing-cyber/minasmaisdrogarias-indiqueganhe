@@ -17,5 +17,8 @@
     <?php if (!empty($valid) && !empty($smartScriptPayload['enabled'])): ?>
         <script src="<?= asset('js/convite-landing.js') ?>" defer></script>
     <?php endif; ?>
+    <?php if (!empty($valid)): ?>
+        <script src="<?= asset('js/convite-landing-ui.js') ?>" defer></script>
+    <?php endif; ?>
 </body>
 </html>
