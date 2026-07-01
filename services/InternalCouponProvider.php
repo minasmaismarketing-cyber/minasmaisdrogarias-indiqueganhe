@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Internal Coupon Provider
- * 
- * Generates and validates internal coupons for the Indique e Ganhe system.
- * Coupon format: MM-XXXXXXXX (8 random characters)
+ * Provider de cupom interno — Status: ATIVA (Integrations::STATUS_ATIVA).
+ *
+ * Gera e valida cupons no banco local (formato MM-XXXXXXXX).
  */
 class InternalCouponProvider implements CouponProviderInterface
 {
@@ -14,73 +13,62 @@ class InternalCouponProvider implements CouponProviderInterface
     private const CODE_LENGTH = 8;
     private const MAX_ATTEMPTS = 10;
 
-    public function generateCode(array $data): string
+    public function generateCode(array $data): IntegrationResult
     {
-        $repository = new CupomRepository();
-        $attempts = 0;
+        unset($data);
 
-        do {
-            $code = $this->generateRandomCode();
-            $attempts++;
+        try {
+            $repository = new CupomRepository();
+            $attempts = 0;
 
-            if (!$repository->codigoExiste($code)) {
-                return $code;
-            }
-        } while ($attempts < self::MAX_ATTEMPTS);
+            do {
+                $code = $this->generateRandomCode();
+                $attempts++;
 
-        throw new RuntimeException('Failed to generate unique coupon code after ' . self::MAX_ATTEMPTS . ' attempts');
+                if (!$repository->codigoExiste($code)) {
+                    return IntegrationResult::ok('Código de cupom gerado.', ['codigo' => $code]);
+                }
+            } while ($attempts < self::MAX_ATTEMPTS);
+
+            return IntegrationResult::falha(
+                'Não foi possível gerar código único após ' . self::MAX_ATTEMPTS . ' tentativas.'
+            );
+        } catch (Throwable $e) {
+            return IntegrationResult::falha('Falha ao gerar código de cupom: ' . $e->getMessage());
+        }
     }
 
-    public function validate(string $code): array
+    public function validate(string $code): IntegrationResult
     {
         $repository = new CupomRepository();
         $cupom = $repository->findByCodigo($code);
 
         if ($cupom === null) {
-            return [
-                'valid' => false,
-                'reason' => 'Cupom não encontrado',
-            ];
+            return IntegrationResult::falha('Cupom não encontrado');
         }
 
         if ($cupom['status'] === Cupom::STATUS_UTILIZADO) {
-            return [
-                'valid' => false,
-                'reason' => 'Cupom já utilizado',
-            ];
+            return IntegrationResult::falha('Cupom já utilizado');
         }
 
         if ($cupom['status'] === Cupom::STATUS_EXPIRADO) {
-            return [
-                'valid' => false,
-                'reason' => 'Cupom expirado',
-            ];
+            return IntegrationResult::falha('Cupom expirado');
         }
 
         if ($cupom['status'] === Cupom::STATUS_CANCELADO) {
-            return [
-                'valid' => false,
-                'reason' => 'Cupom cancelado',
-            ];
+            return IntegrationResult::falha('Cupom cancelado');
         }
 
         if ($cupom['validade'] && strtotime($cupom['validade']) < time()) {
-            return [
-                'valid' => false,
-                'reason' => 'Cupom expirado',
-            ];
+            return IntegrationResult::falha('Cupom expirado');
         }
 
-        return [
-            'valid' => true,
-            'reason' => null,
-            'cupom' => $cupom,
-        ];
+        return IntegrationResult::ok('Cupom válido.', ['cupom' => $cupom]);
     }
 
-    public function isAvailable(): bool
+    public function isAvailable(): IntegrationResult
     {
-        return true; // Internal provider is always available
+        return IntegrationResult::ok('Provider interno de cupons disponível.');
     }
 
     private function generateRandomCode(): string

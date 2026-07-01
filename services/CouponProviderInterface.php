@@ -2,28 +2,26 @@
 
 declare(strict_types=1);
 
+/**
+ * Contrato de providers de cupom.
+ *
+ * Implementações ativas: InternalCouponProvider.
+ * Stub preparado: VTEXCouponProvider.
+ */
 interface CouponProviderInterface
 {
     /**
-     * Generate a unique coupon code
-     * 
-     * @param array $data Coupon data (usuario_id, indicacao_id, campanha_id, tipo, valor)
-     * @return string Generated coupon code
+     * Gera código de cupom.
+     *
+     * Sucesso: dados['codigo'] contém o código gerado.
+     *
+     * @param array<string, mixed> $data
      */
-    public function generateCode(array $data): string;
+    public function generateCode(array $data): IntegrationResult;
 
-    /**
-     * Validate a coupon code
-     * 
-     * @param string $code Coupon code to validate
-     * @return array Result with 'valid' (bool) and 'reason' (string|null)
-     */
-    public function validate(string $code): array;
+    /** Valida cupom existente. Sucesso indica cupom utilizável; dados['cupom'] quando aplicável. */
+    public function validate(string $code): IntegrationResult;
 
-    /**
-     * Check if provider is available/configured
-     * 
-     * @return bool
-     */
-    public function isAvailable(): bool;
+    /** Indica se o provider está configurado e disponível para uso. */
+    public function isAvailable(): IntegrationResult;
 }

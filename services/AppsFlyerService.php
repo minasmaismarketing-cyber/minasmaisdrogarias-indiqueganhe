@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+/**
+ * Integração AppsFlyer — Status: PREPARADA (Integrations::STATUS_PREPARADA).
+ *
+ * Persiste eventos recebidos e permite validação manual no admin.
+ * A validação automática contra a API AppsFlyer permanece desabilitada até configuração completa.
+ */
 class AppsFlyerService
 {
     private AppsFlyerRepository $repository;
@@ -15,12 +21,8 @@ class AppsFlyerService
         $this->config = $this->loadConfig();
     }
 
-    /**
-     * Process AppsFlyer event
-     */
     public function processEvent(array $payload): int
     {
-        // Extract data from payload
         $appsflyerId = $payload['appsflyer_id'] ?? null;
         $eventName = $payload['event_name'] ?? null;
         $eventValue = $payload['event_value'] ?? null;
@@ -32,7 +34,6 @@ class AppsFlyerService
         $usuarioId = $payload['usuario_id'] ?? null;
         $indicacaoId = $payload['indicacao_id'] ?? null;
 
-        // Create event record
         $eventId = $this->repository->create([
             'usuario_id' => $usuarioId,
             'indicacao_id' => $indicacaoId,
@@ -53,9 +54,6 @@ class AppsFlyerService
         return $eventId;
     }
 
-    /**
-     * Validate event
-     */
     public function validateEvent(int $eventId): bool
     {
         $event = $this->repository->findById($eventId);
@@ -63,21 +61,16 @@ class AppsFlyerService
             return false;
         }
 
-        // Update status to RECEIVED
         $this->repository->updateStatus($eventId, AppsFlyerStatus::RECEIVED->value);
         $this->eventLogger->logAppsflyerEventoProcessado($eventId, $event['event_name']);
 
-        // TODO: Implement actual validation logic when connecting to AppsFlyer API
-        // For now, mark as VALIDATED
+        // Validação operacional manual: confirmação admin até integração API AppsFlyer estar ativa.
         $this->repository->updateStatus($eventId, AppsFlyerStatus::VALIDATED->value);
         $this->eventLogger->logAppsflyerEventoValidado($eventId, $event['event_name']);
 
         return true;
     }
 
-    /**
-     * Reject event
-     */
     public function rejectEvent(int $eventId, string $reason): bool
     {
         $event = $this->repository->findById($eventId);
@@ -91,61 +84,40 @@ class AppsFlyerService
         return true;
     }
 
-    /**
-     * Get event by AppsFlyer ID
-     */
     public function getEventByAppsflyerId(string $appsflyerId): ?array
     {
         return $this->repository->findByAppsflyerId($appsflyerId);
     }
 
-    /**
-     * Get events by user
-     */
     public function getEventsByUser(int $usuarioId): array
     {
         return $this->repository->findByUsuario($usuarioId);
     }
 
-    /**
-     * Get events by indication
-     */
     public function getEventsByIndication(int $indicacaoId): array
     {
         return $this->repository->findByIndicacao($indicacaoId);
     }
 
-    /**
-     * Get all events with filters
-     */
     public function getAllEvents(array $filters = []): array
     {
         return $this->repository->findAll($filters);
     }
 
-    /**
-     * Get statistics
-     */
     public function getStats(): array
     {
         return $this->repository->getStats();
     }
 
-    /**
-     * Check if AppsFlyer integration is enabled
-     */
     public function isEnabled(): bool
     {
         return $this->config['enabled'] ?? false;
     }
 
-    /**
-     * Load AppsFlyer configuration
-     */
     private function loadConfig(): array
     {
         $configFile = BASE_PATH . '/config/appsflyer.php';
-        
+
         if (!file_exists($configFile)) {
             return [
                 'enabled' => false,

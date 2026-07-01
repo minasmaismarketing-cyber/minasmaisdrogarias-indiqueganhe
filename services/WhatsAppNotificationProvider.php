@@ -3,27 +3,21 @@
 declare(strict_types=1);
 
 /**
- * WhatsApp Notification Provider
- * 
- * Future integration for sending notifications via WhatsApp
- * This provider will send validation status updates to users.
+ * Provider de notificação WhatsApp — Status: STUB (Integrations::STATUS_STUB).
+ *
+ * Preparado para envio via WhatsApp Business API quando credenciais forem configuradas.
  */
 class WhatsAppNotificationProvider implements NotificationProviderInterface
 {
-    public function send(int $userId, string $message, array $data = []): bool
+    public function send(int $userId, string $message, array $data = []): IntegrationResult
     {
-        // TODO: Implement WhatsApp API integration
-        // This will:
-        // 1. Get user's phone number
-        // 2. Send message via WhatsApp Business API
-        // 3. Handle delivery status and errors
-        
-        return false;
+        unset($userId, $message, $data);
+
+        return IntegrationResult::falha('Integração WhatsApp ainda não implementada.');
     }
 
-    public function isAvailable(): bool
+    public function isAvailable(): IntegrationResult
     {
-        // TODO: Check if WhatsApp API credentials are configured
-        return false;
+        return IntegrationResult::falha('Integração WhatsApp não configurada.');
     }
 }

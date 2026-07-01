@@ -2,16 +2,18 @@
 
 declare(strict_types=1);
 
+/**
+ * Regras de validação AppsFlyer — Status: PREPARADA (Integrations::STATUS_PREPARADA).
+ *
+ * Valida estrutura de payload localmente. Regras avançadas de campanha/origem/timing
+ * permanecem permissivas até dados externos estarem disponíveis.
+ */
 class AppsFlyerValidationService
 {
-    /**
-     * Validate AppsFlyer payload
-     */
-    public function validatePayload(array $payload): array
+    public function validatePayload(array $payload): IntegrationResult
     {
         $errors = [];
 
-        // Validate required fields
         if (empty($payload['appsflyer_id'])) {
             $errors[] = 'appsflyer_id is required';
         }
@@ -20,99 +22,82 @@ class AppsFlyerValidationService
             $errors[] = 'event_name is required';
         }
 
-        // Validate install_type
         if (!empty($payload['install_type'])) {
-            $validInstallTypes = array_map(fn($type) => $type->value, InstallType::cases());
-            if (!in_array($payload['install_type'], $validInstallTypes)) {
+            $validInstallTypes = array_map(static fn ($type) => $type->value, InstallType::cases());
+            if (!in_array($payload['install_type'], $validInstallTypes, true)) {
                 $errors[] = 'Invalid install_type. Valid values: ' . implode(', ', $validInstallTypes);
             }
         }
 
-        // Validate platform
         if (!empty($payload['platform'])) {
             $validPlatforms = ['android', 'ios', 'web'];
-            if (!in_array(strtolower($payload['platform']), $validPlatforms)) {
+            if (!in_array(strtolower((string) $payload['platform']), $validPlatforms, true)) {
                 $errors[] = 'Invalid platform. Valid values: ' . implode(', ', $validPlatforms);
             }
         }
 
-        return [
-            'valid' => empty($errors),
-            'errors' => $errors,
-        ];
+        if ($errors !== []) {
+            return IntegrationResult::falha(implode('; ', $errors), ['errors' => $errors]);
+        }
+
+        return IntegrationResult::ok('Payload AppsFlyer válido.');
     }
 
-    /**
-     * Validate installation
-     */
-    public function validateInstallation(array $payload): array
+    public function validateInstallation(array $payload): IntegrationResult
     {
         $errors = [];
 
-        // Check if install_type is valid
         if (empty($payload['install_type'])) {
             $errors[] = 'install_type is required for installation validation';
         }
 
-        // Check for FIRST_INSTALL
         if (!empty($payload['install_type']) && $payload['install_type'] === InstallType::FIRST_INSTALL->value) {
-            // Additional validations for first install
             if (empty($payload['media_source'])) {
                 $errors[] = 'media_source is required for FIRST_INSTALL';
             }
         }
 
-        return [
-            'valid' => empty($errors),
-            'errors' => $errors,
-        ];
-    }
-
-    /**
-     * Validate platform
-     */
-    public function validatePlatform(string $platform): bool
-    {
-        $validPlatforms = ['android', 'ios', 'web'];
-        return in_array(strtolower($platform), $validPlatforms);
-    }
-
-    /**
-     * Validate campaign
-     */
-    public function validateCampaign(?string $campaign): bool
-    {
-        // Campaign validation logic
-        // For now, just check if it's not empty when expected
-        return true; // TODO: Implement actual campaign validation
-    }
-
-    /**
-     * Validate origin (media source)
-     */
-    public function validateOrigin(?string $mediaSource): bool
-    {
-        // Media source validation logic
-        // For now, just check if it's not empty when expected
-        return true; // TODO: Implement actual origin validation
-    }
-
-    /**
-     * Validate event value
-     */
-    public function validateEventValue(?string $eventValue): bool
-    {
-        if ($eventValue === null) {
-            return true;
+        if ($errors !== []) {
+            return IntegrationResult::falha(implode('; ', $errors), ['errors' => $errors]);
         }
 
-        // Check if it's a valid number
-        return is_numeric($eventValue);
+        return IntegrationResult::ok('Instalação AppsFlyer válida.');
     }
 
-    /**
-     * Check if event is duplicate
-     */
+    public function validatePlatform(string $platform): IntegrationResult
+    {
+        $validPlatforms = ['android', 'ios', 'web'];
+
+        if (in_array(strtolower($platform), $validPlatforms, true)) {
+            return IntegrationResult::ok('Plataforma válida.');
+        }
+
+        return IntegrationResult::falha('Plataforma inválida.');
+    }
+
+    public function validateCampaign(?string $campaign): IntegrationResult
+    {
+        unset($campaign);
+
+        return IntegrationResult::ok('Validação de campanha permissiva até integração externa.');
+    }
+
+    public function validateOrigin(?string $mediaSource): IntegrationResult
+    {
+        unset($mediaSource);
+
+        return IntegrationResult::ok('Validação de origem permissiva até integração externa.');
+    }
+
+    public function validateEventValue(?string $eventValue): IntegrationResult
+    {
+        if ($eventValue === null || is_numeric($eventValue)) {
+            return IntegrationResult::ok('Valor de evento válido.');
+        }
+
+        return IntegrationResult::falha('Valor de evento deve ser numérico.');
+    }
+
     public function isDuplicateEvent(string $appsflyerId, string $eventName): bool
     {
         $repository = new AppsFlyerRepository();
@@ -125,41 +110,35 @@ class AppsFlyerValidationService
         return $existingEvent['event_name'] === $eventName;
     }
 
-    /**
-     * Validate event timing
-     */
-    public function validateEventTiming(array $payload): bool
+    public function validateEventTiming(array $payload): IntegrationResult
     {
-        // Check if event timestamp is within acceptable range
-        // For now, always return true
-        return true; // TODO: Implement actual timing validation
+        unset($payload);
+
+        return IntegrationResult::ok('Validação de timing permissiva até integração externa.');
     }
 
-    /**
-     * Get validation summary
-     */
     public function getValidationSummary(array $payload): array
     {
         $payloadValidation = $this->validatePayload($payload);
         $installationValidation = $this->validateInstallation($payload);
-        $platformValid = empty($payload['platform']) || $this->validatePlatform($payload['platform']);
-        $campaignValid = $this->validateCampaign($payload['campaign'] ?? null);
-        $originValid = $this->validateOrigin($payload['media_source'] ?? null);
-        $eventValueValid = $this->validateEventValue($payload['event_value'] ?? null);
+        $platformValid = empty($payload['platform']) || $this->validatePlatform((string) $payload['platform'])->sucesso;
+        $campaignValid = $this->validateCampaign($payload['campaign'] ?? null)->sucesso;
+        $originValid = $this->validateOrigin($payload['media_source'] ?? null)->sucesso;
+        $eventValueValid = $this->validateEventValue($payload['event_value'] ?? null)->sucesso;
 
         return [
-            'payload_valid' => $payloadValidation['valid'],
-            'installation_valid' => $installationValidation['valid'],
+            'payload_valid' => $payloadValidation->sucesso,
+            'installation_valid' => $installationValidation->sucesso,
             'platform_valid' => $platformValid,
             'campaign_valid' => $campaignValid,
             'origin_valid' => $originValid,
             'event_value_valid' => $eventValueValid,
-            'all_valid' => $payloadValidation['valid'] && 
-                          $installationValidation['valid'] && 
-                          $platformValid && 
-                          $campaignValid && 
-                          $originValid && 
-                          $eventValueValid,
+            'all_valid' => $payloadValidation->sucesso
+                && $installationValidation->sucesso
+                && $platformValid
+                && $campaignValid
+                && $originValid
+                && $eventValueValid,
         ];
     }
 }

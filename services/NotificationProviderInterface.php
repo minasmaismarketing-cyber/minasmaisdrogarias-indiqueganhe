@@ -2,22 +2,20 @@
 
 declare(strict_types=1);
 
+/**
+ * Contrato de providers de notificação.
+ *
+ * Stub preparado: WhatsAppNotificationProvider.
+ */
 interface NotificationProviderInterface
 {
     /**
-     * Send notification to user
-     * 
-     * @param int $userId User ID
-     * @param string $message Notification message
-     * @param array $data Additional data (optional)
-     * @return bool Success status
+     * Envia notificação ao usuário.
+     *
+     * @param array<string, mixed> $data
      */
-    public function send(int $userId, string $message, array $data = []): bool;
+    public function send(int $userId, string $message, array $data = []): IntegrationResult;
 
-    /**
-     * Check if provider is available/configured
-     * 
-     * @return bool
-     */
-    public function isAvailable(): bool;
+    /** Indica se o provider está configurado e disponível para uso. */
+    public function isAvailable(): IntegrationResult;
 }

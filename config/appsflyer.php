@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 /**
- * AppsFlyer Configuration
- * 
- * This file contains all configuration settings for AppsFlyer integration.
- * All fields are initially empty and should be configured when ready to integrate.
+ * Configuração AppsFlyer — Status: PREPARADA (Integrations::STATUS_PREPARADA).
+ *
+ * Campos vazios até credenciais e webhook serem configurados em produção.
  */
 
 return [

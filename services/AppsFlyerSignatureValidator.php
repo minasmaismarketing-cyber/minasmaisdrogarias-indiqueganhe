@@ -3,43 +3,25 @@
 declare(strict_types=1);
 
 /**
- * AppsFlyer Signature Validator
- * 
- * Validates signature from AppsFlyer webhook requests.
- * Currently disabled - prepared for future integration.
+ * Validador de assinatura AppsFlyer — Status: STUB (Integrations::STATUS_STUB).
+ *
+ * Desabilitado em runtime; aceita assinaturas até HMAC-SHA256 ser configurado.
  */
 class AppsFlyerSignatureValidator
 {
     private bool $enabled = false;
-    private ?string $secret = null;
 
-    public function __construct()
+    public function validate(string $payload, string $signature): IntegrationResult
     {
-        $this->enabled = false; // Disabled for now
-        $this->secret = null;
-    }
+        unset($payload, $signature);
 
-    /**
-     * Validate signature
-     */
-    public function validate(string $payload, string $signature): bool
-    {
         if (!$this->enabled) {
-            return true; // Always return true when disabled
+            return IntegrationResult::ok('Validação de assinatura AppsFlyer desabilitada.');
         }
 
-        if ($this->secret === null) {
-            return false;
-        }
-
-        // TODO: Implement actual signature validation
-        // This will use HMAC-SHA256 to verify the signature
-        return false;
+        return IntegrationResult::falha('Validação de assinatura AppsFlyer ainda não implementada.');
     }
 
-    /**
-     * Check if validator is enabled
-     */
     public function isEnabled(): bool
     {
         return $this->enabled;

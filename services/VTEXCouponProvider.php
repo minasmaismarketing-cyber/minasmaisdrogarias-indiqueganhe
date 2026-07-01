@@ -3,43 +3,29 @@
 declare(strict_types=1);
 
 /**
- * VTEX Coupon Provider
- * 
- * Future integration for generating and validating coupons through VTEX.
- * This provider will sync coupons with the VTEX e-commerce platform.
+ * Provider de cupom VTEX — Status: STUB (Integrations::STATUS_STUB).
+ *
+ * Preparado para sincronizar geração e validação de cupons com a VTEX.
+ * Ativação futura: configurar credenciais VTEX e implementar chamadas HTTP.
  */
 class VTEXCouponProvider implements CouponProviderInterface
 {
-    public function generateCode(array $data): string
+    public function generateCode(array $data): IntegrationResult
     {
-        // TODO: Implement VTEX API integration
-        // This will:
-        // 1. Generate coupon in VTEX system
-        // 2. Return the VTEX coupon code
-        // 3. Sync with internal system
-        
-        return [
-            'valid' => false,
-            'reason' => 'VTEX integration not yet implemented',
-        ];
+        unset($data);
+
+        return IntegrationResult::falha('Integração VTEX ainda não implementada.');
     }
 
-    public function validate(string $code): array
+    public function validate(string $code): IntegrationResult
     {
-        // TODO: Implement VTEX API integration
-        // This will:
-        // 1. Check coupon validity in VTEX
-        // 2. Return validation result
-        
-        return [
-            'valid' => false,
-            'reason' => 'VTEX integration not yet implemented',
-        ];
+        unset($code);
+
+        return IntegrationResult::falha('Integração VTEX ainda não implementada.');
     }
 
-    public function isAvailable(): bool
+    public function isAvailable(): IntegrationResult
     {
-        // TODO: Check if VTEX API credentials are configured
-        return false;
+        return IntegrationResult::falha('Integração VTEX não configurada.');
     }
 }

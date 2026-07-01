@@ -26,6 +26,8 @@ require_once BASE_PATH . '/models/Indicado.php';
 require_once BASE_PATH . '/models/Evento.php';
 require_once BASE_PATH . '/enums/InstallType.php';
 require_once BASE_PATH . '/enums/AppsFlyerStatus.php';
+require_once BASE_PATH . '/services/IntegrationResult.php';
+require_once BASE_PATH . '/services/Integrations.php';
 require_once BASE_PATH . '/services/CouponProviderInterface.php';
 require_once BASE_PATH . '/models/HistoricoValidacao.php';
 require_once BASE_PATH . '/models/HistoricoCupom.php';

@@ -47,11 +47,20 @@ class CupomService
 
         // Generate coupon code
         $provider = $this->couponProvider ?? new InternalCouponProvider();
-        $codigo = $provider->generateCode([
+        $generation = $provider->generateCode([
             'usuario_id' => $usuarioId,
             'indicacao_id' => $indicacaoId,
             'campanha_id' => $campanhaAtiva['id'],
         ]);
+
+        if (!$generation->sucesso) {
+            throw new RuntimeException($generation->mensagem);
+        }
+
+        $codigo = (string) ($generation->dados['codigo'] ?? '');
+        if ($codigo === '') {
+            throw new RuntimeException('Provider de cupom não retornou código válido.');
+        }
 
         // Create coupon
         $cupomId = $this->repository->create([

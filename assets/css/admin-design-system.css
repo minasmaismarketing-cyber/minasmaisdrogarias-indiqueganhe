@@ -18,6 +18,17 @@
     --admin-card-title-size: 1rem;
     --admin-body-size: 0.875rem;
     --admin-label-size: 0.8125rem;
+    /* Form fields — aligned with .form-group input (style.css) */
+    --admin-field-min-height: 44px;
+    --admin-field-padding: 0.625rem 0.875rem;
+    --admin-field-border: 1px solid #D9DDE3;
+    --admin-field-radius: var(--radius-input);
+    --admin-field-font-size: 1rem;
+    --admin-field-bg: var(--white);
+    --admin-field-color: var(--black);
+    --admin-field-transition: border-color var(--transition), box-shadow var(--transition);
+    --admin-field-focus-border: var(--primary);
+    --admin-field-focus-shadow: 0 0 0 3px rgba(215, 25, 32, 0.12);
 }
 
 /* ── Page head ── */
@@ -469,6 +480,25 @@
     justify-content: center;
     gap: var(--admin-space-sm);
     margin-top: var(--admin-space-md);
+}
+
+/* ── Form fields (select = input parity) ── */
+.page--admin select {
+    min-height: var(--admin-field-min-height);
+    padding: var(--admin-field-padding);
+    border: var(--admin-field-border);
+    border-radius: var(--admin-field-radius);
+    font-size: var(--admin-field-font-size);
+    font-family: inherit;
+    color: var(--admin-field-color);
+    background: var(--admin-field-bg);
+    transition: var(--admin-field-transition);
+}
+
+.page--admin select:focus {
+    outline: none;
+    border-color: var(--admin-field-focus-border);
+    box-shadow: var(--admin-field-focus-shadow);
 }
 
 /* ── Tables ── */

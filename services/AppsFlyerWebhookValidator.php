@@ -3,37 +3,25 @@
 declare(strict_types=1);
 
 /**
- * AppsFlyer Webhook Validator
- * 
- * Validates webhook requests from AppsFlyer.
- * Currently disabled - prepared for future integration.
+ * Validador de webhook AppsFlyer — Status: STUB (Integrations::STATUS_STUB).
+ *
+ * Desabilitado em runtime; aceita requisições até verificação de assinatura ser implementada.
  */
 class AppsFlyerWebhookValidator
 {
     private bool $enabled = false;
 
-    public function __construct()
+    public function validate(array $payload, string $signature): IntegrationResult
     {
-        $this->enabled = false; // Disabled for now
-    }
+        unset($payload, $signature);
 
-    /**
-     * Validate webhook request
-     */
-    public function validate(array $payload, string $signature): bool
-    {
         if (!$this->enabled) {
-            return true; // Always return true when disabled
+            return IntegrationResult::ok('Validação de webhook AppsFlyer desabilitada.');
         }
 
-        // TODO: Implement actual webhook validation
-        // This will verify the signature from AppsFlyer
-        return false;
+        return IntegrationResult::falha('Validação de webhook AppsFlyer ainda não implementada.');
     }
 
-    /**
-     * Check if validator is enabled
-     */
     public function isEnabled(): bool
     {
         return $this->enabled;

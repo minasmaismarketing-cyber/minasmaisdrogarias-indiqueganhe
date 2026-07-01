@@ -3,43 +3,23 @@
 declare(strict_types=1);
 
 /**
- * AppsFlyer Payload Validator
- * 
- * Validates payload structure from AppsFlyer webhook requests.
- * Currently disabled - prepared for future integration.
+ * Validador de payload AppsFlyer — Status: STUB (Integrations::STATUS_STUB).
+ *
+ * Desabilitado em runtime; retorna sucesso permissivo até webhook AppsFlyer ser ativado.
  */
 class AppsFlyerPayloadValidator
 {
     private bool $enabled = false;
 
-    public function __construct()
-    {
-        $this->enabled = false; // Disabled for now
-    }
-
-    /**
-     * Validate payload structure
-     */
-    public function validate(array $payload): array
+    public function validate(array $payload): IntegrationResult
     {
         if (!$this->enabled) {
-            return ['valid' => true, 'errors' => []];
+            return IntegrationResult::ok('Validação de payload AppsFlyer desabilitada.', ['payload' => $payload]);
         }
 
-        $errors = [];
-
-        // TODO: Implement actual payload validation
-        // This will check required fields and data types
-
-        return [
-            'valid' => empty($errors),
-            'errors' => $errors,
-        ];
+        return IntegrationResult::falha('Validação de payload AppsFlyer ainda não implementada.');
     }
 
-    /**
-     * Check if validator is enabled
-     */
     public function isEnabled(): bool
     {
         return $this->enabled;
