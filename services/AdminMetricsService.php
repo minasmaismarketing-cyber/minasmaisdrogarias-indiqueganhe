@@ -33,14 +33,14 @@ class AdminMetricsService
     private const EFFECTIVE_STATUS_SQL = 'COALESCE(
         v.status,
         CASE i.status
-            WHEN :st_aguardando THEN :vf_aguardando_cadastro
-            WHEN :st_link THEN :vf_aguardando_cadastro
-            WHEN :st_cadastro_pendente THEN :vf_aguardando_validacao
-            WHEN :st_validado THEN :vf_aprovado
-            WHEN :st_premio THEN :vf_aprovado
-            WHEN :st_invalido THEN :vf_reprovado
-            WHEN :st_expirado THEN :vf_cancelado
-            ELSE :vf_aguardando_cadastro
+            WHEN :st_aguardando THEN :vf_aguardando_cadastro_es1
+            WHEN :st_link THEN :vf_aguardando_cadastro_es2
+            WHEN :st_cadastro_pendente THEN :vf_aguardando_validacao_es1
+            WHEN :st_validado THEN :vf_aprovado_es1
+            WHEN :st_premio THEN :vf_aprovado_es2
+            WHEN :st_invalido THEN :vf_reprovado_es1
+            WHEN :st_expirado THEN :vf_cancelado_es1
+            ELSE :vf_aguardando_cadastro_es3
         END
     )';
 
@@ -218,12 +218,12 @@ class AdminMetricsService
         $statusParams = $this->statusBindParams();
         $sql = 'SELECT
                     COUNT(*) AS total_indicacoes,
-                    SUM(CASE WHEN admin_status = :vf_aguardando_cadastro THEN 1 ELSE 0 END) AS aguardando_cadastro,
-                    SUM(CASE WHEN admin_status IN (:vf_pendente, :vf_aguardando_validacao) THEN 1 ELSE 0 END) AS aguardando_validacao,
-                    SUM(CASE WHEN admin_status = :vf_em_analise THEN 1 ELSE 0 END) AS em_analise,
-                    SUM(CASE WHEN admin_status IN (:vf_aprovado, :vf_beneficio) THEN 1 ELSE 0 END) AS aprovadas,
-                    SUM(CASE WHEN admin_status = :vf_reprovado THEN 1 ELSE 0 END) AS reprovadas,
-                    SUM(CASE WHEN admin_status = :vf_cancelado THEN 1 ELSE 0 END) AS canceladas
+                    SUM(CASE WHEN admin_status = :vf_aguardando_cadastro_m1 THEN 1 ELSE 0 END) AS aguardando_cadastro,
+                    SUM(CASE WHEN admin_status IN (:vf_pendente_m1, :vf_aguardando_validacao_m2) THEN 1 ELSE 0 END) AS aguardando_validacao,
+                    SUM(CASE WHEN admin_status = :vf_em_analise_m1 THEN 1 ELSE 0 END) AS em_analise,
+                    SUM(CASE WHEN admin_status IN (:vf_aprovado_m3, :vf_beneficio_m1) THEN 1 ELSE 0 END) AS aprovadas,
+                    SUM(CASE WHEN admin_status = :vf_reprovado_m2 THEN 1 ELSE 0 END) AS reprovadas,
+                    SUM(CASE WHEN admin_status = :vf_cancelado_m2 THEN 1 ELSE 0 END) AS canceladas
                 FROM (
                     SELECT ' . self::EFFECTIVE_STATUS_SQL . ' AS admin_status
                     FROM indicacoes i
@@ -255,10 +255,10 @@ class AdminMetricsService
     {
         $sql = 'SELECT
                     COUNT(*) AS cupons_gerados,
-                    SUM(CASE WHEN status = :utilizado THEN 1 ELSE 0 END) AS cupons_utilizados,
+                    SUM(CASE WHEN status = :utilizado_m1 THEN 1 ELSE 0 END) AS cupons_utilizados,
                     SUM(CASE WHEN status = :disponivel THEN 1 ELSE 0 END) AS disponiveis,
                     SUM(CASE WHEN status = :reservado THEN 1 ELSE 0 END) AS reservados,
-                    SUM(CASE WHEN status = :utilizado THEN 1 ELSE 0 END) AS utilizados,
+                    SUM(CASE WHEN status = :utilizado_m2 THEN 1 ELSE 0 END) AS utilizados,
                     SUM(CASE WHEN status = :expirado THEN 1 ELSE 0 END) AS expirados,
                     SUM(CASE WHEN status = :cancelado THEN 1 ELSE 0 END) AS cancelados
                 FROM cupons
@@ -266,7 +266,8 @@ class AdminMetricsService
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(array_merge([
-            'utilizado' => Cupom::STATUS_UTILIZADO,
+            'utilizado_m1' => Cupom::STATUS_UTILIZADO,
+            'utilizado_m2' => Cupom::STATUS_UTILIZADO,
             'disponivel' => Cupom::STATUS_DISPONIVEL,
             'reservado' => Cupom::STATUS_RESERVADO,
             'expirado' => Cupom::STATUS_EXPIRADO,
@@ -303,6 +304,12 @@ class AdminMetricsService
     /** @return array<string, string> */
     private function statusBindParams(): array
     {
+        $aguardandoCadastro = ValidacaoIndicacao::STATUS_AGUARDANDO_CADASTRO;
+        $aguardandoValidacao = ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO;
+        $aprovado = ValidacaoIndicacao::STATUS_APROVADO;
+        $reprovado = ValidacaoIndicacao::STATUS_REPROVADO;
+        $cancelado = ValidacaoIndicacao::STATUS_CANCELADO;
+
         return [
             'st_aguardando' => Indicacao::STATUS_AGUARDANDO,
             'st_link' => Indicacao::STATUS_LINK_ACESSADO,
@@ -311,14 +318,22 @@ class AdminMetricsService
             'st_premio' => Indicacao::STATUS_PREMIO_LIBERADO,
             'st_invalido' => Indicacao::STATUS_INVALIDO,
             'st_expirado' => Indicacao::STATUS_EXPIRADO,
-            'vf_aguardando_cadastro' => ValidacaoIndicacao::STATUS_AGUARDANDO_CADASTRO,
-            'vf_pendente' => ValidacaoIndicacao::STATUS_PENDENTE,
-            'vf_aguardando_validacao' => ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO,
-            'vf_em_analise' => ValidacaoIndicacao::STATUS_EM_ANALISE,
-            'vf_aprovado' => ValidacaoIndicacao::STATUS_APROVADO,
-            'vf_beneficio' => ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,
-            'vf_reprovado' => ValidacaoIndicacao::STATUS_REPROVADO,
-            'vf_cancelado' => ValidacaoIndicacao::STATUS_CANCELADO,
+            'vf_aguardando_cadastro_es1' => $aguardandoCadastro,
+            'vf_aguardando_cadastro_es2' => $aguardandoCadastro,
+            'vf_aguardando_cadastro_es3' => $aguardandoCadastro,
+            'vf_aguardando_cadastro_m1' => $aguardandoCadastro,
+            'vf_aguardando_validacao_es1' => $aguardandoValidacao,
+            'vf_aguardando_validacao_m2' => $aguardandoValidacao,
+            'vf_pendente_m1' => ValidacaoIndicacao::STATUS_PENDENTE,
+            'vf_em_analise_m1' => ValidacaoIndicacao::STATUS_EM_ANALISE,
+            'vf_aprovado_es1' => $aprovado,
+            'vf_aprovado_es2' => $aprovado,
+            'vf_aprovado_m3' => $aprovado,
+            'vf_beneficio_m1' => ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,
+            'vf_reprovado_es1' => $reprovado,
+            'vf_reprovado_m2' => $reprovado,
+            'vf_cancelado_es1' => $cancelado,
+            'vf_cancelado_m2' => $cancelado,
         ];
     }
 }
