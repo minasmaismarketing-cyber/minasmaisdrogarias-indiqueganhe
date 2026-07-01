@@ -42,6 +42,8 @@ require_once BASE_PATH . '/services/CupomService.php';
 require_once BASE_PATH . '/services/AdminMetricsService.php';
 require_once BASE_PATH . '/services/AppsFlyerEventData.php';
 require_once BASE_PATH . '/services/AppsFlyerConfig.php';
+require_once BASE_PATH . '/services/KobeApiIntegration.php';
+require_once BASE_PATH . '/services/HomologacaoIntegrationStatus.php';
 require_once BASE_PATH . '/services/AppsFlyerIntegrationLogger.php';
 require_once BASE_PATH . '/services/AppsFlyerDiagnosticService.php';
 require_once BASE_PATH . '/services/AppsFlyerService.php';

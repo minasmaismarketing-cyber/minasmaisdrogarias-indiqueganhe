@@ -1,5 +1,8 @@
 /**
  * Landing /convite — AppsFlyer Smart Script V2 + fallback APP_DOWNLOAD_URL
+ *
+ * Toda a URL do OneLink é gerada exclusivamente por
+ * window.AF_SMART_SCRIPT.generateOneLinkURL() — sem montagem manual.
  */
 (function () {
     'use strict';
@@ -50,18 +53,46 @@
         });
     }
 
+    /**
+     * Parâmetros oficiais AppsFlyer (pid, c, deep_link_value, af_sub1–5).
+     * ref é lido automaticamente da query string (?ref=) via keys: ['ref'].
+     */
     function buildAfParameters(config) {
-        var refValue = config.ref || readRefFromUrl();
+        var refFallback = readRefFromUrl();
 
         return {
-            mediaSource: { keys: [], defaultValue: config.mediaSource || '' },
-            campaign: { keys: [], defaultValue: config.campaign || '' },
-            deepLinkValue: { keys: [], defaultValue: config.deepLinkValue || 'indique' },
-            afSub1: { keys: ['ref'], defaultValue: refValue },
-            afSub2: { keys: [], defaultValue: config.usuarioId || '' },
-            afSub3: { keys: [], defaultValue: config.campaign || '' },
-            afSub4: { keys: [], defaultValue: config.deepLinkSub4 || 'indique_ganhe' },
-            afSub5: { keys: [], defaultValue: config.deepLinkSub5 || 'homolog' },
+            mediaSource: {
+                keys: [],
+                defaultValue: config.mediaSource || 'User_invite',
+            },
+            campaign: {
+                keys: [],
+                defaultValue: config.campaign || 'Indique e Ganhe Minas Mais',
+            },
+            deepLinkValue: {
+                keys: ['ref'],
+                defaultValue: refFallback,
+            },
+            afSub1: {
+                keys: ['ref'],
+                defaultValue: refFallback,
+            },
+            afSub2: {
+                keys: [],
+                defaultValue: config.afSub2 || '1',
+            },
+            afSub3: {
+                keys: [],
+                defaultValue: config.campaign || 'Indique e Ganhe Minas Mais',
+            },
+            afSub4: {
+                keys: [],
+                defaultValue: config.afSub4 || 'indique_ganhe',
+            },
+            afSub5: {
+                keys: [],
+                defaultValue: config.afSub5 || 'homolog',
+            },
         };
     }
 
@@ -85,10 +116,17 @@
                 return;
             }
 
-            var result = smartScript.generateOneLinkURL({
-                oneLinkURL: config.oneLinkURL,
-                afParameters: buildAfParameters(config),
-            });
+            var result;
+
+            try {
+                result = smartScript.generateOneLinkURL({
+                    oneLinkURL: config.oneLinkURL,
+                    afParameters: buildAfParameters(config),
+                });
+            } catch (error) {
+                applyFallback(button, fallbackUrl);
+                return;
+            }
 
             if (result && result.clickURL) {
                 button.setAttribute('href', result.clickURL);

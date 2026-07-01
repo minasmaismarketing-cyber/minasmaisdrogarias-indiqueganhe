@@ -15,6 +15,9 @@
         <?= $content ?? '' ?>
     </main>
     <?php if (!empty($valid) && !empty($smartScriptPayload['enabled'])): ?>
+        <script>
+            window.__CONVITE_AF__ = <?= json_encode($smartScriptPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        </script>
         <script src="<?= asset('js/convite-landing.js') ?>" defer></script>
     <?php endif; ?>
     <?php if (!empty($valid)): ?>

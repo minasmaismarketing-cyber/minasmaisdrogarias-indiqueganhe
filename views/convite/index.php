@@ -5,15 +5,6 @@ $nome = (string) ($indicadorPrimeiroNome ?? '');
 $link = (string) ($appDownloadUrl ?? '#');
 $linkDisabled = $link === '#';
 
-$indicadorUsuarioId = '';
-$smartScriptPayload = ['enabled' => false, 'scriptUrl' => ''];
-
-if (!empty($valid) && !empty($ref)) {
-    $indicadorRow = (new Usuario())->findByCodigo((string) $ref);
-    $indicadorUsuarioId = $indicadorRow ? (string) ($indicadorRow['id'] ?? '') : '';
-    $smartScriptPayload = convite_smart_script_payload((string) $ref, $indicadorUsuarioId);
-}
-
 ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -193,9 +184,6 @@ if (!empty($valid) && !empty($ref)) {
             </article>
         </section>
 
-        <script>
-            window.__CONVITE_AF__ = <?= json_encode($smartScriptPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-        </script>
         <script src="<?= asset('js/landing-convite.js') ?>" defer></script>
     <?php endif; ?>
 </div>

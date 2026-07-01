@@ -298,6 +298,7 @@ class AdminController extends Controller
 
         $this->view('admin.configuracoes', [
             'title' => 'Configurações',
+            'integrationRows' => HomologacaoIntegrationStatus::getIntegrationRows(),
         ], 'admin');
     }
 }

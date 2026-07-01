@@ -68,6 +68,7 @@ class ConviteController extends Controller
             'valid' => $valid,
             'indicadorPrimeiroNome' => $indicadorPrimeiroNome,
             'appDownloadUrl' => app_download_url(),
+            'smartScriptPayload' => $valid ? convite_smart_script_payload() : ['enabled' => false, 'scriptUrl' => ''],
         ], 'convite');
     }
 
