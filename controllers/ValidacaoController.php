@@ -280,7 +280,7 @@ class ValidacaoController extends Controller
 
         if ($nomeIndicado !== '') {
             $events[] = [
-                'date' => (string) ($indicacao['updated_at'] ?? $validacao['created_at']),
+                'date' => (string) ($indicacao !== null ? ($indicacao['updated_at'] ?? $validacao['created_at']) : $validacao['created_at']),
                 'label' => 'Cadastro',
                 'icon' => '📝',
                 'description' => $nomeIndicado,

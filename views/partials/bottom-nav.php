@@ -19,12 +19,12 @@ $onIndicacoes = $currentPath === '/indicacoes';
         </span>
         <span>Indicações</span>
     </a>
-    <button type="button" class="mm-bottom-nav__item is-disabled" disabled aria-disabled="true">
+    <a href="<?= url('/meus-cupons') ?>" class="mm-bottom-nav__item <?= $currentPath === '/meus-cupons' ? 'is-active' : '' ?>">
         <span class="mm-bottom-nav__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 1-2-2 2 2 0 0 1 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-8H6a2 2 0 0 1-2-2"/></svg>
         </span>
         <span>Cupom</span>
-    </button>
+    </a>
     <a href="<?= url('/perfil') ?>" class="mm-bottom-nav__item <?= $currentPath === '/perfil' ? 'is-active' : '' ?>">
         <span class="mm-bottom-nav__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>

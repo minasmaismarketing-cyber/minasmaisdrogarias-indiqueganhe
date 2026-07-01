@@ -34,7 +34,7 @@ class CuponsController extends Controller
 
         $total = $this->cupomRepository->countFiltered($filters);
         $cupons = $this->cupomRepository->findAll($filters, $limit, $offset);
-        $stats = (new AdminMetricsService())->getCupomStatusMetrics();
+        $stats = (new Cupom())->getFilteredStats($filters);
         $campanhas = (new Campanha())->findAll();
         $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
 

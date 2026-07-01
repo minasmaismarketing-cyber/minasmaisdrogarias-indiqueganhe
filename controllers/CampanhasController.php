@@ -24,7 +24,7 @@ class CampanhasController extends Controller
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!Csrf::validateRequest()) {
                 Session::flash('error', 'Token de segurança inválido.');
-                $this->redirect('/admin/campanhas');
+                $this->redirect('/admin/campanhas/criar');
             }
 
             $nome = Validator::sanitizeString($_POST['nome'] ?? '', 150);
@@ -151,7 +151,7 @@ class CampanhasController extends Controller
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!Csrf::validateRequest()) {
                 Session::flash('error', 'Token de segurança inválido.');
-                $this->redirect('/admin/campanhas');
+                $this->redirect('/admin/campanhas/editar/' . $id);
             }
 
             $nome = Validator::sanitizeString($_POST['nome'] ?? '', 150);

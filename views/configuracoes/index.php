@@ -48,7 +48,7 @@ declare(strict_types=1);
             <span>👤</span>
             <span>Meu perfil</span>
         </a>
-        <a href="<?= url('/minhas-indicacoes') ?>" class="quick-links__item">
+        <a href="<?= url('/indicacoes') ?>" class="quick-links__item">
             <span>📋</span>
             <span>Minhas indicações</span>
         </a>

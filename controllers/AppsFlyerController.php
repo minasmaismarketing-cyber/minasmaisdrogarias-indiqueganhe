@@ -18,6 +18,7 @@ class AppsFlyerController extends Controller
         Auth::requireAdmin();
 
         $filters = [
+            'status' => $_GET['status'] ?? '',
             'af_status' => $_GET['status'] ?? '',
             'platform' => $_GET['platform'] ?? '',
             'install_type' => $_GET['install_type'] ?? '',
@@ -26,7 +27,7 @@ class AppsFlyerController extends Controller
         ];
 
         $events = $this->appsFlyerRepository->findAll($filters);
-        $stats = $this->appsFlyerRepository->getStats();
+        $stats = $this->appsFlyerRepository->getStats($filters);
         $recentEvents = $this->appsFlyerRepository->listRecent(10);
         $integrationEnabled = $this->appsFlyerService->isEnabled();
 

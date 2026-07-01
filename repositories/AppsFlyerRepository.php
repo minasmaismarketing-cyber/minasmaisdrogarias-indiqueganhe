@@ -46,9 +46,9 @@ class AppsFlyerRepository
         $this->appsFlyerEventModel->updateStatus($id, $status);
     }
 
-    public function getStats(): array
+    public function getStats(array $filters = []): array
     {
-        return $this->appsFlyerEventModel->getStats();
+        return $this->appsFlyerEventModel->getStats($filters);
     }
 
     public function countByStatus(string $status): int

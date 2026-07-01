@@ -289,7 +289,10 @@ class ReferralService
             'origem' => 'WEB',
         ]);
 
-        return (int) $db->lastInsertId();
+        $indicacaoId = (int) $db->lastInsertId();
+        $this->ensureValidacaoForIndicacao($indicacaoId, $usuarioId, null);
+
+        return $indicacaoId;
     }
 
     private function recordLinkAccess(int $usuarioId, string $codigo): int
@@ -308,7 +311,10 @@ class ReferralService
             'origem' => 'WEB',
         ]);
 
-        return (int) $db->lastInsertId();
+        $indicacaoId = (int) $db->lastInsertId();
+        $this->ensureValidacaoForIndicacao($indicacaoId, $usuarioId, null);
+
+        return $indicacaoId;
     }
 
     private function completeIndicacaoRegistration(

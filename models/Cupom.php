@@ -118,6 +118,47 @@ class Cupom extends Model
         return (int) ($row['total'] ?? 0);
     }
 
+    /** @param array<string, mixed> $filters
+     *  @return array<string, int>
+     */
+    public function getFilteredStats(array $filters = []): array
+    {
+        $sql = 'SELECT
+                    COUNT(*) AS cupons_gerados,
+                    SUM(CASE WHEN c.status = :disponivel THEN 1 ELSE 0 END) AS disponiveis,
+                    SUM(CASE WHEN c.status = :reservado THEN 1 ELSE 0 END) AS reservados,
+                    SUM(CASE WHEN c.status = :utilizado THEN 1 ELSE 0 END) AS utilizados,
+                    SUM(CASE WHEN c.status = :expirado THEN 1 ELSE 0 END) AS expirados,
+                    SUM(CASE WHEN c.status = :cancelado THEN 1 ELSE 0 END) AS cancelados
+                FROM cupons c
+                LEFT JOIN usuarios u ON c.usuario_id = u.id
+                LEFT JOIN indicacoes i ON c.indicacao_id = i.id
+                LEFT JOIN campanhas cam ON c.campanha_id = cam.id
+                WHERE 1=1';
+        $params = [
+            'disponivel' => self::STATUS_DISPONIVEL,
+            'reservado' => self::STATUS_RESERVADO,
+            'utilizado' => self::STATUS_UTILIZADO,
+            'expirado' => self::STATUS_EXPIRADO,
+            'cancelado' => self::STATUS_CANCELADO,
+        ];
+
+        $this->applyListFilters($sql, $params, $filters);
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'cupons_gerados' => (int) ($row['cupons_gerados'] ?? 0),
+            'disponiveis' => (int) ($row['disponiveis'] ?? 0),
+            'reservados' => (int) ($row['reservados'] ?? 0),
+            'utilizados' => (int) ($row['utilizados'] ?? 0),
+            'expirados' => (int) ($row['expirados'] ?? 0),
+            'cancelados' => (int) ($row['cancelados'] ?? 0),
+        ];
+    }
+
     /** @return array<string, mixed>|null */
     public function findByIdForAdmin(int $id): ?array
     {

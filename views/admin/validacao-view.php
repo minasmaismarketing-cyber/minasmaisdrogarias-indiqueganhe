@@ -9,7 +9,7 @@ $codigoIndicacao = '—';
 if ($indicacao !== null) {
     $codigoIndicacao = (string) ($indicacao['codigo_referencia'] ?? $indicacao['codigo_indicador'] ?? '—');
 }
-$indicacaoDate = $indicacao['created_at'] ?? $validacao['created_at'];
+$indicacaoDate = $indicacao !== null ? ($indicacao['created_at'] ?? $validacao['created_at']) : $validacao['created_at'];
 ?>
 
 <?php admin_detail_card('Dados da Indicação', [

@@ -136,9 +136,10 @@
                         <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
                         <button type="submit" class="btn btn--sm btn--success">Aprovar</button>
                     </form>
-                    <form method="POST" action="<?= url('/admin/validacoes/rejeitar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja rejeitar?');">
+                    <form method="POST" action="<?= url('/admin/validacoes/rejeitar') ?>" class="inline-form" onsubmit="var m=prompt('Informe o motivo da rejeição:'); if(!m||!m.trim()){return false;} this.motivo.value=m.trim(); return confirm('Tem certeza que deseja rejeitar?');">
                         <?= csrf_field() ?>
                         <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
+                        <input type="hidden" name="motivo" value="">
                         <button type="submit" class="btn btn--sm btn--danger">Rejeitar</button>
                     </form>
                 <?php endif; ?>
