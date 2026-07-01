@@ -6,11 +6,12 @@ declare(strict_types=1);
  * Montagem de links OneLink AppsFlyer — Sprint 3.1.
  *
  * Parâmetros oficiais AppsFlyer (OneLink):
- * - deep_link_value  → destino principal do deep link (código indicador)
- * - deep_link_sub1   → sub-parâmetro 1 (código indicador / ref)
- * - deep_link_sub2   → sub-parâmetro 2 (ID interno do usuário indicador)
- * - deep_link_sub3   → sub-parâmetro 3 (campanha)
- * - deep_link_sub4   → sub-parâmetro 4 (origem do convite)
+ * - deep_link_value  → rota/deep link fixo do app (`indique`)
+ * - deep_link_sub1   → código indicador (ref)
+ * - deep_link_sub2   → ID interno do usuário indicador
+ * - deep_link_sub3   → campanha (default_campaign)
+ * - deep_link_sub4   → origem do convite (`indique_ganhe`)
+ * - deep_link_sub5   → ambiente (`homolog`; em produção usar `production`)
  * - pid              → media source (attribution)
  * - c                → nome da campanha (attribution)
  *
@@ -20,7 +21,11 @@ declare(strict_types=1);
  */
 final class OneLinkBuilder
 {
+    private const DEEP_LINK_VALUE = 'indique';
     private const ORIGEM_CONVITE = 'indique_ganhe';
+
+    /** Homologação; em produção alterar para `production`. */
+    private const AMBIENTE = 'homolog';
 
     /** @var list<string> */
     private const QUERY_PARAM_KEYS = [
@@ -31,6 +36,7 @@ final class OneLinkBuilder
         'deep_link_sub2',
         'deep_link_sub3',
         'deep_link_sub4',
+        'deep_link_sub5',
     ];
 
     /** @var array<string, mixed> */
@@ -88,11 +94,12 @@ final class OneLinkBuilder
         $params = [
             'pid' => $mediaSource,
             'c' => $campanha,
-            'deep_link_value' => $codigo,
+            'deep_link_value' => self::DEEP_LINK_VALUE,
             'deep_link_sub1' => $codigo,
             'deep_link_sub2' => $usuarioId,
             'deep_link_sub3' => $campanha,
             'deep_link_sub4' => $origem,
+            'deep_link_sub5' => self::AMBIENTE,
         ];
 
         $ordered = [];

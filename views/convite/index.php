@@ -1,30 +1,73 @@
-<section class="convite-page animate-slide">
+<section class="convite-landing animate-slide">
     <?php if (!$valid): ?>
-        <div class="mm-card">
-            <h1 class="convite-page__title">Convite indisponível</h1>
-            <p class="convite-page__text"><?= e($error) ?></p>
+        <div class="convite-landing__card convite-landing__card--error">
+            <div class="convite-landing__logo">
+                <img
+                    src="<?= e(brand_logo_url()) ?>"
+                    alt="Minas Mais Drogaria e Perfumaria"
+                    class="convite-landing__logo-img"
+                    width="220"
+                    height="48"
+                    loading="eager"
+                >
+            </div>
+            <h1 class="convite-landing__title">Convite indisponível</h1>
+            <p class="convite-landing__text"><?= e($error) ?></p>
             <a href="<?= url('/') ?>" class="btn btn--block">Voltar ao início</a>
         </div>
     <?php else: ?>
-        <div class="convite-page__logo">
-            <img src="<?= e(brand_logo_url()) ?>" alt="" class="convite-page__logo-img">
-        </div>
+        <div class="convite-landing__card">
+            <div class="convite-landing__logo">
+                <img
+                    src="<?= e(brand_logo_url()) ?>"
+                    alt="Minas Mais Drogaria e Perfumaria"
+                    class="convite-landing__logo-img"
+                    width="220"
+                    height="48"
+                    loading="eager"
+                >
+            </div>
 
-        <div class="mm-card mm-card--highlight">
-            <h1 class="convite-page__title">Indique amigos e ganhe benefícios</h1>
-            <p class="convite-page__text">
-                Participe do programa de indicação da Minas Mais e aproveite vantagens exclusivas.
+            <p class="convite-landing__badge">🎁 Você foi indicado!</p>
+
+            <h1 class="convite-landing__title">
+                <?php if ($indicadorPrimeiroNome !== ''): ?>
+                    <span class="convite-landing__referrer"><?= e($indicadorPrimeiroNome) ?></span>
+                    quer dividir um benefício com você!
+                <?php else: ?>
+                    Alguém especial quer dividir um benefício com você!
+                <?php endif; ?>
+            </h1>
+
+            <section class="convite-landing__benefits" aria-labelledby="convite-benefits-title">
+                <h2 id="convite-benefits-title" class="convite-landing__section-title">Você ganha:</h2>
+                <ul class="convite-landing__list">
+                    <li>✅ 5% OFF na primeira compra</li>
+                    <li>✅ Entrega rápida em até 30 minutos</li>
+                    <li>✅ Promoções exclusivas no aplicativo</li>
+                </ul>
+            </section>
+
+            <section class="convite-landing__steps" aria-labelledby="convite-steps-title">
+                <h2 id="convite-steps-title" class="convite-landing__section-title">Como funciona?</h2>
+                <ol class="convite-landing__steps-list">
+                    <li>1️⃣ Baixe o aplicativo</li>
+                    <li>2️⃣ <strong>Faça seu cadastro</strong></li>
+                    <li>3️⃣ Seu desconto será liberado automaticamente</li>
+                </ol>
+            </section>
+
+            <a
+                href="<?= e($appDownloadUrl) ?>"
+                class="convite-landing__cta btn btn--block"
+                <?= $appDownloadUrl === '#' ? 'role="button" aria-disabled="true"' : 'target="_blank" rel="noopener noreferrer"' ?>
+            >
+                BAIXAR O APP
+            </a>
+
+            <p class="convite-landing__footnote">
+                Oferta válida para novos cadastros realizados através desta indicação.
             </p>
-
-            <form method="POST" action="<?= url('/convite/participar') ?>" class="convite-page__form">
-                <?= csrf_field() ?>
-                <input type="hidden" name="ref" value="<?= e($ref) ?>">
-                <button type="submit" class="btn btn--block btn--primary">Participar</button>
-            </form>
         </div>
     <?php endif; ?>
 </section>
-
-<footer class="page-footer">
-    <p>© 2026 - Criado por NEXDEN Digital</p>
-</footer>

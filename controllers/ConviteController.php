@@ -10,6 +10,9 @@ class ConviteController extends Controller
         $error = '';
         $valid = false;
 
+        $indicadorPrimeiroNome = '';
+        $indicadorNomeCompleto = '';
+
         if ($ref === '') {
             $error = 'Link de convite inválido.';
         } else {
@@ -47,17 +50,25 @@ class ConviteController extends Controller
                     if (!$result['valid']) {
                         $error = $result['error'];
                         $valid = false;
+                    } else {
+                        $referrer = $result['user'] ?? null;
+                        if (is_array($referrer)) {
+                            $indicadorNomeCompleto = trim((string) ($referrer['nome'] ?? ''));
+                            $indicadorPrimeiroNome = first_name_from_full($indicadorNomeCompleto);
+                        }
                     }
                 }
             }
         }
 
         $this->view('convite.index', [
-            'title' => 'Convite especial',
+            'title' => 'Você foi indicado!',
             'ref' => $ref,
             'error' => $error,
             'valid' => $valid,
-        ], 'main');
+            'indicadorPrimeiroNome' => $indicadorPrimeiroNome,
+            'appDownloadUrl' => app_download_url(),
+        ], 'convite');
     }
 
     public function participar(): void

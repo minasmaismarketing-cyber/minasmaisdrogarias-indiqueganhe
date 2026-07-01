@@ -44,6 +44,7 @@ $labels = [
     'deep_link_sub2' => 'Deep Link Sub2',
     'deep_link_sub3' => 'Deep Link Sub3',
     'deep_link_sub4' => 'Deep Link Sub4',
+    'deep_link_sub5' => 'Deep Link Sub5',
     'pid' => 'pid',
     'c' => 'c',
     'link_type' => 'Link Type',

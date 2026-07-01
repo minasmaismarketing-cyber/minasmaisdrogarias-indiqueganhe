@@ -49,6 +49,7 @@ final class AppsFlyerDiagnosticService
      *     deep_link_sub2: string,
      *     deep_link_sub3: string,
      *     deep_link_sub4: string,
+     *     deep_link_sub5: string,
      *     pid: string,
      *     c: string
      * }
@@ -72,6 +73,7 @@ final class AppsFlyerDiagnosticService
             'deep_link_sub2' => (string) ($params['deep_link_sub2'] ?? ''),
             'deep_link_sub3' => (string) ($params['deep_link_sub3'] ?? ''),
             'deep_link_sub4' => (string) ($params['deep_link_sub4'] ?? ''),
+            'deep_link_sub5' => (string) ($params['deep_link_sub5'] ?? ''),
             'pid' => (string) ($params['pid'] ?? ''),
             'c' => (string) ($params['c'] ?? ''),
         ];

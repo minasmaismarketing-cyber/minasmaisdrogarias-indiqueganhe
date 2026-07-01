@@ -132,6 +132,34 @@ function brand_logo_url(): string
     return asset('images/logo-placeholder.svg');
 }
 
+function first_name_from_full(?string $nome, string $fallback = 'Alguém'): string
+{
+    $nome = trim((string) $nome);
+
+    if ($nome === '') {
+        return $fallback;
+    }
+
+    $parts = preg_split('/\s+/u', $nome) ?: [];
+
+    return $parts[0] !== '' ? $parts[0] : $fallback;
+}
+
+function app_download_url(): string
+{
+    static $url = null;
+
+    if ($url !== null) {
+        return $url;
+    }
+
+    $configured = trim((string) Env::get('APP_DOWNLOAD_URL', ''));
+
+    $url = $configured !== '' ? $configured : '#';
+
+    return $url;
+}
+
 function e(?string $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');

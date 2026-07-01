@@ -4318,3 +4318,145 @@ code {
     }
 }
 
+/* ==========================================================================
+   Landing Page — Convite (/convite?ref=)
+   ========================================================================== */
+
+.page--convite {
+    background: linear-gradient(180deg, var(--primary-light) 0%, var(--white) 42%);
+    min-height: 100dvh;
+}
+
+.convite-landing-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 1.25rem 1rem 2rem;
+}
+
+.convite-landing {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.convite-landing__card {
+    background: var(--white);
+    border-radius: var(--radius-card);
+    box-shadow: 0 8px 32px rgba(18, 18, 18, 0.08);
+    padding: 1.75rem 1.25rem 1.5rem;
+    text-align: center;
+}
+
+.convite-landing__card--error {
+    padding: 2rem 1.25rem;
+}
+
+.convite-landing__logo {
+    margin-bottom: 1.5rem;
+}
+
+.convite-landing__logo-img {
+    display: block;
+    max-height: 56px;
+    width: auto;
+    max-width: min(240px, 78vw);
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+.convite-landing__badge {
+    margin: 0 0 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--black);
+}
+
+.convite-landing__title {
+    margin: 0 0 1.5rem;
+    font-size: 1.25rem;
+    line-height: 1.45;
+    font-weight: 600;
+    color: var(--black);
+}
+
+.convite-landing__referrer {
+    font-weight: 700;
+}
+
+.convite-landing__section-title {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: left;
+    color: var(--black);
+}
+
+.convite-landing__benefits,
+.convite-landing__steps {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.convite-landing__list,
+.convite-landing__steps-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--gray-700);
+}
+
+.convite-landing__steps-list {
+    counter-reset: none;
+}
+
+.convite-landing__steps-list strong {
+    color: var(--black);
+    font-weight: 700;
+}
+
+.convite-landing__cta {
+    margin-top: 0.25rem;
+    min-height: 52px;
+    font-size: 1.0625rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    background: var(--primary);
+    box-shadow: 0 4px 14px rgba(215, 25, 32, 0.35);
+}
+
+.convite-landing__cta:hover,
+.convite-landing__cta:focus-visible {
+    background: var(--primary-dark);
+    color: var(--white);
+}
+
+.convite-landing__footnote {
+    margin: 1rem 0 0;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--gray-700);
+}
+
+.convite-landing__text {
+    margin: 0 0 1.25rem;
+    color: var(--gray-700);
+    font-size: 0.9375rem;
+}
+
+@media (min-width: 480px) {
+    .convite-landing__card {
+        padding: 2rem 1.75rem 1.75rem;
+    }
+
+    .convite-landing__title {
+        font-size: 1.375rem;
+    }
+}
+

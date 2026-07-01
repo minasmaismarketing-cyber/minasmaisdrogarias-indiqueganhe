@@ -12,8 +12,9 @@ declare(strict_types=1);
 return [
     /**
      * Enable or disable AppsFlyer integration
+     * Sprint 3.3: false mantém Dashboard compartilhando /convite?ref= (landing WEB)
      */
-    'enabled' => true,
+    'enabled' => false,
 
     /**
      * Modo homologação — logs detalhados e endpoint de teste
