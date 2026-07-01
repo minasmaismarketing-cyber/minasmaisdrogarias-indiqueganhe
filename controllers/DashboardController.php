@@ -20,7 +20,7 @@ class DashboardController extends Controller
             $this->redirect('/login');
         }
 
-        $referral = new ReferralService();
+        $inviteLinkService = new InviteLinkService();
         $userId = (int) $user['id'];
         $codigo = (string) $user['codigo_indicador'];
 
@@ -66,7 +66,7 @@ class DashboardController extends Controller
         }
 
         $linkStats = $linkModel->getStatsByUsuario($userId);
-        $linkUrl = $link ? (string) $link['url'] : $referral->inviteLink($codigo);
+        $linkUrl = $inviteLinkService->getInviteLink($user);
 
         $this->view('dashboard.index', [
             'title' => 'Meu painel',
@@ -96,13 +96,14 @@ class DashboardController extends Controller
         }
 
         $referral = new ReferralService();
+        $inviteLinkService = new InviteLinkService();
         $codigo = (string) $user['codigo_indicador'];
         $referral->logShare((int) $user['id'], $codigo);
 
         $this->eventLogger->logLinkCompartilhado((int) $user['id'], $codigo);
 
         Session::flash('success', 'Link de indicação registrado!');
-        Session::flash('share_link', $referral->inviteLink($codigo));
+        Session::flash('share_link', $inviteLinkService->getInviteLink($user));
         $this->redirect('/dashboard');
     }
 }

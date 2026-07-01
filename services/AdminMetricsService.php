@@ -46,6 +46,15 @@ class AdminMetricsService
 
     private PDO $db;
 
+    /** @var array<string, string>|null */
+    private ?array $statusBindParamsCache = null;
+
+    /** @var array<string, array<string, int>> */
+    private array $indicacaoMetricsCache = [];
+
+    /** @var array<string, array<string, int>> */
+    private array $cupomMetricsCache = [];
+
     public function __construct()
     {
         $this->db = Database::getConnection();
@@ -86,11 +95,11 @@ class AdminMetricsService
     /** @return array<string, int|float> */
     public function getMetricsForCampanha(int $campanhaId): array
     {
-        $scopeSql = 'i.id IN (
-            SELECT DISTINCT c.indicacao_id
+        $scopeSql = 'EXISTS (
+            SELECT 1
             FROM cupons c
-            WHERE c.campanha_id = :campanha_id
-              AND c.indicacao_id IS NOT NULL
+            WHERE c.indicacao_id = i.id
+              AND c.campanha_id = :campanha_id
         )';
         $params = ['campanha_id' => $campanhaId];
 
@@ -215,6 +224,11 @@ class AdminMetricsService
     /** @return array<string, int> */
     private function fetchIndicacaoMetrics(string $whereSql, array $params): array
     {
+        $cacheKey = $this->metricsCacheKey($whereSql, $params);
+        if (isset($this->indicacaoMetricsCache[$cacheKey])) {
+            return $this->indicacaoMetricsCache[$cacheKey];
+        }
+
         $statusParams = $this->statusBindParams();
         $sql = 'SELECT
                     COUNT(*) AS total_indicacoes,
@@ -238,7 +252,7 @@ class AdminMetricsService
         $aguardandoCadastro = (int) ($row['aguardando_cadastro'] ?? 0);
         $aguardandoValidacao = (int) ($row['aguardando_validacao'] ?? 0);
 
-        return [
+        $result = [
             'total_indicacoes' => (int) ($row['total_indicacoes'] ?? 0),
             'aguardando_cadastro' => $aguardandoCadastro,
             'aguardando_validacao' => $aguardandoValidacao,
@@ -248,11 +262,20 @@ class AdminMetricsService
             'reprovadas' => (int) ($row['reprovadas'] ?? 0),
             'canceladas' => (int) ($row['canceladas'] ?? 0),
         ];
+
+        $this->indicacaoMetricsCache[$cacheKey] = $result;
+
+        return $result;
     }
 
     /** @return array<string, int> */
     private function fetchCupomMetrics(string $whereSql, array $params): array
     {
+        $cacheKey = $this->metricsCacheKey($whereSql, $params);
+        if (isset($this->cupomMetricsCache[$cacheKey])) {
+            return $this->cupomMetricsCache[$cacheKey];
+        }
+
         $sql = 'SELECT
                     COUNT(*) AS cupons_gerados,
                     SUM(CASE WHEN status = :utilizado_m1 THEN 1 ELSE 0 END) AS cupons_utilizados,
@@ -275,7 +298,7 @@ class AdminMetricsService
         ], $params));
         $row = $stmt->fetch() ?: [];
 
-        return [
+        $result = [
             'cupons_gerados' => (int) ($row['cupons_gerados'] ?? 0),
             'cupons_utilizados' => (int) ($row['cupons_utilizados'] ?? 0),
             'total' => (int) ($row['cupons_gerados'] ?? 0),
@@ -285,6 +308,18 @@ class AdminMetricsService
             'expirados' => (int) ($row['expirados'] ?? 0),
             'cancelados' => (int) ($row['cancelados'] ?? 0),
         ];
+
+        $this->cupomMetricsCache[$cacheKey] = $result;
+
+        return $result;
+    }
+
+    /** @param array<string, mixed> $params */
+    private function metricsCacheKey(string $whereSql, array $params): string
+    {
+        ksort($params);
+
+        return md5($whereSql . '|' . serialize($params));
     }
 
     private function countValidacoesForCampanha(int $campanhaId): int
@@ -304,13 +339,17 @@ class AdminMetricsService
     /** @return array<string, string> */
     private function statusBindParams(): array
     {
+        if ($this->statusBindParamsCache !== null) {
+            return $this->statusBindParamsCache;
+        }
+
         $aguardandoCadastro = ValidacaoIndicacao::STATUS_AGUARDANDO_CADASTRO;
         $aguardandoValidacao = ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO;
         $aprovado = ValidacaoIndicacao::STATUS_APROVADO;
         $reprovado = ValidacaoIndicacao::STATUS_REPROVADO;
         $cancelado = ValidacaoIndicacao::STATUS_CANCELADO;
 
-        return [
+        return $this->statusBindParamsCache = [
             'st_aguardando' => Indicacao::STATUS_AGUARDANDO,
             'st_link' => Indicacao::STATUS_LINK_ACESSADO,
             'st_cadastro_pendente' => Indicacao::STATUS_CADASTRO_PENDENTE,

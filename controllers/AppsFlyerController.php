@@ -107,4 +107,16 @@ class AppsFlyerController extends Controller
 
         $this->redirect('/admin/appsflyer');
     }
+
+    public function diagnostico(): void
+    {
+        Auth::requireAdmin();
+
+        $diagnosticService = new AppsFlyerDiagnosticService();
+
+        $this->view('admin.appsflyer-diagnostico', [
+            'title' => 'Diagnóstico AppsFlyer',
+            'snapshot' => $diagnosticService->getSnapshot(),
+        ], 'admin');
+    }
 }

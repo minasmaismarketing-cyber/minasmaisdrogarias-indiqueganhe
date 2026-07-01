@@ -27,7 +27,7 @@ class ReferralService
 
     public function inviteLink(string $codigo): string
     {
-        return url('/convite?ref=' . urlencode($codigo));
+        return (new InviteLinkService())->getInviteLinkByCodigo($codigo);
     }
 
     /** @return array{valid: bool, user: array<string, mixed>|null, error: string} */

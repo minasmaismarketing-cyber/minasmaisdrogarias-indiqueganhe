@@ -231,9 +231,7 @@ class Usuario extends Model
      */
     public function findAllAdmin(array $filters = [], int $limit = 20, int $offset = 0): array
     {
-        $sql = 'SELECT u.*,
-                       (SELECT COUNT(*) FROM indicacoes i WHERE i.usuario_id = u.id) AS total_indicacoes,
-                       (SELECT COUNT(*) FROM cupons c WHERE c.usuario_id = u.id) AS total_cupons
+        $sql = 'SELECT u.*
                 FROM usuarios u
                 WHERE 1=1';
         $params = [];
@@ -250,7 +248,91 @@ class Usuario extends Model
         $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll();
+        $rows = $stmt->fetchAll();
+        if ($rows === []) {
+            return [];
+        }
+
+        $usuarioIds = array_map(static fn (array $row): int => (int) $row['id'], $rows);
+        $indicacaoCounts = $this->countIndicacoesByUsuarioIds($usuarioIds);
+        $cupomCounts = $this->countCuponsByUsuarioIds($usuarioIds);
+
+        foreach ($rows as &$row) {
+            $userId = (int) $row['id'];
+            $row['total_indicacoes'] = $indicacaoCounts[$userId] ?? 0;
+            $row['total_cupons'] = $cupomCounts[$userId] ?? 0;
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    /** @param list<int> $usuarioIds
+     *  @return array<int, int>
+     */
+    private function countIndicacoesByUsuarioIds(array $usuarioIds): array
+    {
+        $usuarioIds = array_values(array_unique(array_filter(array_map('intval', $usuarioIds))));
+        if ($usuarioIds === []) {
+            return [];
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach ($usuarioIds as $index => $id) {
+            $key = 'uid_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $id;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT usuario_id, COUNT(*) AS total
+             FROM indicacoes
+             WHERE usuario_id IN (' . implode(', ', $placeholders) . ')
+             GROUP BY usuario_id'
+        );
+        $stmt->execute($params);
+
+        $counts = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $counts[(int) $row['usuario_id']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    /** @param list<int> $usuarioIds
+     *  @return array<int, int>
+     */
+    private function countCuponsByUsuarioIds(array $usuarioIds): array
+    {
+        $usuarioIds = array_values(array_unique(array_filter(array_map('intval', $usuarioIds))));
+        if ($usuarioIds === []) {
+            return [];
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach ($usuarioIds as $index => $id) {
+            $key = 'uid_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $id;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT usuario_id, COUNT(*) AS total
+             FROM cupons
+             WHERE usuario_id IN (' . implode(', ', $placeholders) . ')
+             GROUP BY usuario_id'
+        );
+        $stmt->execute($params);
+
+        $counts = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $counts[(int) $row['usuario_id']] = (int) $row['total'];
+        }
+
+        return $counts;
     }
 
     /** @param array<string, mixed> $filters */

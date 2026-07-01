@@ -44,6 +44,15 @@ class Indicacao extends Model
         END
     )';
 
+    /** @var array<int, array<string, mixed>> */
+    private static array $adminListSummaryCache = [];
+
+    /** @var array<int, string> */
+    private static array $adminListCampanhaNomeCache = [];
+
+    /** @var string|null */
+    private static ?string $adminListEnrichmentKey = null;
+
     /** @return array<string, int> */
     public function statsByUsuario(int $usuarioId): array
     {
@@ -418,15 +427,22 @@ class Indicacao extends Model
                        v.motivo_bloqueio AS validacao_motivo_bloqueio,
                        v.created_at AS validacao_created_at,
                        v.updated_at AS validacao_updated_at,
-                       (SELECT c.id FROM cupons c WHERE c.indicacao_id = i.id ORDER BY c.created_at DESC LIMIT 1) AS cupom_id,
-                       (SELECT c.codigo FROM cupons c WHERE c.indicacao_id = i.id ORDER BY c.created_at DESC LIMIT 1) AS cupom_codigo,
-                       (SELECT c.status FROM cupons c WHERE c.indicacao_id = i.id ORDER BY c.created_at DESC LIMIT 1) AS cupom_status,
-                       (SELECT c.created_at FROM cupons c WHERE c.indicacao_id = i.id ORDER BY c.created_at DESC LIMIT 1) AS cupom_created_at,
+                       c_latest.id AS cupom_id,
+                       c_latest.codigo AS cupom_codigo,
+                       c_latest.status AS cupom_status,
+                       c_latest.created_at AS cupom_created_at,
                        ' . self::ADMIN_EFFECTIVE_STATUS_SQL . ' AS admin_status
                 FROM indicacoes i
                 INNER JOIN usuarios u_ind ON i.usuario_id = u_ind.id
                 LEFT JOIN validacao_indicacoes v ON v.indicacao_id = i.id
                 LEFT JOIN usuarios u_indicado ON v.usuario_indicado_id = u_indicado.id
+                LEFT JOIN cupons c_latest ON c_latest.id = (
+                    SELECT c2.id
+                    FROM cupons c2
+                    WHERE c2.indicacao_id = i.id
+                    ORDER BY c2.created_at DESC, c2.id DESC
+                    LIMIT 1
+                )
                 WHERE 1=1';
     }
 
@@ -575,10 +591,56 @@ class Indicacao extends Model
      */
     public function findSummaryByIds(array $ids): array
     {
-        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        $ids = $this->normalizeIdList($ids);
         if ($ids === []) {
             return [];
         }
+
+        $this->loadAdminListEnrichment($ids);
+
+        $map = [];
+        foreach ($ids as $id) {
+            if (isset(self::$adminListSummaryCache[$id])) {
+                $map[$id] = self::$adminListSummaryCache[$id];
+            }
+        }
+
+        return $map;
+    }
+
+    /** @param list<int> $ids
+     *  @return array<int, string>
+     */
+    public function findCampanhaNomesByIndicacaoIds(array $ids): array
+    {
+        $ids = $this->normalizeIdList($ids);
+        if ($ids === []) {
+            return [];
+        }
+
+        $this->loadAdminListEnrichment($ids);
+
+        $map = [];
+        foreach ($ids as $id) {
+            if (isset(self::$adminListCampanhaNomeCache[$id])) {
+                $map[$id] = self::$adminListCampanhaNomeCache[$id];
+            }
+        }
+
+        return $map;
+    }
+
+    /** @param list<int> $ids */
+    private function loadAdminListEnrichment(array $ids): void
+    {
+        $cacheKey = implode(',', $ids);
+        if (self::$adminListEnrichmentKey === $cacheKey) {
+            return;
+        }
+
+        self::$adminListSummaryCache = [];
+        self::$adminListCampanhaNomeCache = [];
+        self::$adminListEnrichmentKey = $cacheKey;
 
         $placeholders = [];
         $params = [];
@@ -589,17 +651,51 @@ class Indicacao extends Model
         }
 
         $stmt = $this->db->prepare(
-            'SELECT id, created_at, updated_at, codigo_referencia, codigo_indicador, nome_indicado, telefone_indicado, status
-             FROM indicacoes
-             WHERE id IN (' . implode(', ', $placeholders) . ')'
+            'SELECT i.id,
+                    i.created_at,
+                    i.updated_at,
+                    i.codigo_referencia,
+                    i.codigo_indicador,
+                    i.nome_indicado,
+                    i.telefone_indicado,
+                    i.status,
+                    (
+                        SELECT cam.nome
+                        FROM cupons c
+                        INNER JOIN campanhas cam ON cam.id = c.campanha_id
+                        WHERE c.indicacao_id = i.id
+                        ORDER BY c.created_at DESC, c.id DESC
+                        LIMIT 1
+                    ) AS campanha_nome
+             FROM indicacoes i
+             WHERE i.id IN (' . implode(', ', $placeholders) . ')'
         );
         $stmt->execute($params);
 
-        $map = [];
         foreach ($stmt->fetchAll() as $row) {
-            $map[(int) $row['id']] = $row;
-        }
+            $id = (int) $row['id'];
+            self::$adminListSummaryCache[$id] = [
+                'id' => $id,
+                'created_at' => $row['created_at'],
+                'updated_at' => $row['updated_at'],
+                'codigo_referencia' => $row['codigo_referencia'],
+                'codigo_indicador' => $row['codigo_indicador'],
+                'nome_indicado' => $row['nome_indicado'],
+                'telefone_indicado' => $row['telefone_indicado'],
+                'status' => $row['status'],
+            ];
 
-        return $map;
+            if (!empty($row['campanha_nome'])) {
+                self::$adminListCampanhaNomeCache[$id] = (string) $row['campanha_nome'];
+            }
+        }
+    }
+
+    /** @param list<int> $ids
+     *  @return list<int>
+     */
+    private function normalizeIdList(array $ids): array
+    {
+        return array_values(array_unique(array_filter(array_map('intval', $ids))));
     }
 }

@@ -71,7 +71,8 @@ class ValidacaoIndicacao extends Model
                        v.motivo_bloqueio AS motivo,
                        u.nome AS usuario_nome,
                        i.nome_indicado,
-                       i.telefone_indicado
+                       i.telefone_indicado,
+                       i.created_at AS indicacao_created_at
                 FROM validacao_indicacoes v
                 LEFT JOIN usuarios u ON v.usuario_indicador_id = u.id
                 LEFT JOIN indicacoes i ON v.indicacao_id = i.id

@@ -6,17 +6,21 @@ class ApiIndicacaoController extends Controller
 {
     private Usuario $usuarioModel;
     private Campanha $campanhaModel;
+    private Indicacao $indicacaoModel;
     private ApiLog $apiLogModel;
     private EventLogger $eventLogger;
     private ReferralService $referralService;
+    private AppsFlyerService $appsFlyerService;
 
     public function __construct()
     {
         $this->usuarioModel = new Usuario();
         $this->campanhaModel = new Campanha();
+        $this->indicacaoModel = new Indicacao();
         $this->apiLogModel = new ApiLog();
         $this->eventLogger = new EventLogger();
         $this->referralService = new ReferralService();
+        $this->appsFlyerService = new AppsFlyerService();
     }
 
     /**
@@ -25,6 +29,7 @@ class ApiIndicacaoController extends Controller
      */
     public function confirmarCadastro(): void
     {
+        $startedAt = microtime(true);
         $endpoint = '/api/indicacao/confirmar-cadastro';
         $ip = $this->getClientIp();
         $payload = $this->getJsonPayload();
@@ -40,7 +45,7 @@ class ApiIndicacaoController extends Controller
                         'message' => "Campo obrigatório: {$field}",
                     ];
                     $statusCode = 400;
-                    $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
+                    $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode, $startedAt);
                     $this->sendJsonResponse($response, $statusCode);
                     return;
                 }
@@ -60,7 +65,7 @@ class ApiIndicacaoController extends Controller
                     'message' => 'tipoEvento inválido. Valores aceitos: INSTALL, REENGAGEMENT, UNKNOWN',
                 ];
                 $statusCode = 400;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
+                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode, $startedAt);
                 $this->sendJsonResponse($response, $statusCode);
                 return;
             }
@@ -72,7 +77,7 @@ class ApiIndicacaoController extends Controller
                     'message' => 'plataforma inválida. Valores aceitos: ANDROID, IOS, WEB',
                 ];
                 $statusCode = 400;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
+                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode, $startedAt);
                 $this->sendJsonResponse($response, $statusCode);
                 return;
             }
@@ -84,7 +89,7 @@ class ApiIndicacaoController extends Controller
                     'message' => 'Nenhuma campanha ativa encontrada',
                 ];
                 $statusCode = 400;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
+                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode, $startedAt);
                 $this->sendJsonResponse($response, $statusCode);
                 return;
             }
@@ -104,20 +109,52 @@ class ApiIndicacaoController extends Controller
                 $indicador = $this->usuarioModel->findByCodigo($codigoIndicador);
                 if ($indicador !== null) {
                     $this->eventLogger->logIndicadoCadastrado((int) $indicador['id'], 'Indicado via API');
+                    $this->persistAppsFlyerMetadata($payload, (int) $indicador['id'], $telefoneIndicado);
                 }
             }
 
             $response = $result;
-            $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
+            $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode, $startedAt);
             $this->sendJsonResponse($response, $statusCode);
         } catch (Exception $e) {
+            AppsFlyerIntegrationLogger::logError('api_kobe', $e->getMessage(), [
+                'endpoint' => $endpoint,
+                'payload' => $payload,
+            ]);
+
             $response = [
                 'success' => false,
                 'message' => 'Erro interno do servidor.',
             ];
             $statusCode = 500;
-            $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
+            $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode, $startedAt);
             $this->sendJsonResponse($response, $statusCode);
+        }
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function persistAppsFlyerMetadata(array $payload, int $indicadorId, string $telefoneIndicado): void
+    {
+        if (!AppsFlyerEventData::hasApiMetadata($payload)) {
+            return;
+        }
+
+        try {
+            $indicacao = $this->indicacaoModel->findActiveByReferrerAndPhone($indicadorId, $telefoneIndicado);
+            $indicacaoId = $indicacao !== null ? (int) $indicacao['id'] : null;
+            $eventData = AppsFlyerEventData::fromApiPayload($payload);
+
+            $this->appsFlyerService->processApiEvent($eventData, $indicacaoId, $indicadorId);
+        } catch (Throwable $e) {
+            AppsFlyerIntegrationLogger::logError('api_kobe', $e->getMessage(), [
+                'indicador_id' => $indicadorId,
+                'payload' => $payload,
+            ]);
+
+            Logger::warning('Failed to persist AppsFlyer metadata from API KOBE', [
+                'indicador_id' => $indicadorId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -151,8 +188,24 @@ class ApiIndicacaoController extends Controller
         return trim($ip);
     }
 
-    private function logApiCall(string $endpoint, array $payload, ?array $response, string $ip, int $statusCode): void
-    {
+    private function logApiCall(
+        string $endpoint,
+        array $payload,
+        ?array $response,
+        string $ip,
+        int $statusCode,
+        float $startedAt
+    ): void {
+        $durationMs = (microtime(true) - $startedAt) * 1000;
+
+        AppsFlyerIntegrationLogger::logApiKobe(
+            $payload,
+            $response ?? [],
+            $statusCode,
+            $ip,
+            $durationMs
+        );
+
         $this->apiLogModel->create([
             'endpoint' => $endpoint,
             'payload' => $payload,

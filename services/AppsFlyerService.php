@@ -12,12 +12,14 @@ class AppsFlyerService
 {
     private AppsFlyerRepository $repository;
     private EventLogger $eventLogger;
+    private Usuario $usuarioModel;
     private array $config;
 
     public function __construct()
     {
         $this->repository = new AppsFlyerRepository();
         $this->eventLogger = new EventLogger();
+        $this->usuarioModel = new Usuario();
         $this->config = $this->loadConfig();
     }
 
@@ -46,12 +48,87 @@ class AppsFlyerService
             'campaign_id' => $campaignId,
             'af_status' => AppsFlyerStatus::PENDING->value,
             'platform' => $platform,
-            'raw_payload' => $payload,
+            'raw_payload' => $payload['raw_payload'] ?? $payload,
         ]);
 
         $this->eventLogger->logAppsflyerEventoRecebido($eventId, $eventName);
 
         return $eventId;
+    }
+
+    /**
+     * Entrada oficial do webhook AppsFlyer (Sprint 3.0).
+     */
+    public function processWebhookEvent(AppsFlyerEventData $eventData): int
+    {
+        $indicacao = $this->findIndicacaoByAppsFlyerId(
+            $eventData->appsflyerId,
+            $eventData->deepLinkSub1
+        );
+        $indicacaoId = $indicacao['id'] ?? null;
+
+        return $this->processEvent($eventData->toPersistenceArray(
+            $indicacaoId !== null ? (int) $indicacaoId : null
+        ));
+    }
+
+    /**
+     * Metadados AppsFlyer enviados pela API KOBE após confirmação de cadastro.
+     */
+    public function processApiEvent(
+        AppsFlyerEventData $eventData,
+        ?int $indicacaoId = null,
+        ?int $usuarioId = null
+    ): int {
+        if ($indicacaoId === null) {
+            $this->findIndicacaoByAppsFlyerId($eventData->appsflyerId, $eventData->deepLinkSub1);
+        }
+
+        return $this->processEvent($eventData->toApiPersistenceArray($indicacaoId, $usuarioId));
+    }
+
+    /**
+     * Preparação Sprint 3.1 — correlação futura entre appsflyer_id e indicação.
+     *
+     * Quando `deepLinkSub1` estiver presente, valida o código do indicador.
+     * A associação completa com `indicacoes` será implementada em sprint futura.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findIndicacaoByAppsFlyerId(?string $appsflyerId, ?string $deepLinkSub1 = null): ?array
+    {
+        $codigoIndicador = $this->resolveCodigoIndicadorFromDeepLink($deepLinkSub1);
+
+        if ($codigoIndicador !== null) {
+            Logger::info('AppsFlyer correlation prepared via deepLinkSub1', [
+                'appsflyer_id' => $appsflyerId,
+                'codigo_indicador' => $codigoIndicador,
+            ]);
+        }
+
+        unset($appsflyerId, $codigoIndicador);
+
+        return null;
+    }
+
+    /**
+     * Localiza código do indicador a partir de deep_link_sub1 / deepLinkSub1.
+     */
+    public function resolveCodigoIndicadorFromDeepLink(?string $deepLinkSub1): ?string
+    {
+        if ($deepLinkSub1 === null || trim($deepLinkSub1) === '') {
+            return null;
+        }
+
+        $codigo = strtoupper(trim($deepLinkSub1));
+
+        if (!preg_match('/^MM[A-Z0-9]{6}$/', $codigo)) {
+            return null;
+        }
+
+        $usuario = $this->usuarioModel->findByCodigo($codigo);
+
+        return $usuario !== null ? $codigo : null;
     }
 
     public function validateEvent(int $eventId): bool
@@ -111,25 +188,16 @@ class AppsFlyerService
 
     public function isEnabled(): bool
     {
-        return $this->config['enabled'] ?? false;
+        return AppsFlyerConfig::isEnabled();
+    }
+
+    public function isHomologation(): bool
+    {
+        return AppsFlyerConfig::isHomologation();
     }
 
     private function loadConfig(): array
     {
-        $configFile = BASE_PATH . '/config/appsflyer.php';
-
-        if (!file_exists($configFile)) {
-            return [
-                'enabled' => false,
-                'api_key' => '',
-                'dev_key' => '',
-                'app_id_android' => '',
-                'app_id_ios' => '',
-                'onelink_template' => '',
-                'endpoint' => '',
-            ];
-        }
-
-        return require $configFile;
+        return AppsFlyerConfig::all();
     }
 }

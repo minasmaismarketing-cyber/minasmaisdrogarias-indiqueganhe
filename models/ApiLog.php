@@ -21,6 +21,31 @@ class ApiLog extends Model
         return (int) $this->db->lastInsertId();
     }
 
+    public function findLatestByEndpoint(string $endpoint): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM api_logs
+             WHERE endpoint = :endpoint
+             ORDER BY created_at DESC
+             LIMIT 1'
+        );
+        $stmt->execute(['endpoint' => $endpoint]);
+        $log = $stmt->fetch();
+
+        if (!$log) {
+            return null;
+        }
+
+        if ($log['payload']) {
+            $log['payload'] = json_decode($log['payload'], true);
+        }
+        if ($log['response']) {
+            $log['response'] = json_decode($log['response'], true);
+        }
+
+        return $log;
+    }
+
     public function findByEndpoint(string $endpoint, int $limit = 100): array
     {
         $stmt = $this->db->prepare(

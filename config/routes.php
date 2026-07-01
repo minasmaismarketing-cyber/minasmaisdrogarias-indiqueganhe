@@ -66,7 +66,10 @@ $router->get('/meus-cupons', 'CuponsController', 'userIndex');
 $router->post('/api/indicacao/confirmar-cadastro', 'ApiIndicacaoController', 'confirmarCadastro', 'ApiAuth');
 
 // AppsFlyer (Etapa 16 - Preparação para Integração AppsFlyer)
+$router->post('/api/appsflyer/webhook', 'AppsFlyerWebhookController', 'receive');
+$router->post('/api/appsflyer/test', 'AppsFlyerTestController', 'receive');
 $router->get('/admin/appsflyer', 'AppsFlyerController', 'adminIndex');
+$router->get('/admin/appsflyer/diagnostico', 'AppsFlyerController', 'diagnostico');
 $router->get('/admin/appsflyer/{id}', 'AppsFlyerController', 'show');
 $router->post('/admin/appsflyer/validar', 'AppsFlyerController', 'validate');
 $router->post('/admin/appsflyer/rejeitar', 'AppsFlyerController', 'reject');

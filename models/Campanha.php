@@ -34,6 +34,11 @@ class Campanha extends Model
         self::FILTER_VIGENCIA_ENCERRADA,
     ];
 
+    private static bool $activeCampanhaLoaded = false;
+
+    /** @var array<string, mixed>|null */
+    private static ?array $activeCampanhaCache = null;
+
     public function create(array $data): int
     {
         $stmt = $this->db->prepare(
@@ -66,19 +71,28 @@ class Campanha extends Model
 
     public function findAll(): array
     {
-        $stmt = $this->db->prepare('SELECT * FROM campanhas ORDER BY created_at DESC');
+        $stmt = $this->db->prepare('SELECT id, nome FROM campanhas ORDER BY created_at DESC');
         $stmt->execute();
+
         return $stmt->fetchAll();
     }
 
     public function findActive(): ?array
     {
+        if (self::$activeCampanhaLoaded) {
+            return self::$activeCampanhaCache;
+        }
+
         $stmt = $this->db->prepare(
             'SELECT * FROM campanhas WHERE status = :status AND CURDATE() BETWEEN inicio AND fim LIMIT 1'
         );
         $stmt->execute(['status' => self::STATUS_ATIVA]);
         $row = $stmt->fetch();
-        return $row ?: null;
+
+        self::$activeCampanhaLoaded = true;
+        self::$activeCampanhaCache = $row ?: null;
+
+        return self::$activeCampanhaCache;
     }
 
     public function findById(int $id): ?array
@@ -309,8 +323,7 @@ class Campanha extends Model
      */
     public function findAllAdmin(array $filters = [], int $limit = 20, int $offset = 0): array
     {
-        $sql = 'SELECT campanhas.*,
-                       ' . $this->adminMetricsSelectSql('campanhas.id') . '
+        $sql = 'SELECT campanhas.*
                 FROM campanhas
                 WHERE 1=1';
         $params = [];
@@ -327,7 +340,23 @@ class Campanha extends Model
         $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll();
+        $rows = $stmt->fetchAll();
+        if ($rows === []) {
+            return [];
+        }
+
+        $campanhaIds = array_map(static fn (array $row): int => (int) $row['id'], $rows);
+        $metrics = $this->fetchAdminMetricsByCampanhaIds($campanhaIds);
+
+        foreach ($rows as &$row) {
+            $campanhaId = (int) $row['id'];
+            $row['total_indicados'] = $metrics[$campanhaId]['total_indicados'] ?? 0;
+            $row['cupons_gerados'] = $metrics[$campanhaId]['cupons_gerados'] ?? 0;
+            $row['cupons_utilizados'] = $metrics[$campanhaId]['cupons_utilizados'] ?? 0;
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /** @param array<string, mixed> $filters */
@@ -401,13 +430,48 @@ class Campanha extends Model
         return $events;
     }
 
-    private function adminMetricsSelectSql(string $campanhaIdColumn): string
+    /** @param list<int> $campanhaIds
+     *  @return array<int, array{total_indicados: int, cupons_gerados: int, cupons_utilizados: int}>
+     */
+    private function fetchAdminMetricsByCampanhaIds(array $campanhaIds): array
     {
-        $utilizado = Cupom::STATUS_UTILIZADO;
+        $campanhaIds = array_values(array_unique(array_filter(array_map('intval', $campanhaIds))));
+        if ($campanhaIds === []) {
+            return [];
+        }
 
-        return "(SELECT COUNT(DISTINCT c.indicacao_id) FROM cupons c WHERE c.campanha_id = {$campanhaIdColumn}) AS total_indicados,
-                (SELECT COUNT(*) FROM cupons c WHERE c.campanha_id = {$campanhaIdColumn}) AS cupons_gerados,
-                (SELECT COUNT(*) FROM cupons c WHERE c.campanha_id = {$campanhaIdColumn} AND c.status = '{$utilizado}') AS cupons_utilizados";
+        $placeholders = [];
+        $params = [
+            'utilizado' => Cupom::STATUS_UTILIZADO,
+        ];
+        foreach ($campanhaIds as $index => $id) {
+            $key = 'cid_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $id;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT c.campanha_id,
+                    COUNT(DISTINCT c.indicacao_id) AS total_indicados,
+                    COUNT(*) AS cupons_gerados,
+                    SUM(CASE WHEN c.status = :utilizado THEN 1 ELSE 0 END) AS cupons_utilizados
+             FROM cupons c
+             WHERE c.campanha_id IN (' . implode(', ', $placeholders) . ')
+             GROUP BY c.campanha_id'
+        );
+        $stmt->execute($params);
+
+        $metrics = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $campanhaId = (int) $row['campanha_id'];
+            $metrics[$campanhaId] = [
+                'total_indicados' => (int) ($row['total_indicados'] ?? 0),
+                'cupons_gerados' => (int) ($row['cupons_gerados'] ?? 0),
+                'cupons_utilizados' => (int) ($row['cupons_utilizados'] ?? 0),
+            ];
+        }
+
+        return $metrics;
     }
 
     /** @param array<string, mixed> $filters

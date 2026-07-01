@@ -329,32 +329,6 @@ class Cupom extends Model
      */
     public function findCampanhaNomesByIndicacaoIds(array $indicacaoIds): array
     {
-        $indicacaoIds = array_values(array_unique(array_filter(array_map('intval', $indicacaoIds))));
-        if ($indicacaoIds === []) {
-            return [];
-        }
-
-        $placeholders = [];
-        $params = [];
-        foreach ($indicacaoIds as $index => $id) {
-            $key = 'id_' . $index;
-            $placeholders[] = ':' . $key;
-            $params[$key] = $id;
-        }
-
-        $stmt = $this->db->prepare(
-            'SELECT c.indicacao_id, cam.nome AS campanha_nome
-             FROM cupons c
-             INNER JOIN campanhas cam ON cam.id = c.campanha_id
-             WHERE c.indicacao_id IN (' . implode(', ', $placeholders) . ')'
-        );
-        $stmt->execute($params);
-
-        $map = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $map[(int) $row['indicacao_id']] = (string) $row['campanha_nome'];
-        }
-
-        return $map;
+        return (new Indicacao())->findCampanhaNomesByIndicacaoIds($indicacaoIds);
     }
 }

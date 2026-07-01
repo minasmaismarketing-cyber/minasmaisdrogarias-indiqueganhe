@@ -3,44 +3,68 @@
 declare(strict_types=1);
 
 /**
- * Configuração AppsFlyer — Status: PREPARADA (Integrations::STATUS_PREPARADA).
+ * Configuração AppsFlyer — Sprint 3.2.1 (homologação OneLink).
  *
- * Campos vazios até credenciais e webhook serem configurados em produção.
+ * OneLink Minas Mais conectado ao backend. Credenciais de API/webhook
+ * permanecem vazias até obtenção no painel AppsFlyer.
  */
 
 return [
     /**
      * Enable or disable AppsFlyer integration
      */
-    'enabled' => false,
+    'enabled' => true,
 
     /**
-     * AppsFlyer API Key
-     * Used for API authentication
+     * Modo homologação — logs detalhados e endpoint de teste
      */
-    'api_key' => '',
+    'homologation' => true,
+
+    /**
+     * OneLink template — URL base criada no painel AppsFlyer
+     */
+    'onelink_template' => 'https://drogariasminasmais.onelink.me/zjoY/indiqueganhe',
 
     /**
      * AppsFlyer Dev Key
-     * Used for development/testing
+     * Preencher com a Dev Key do app no painel AppsFlyer:
+     * App Settings → App Details → Dev Key
      */
     'dev_key' => '',
 
     /**
-     * App ID for Android
+     * App ID Android (package name / ID do app na AppsFlyer)
+     * Preencher em: App Settings → Android app
      */
     'app_id_android' => '',
 
     /**
-     * App ID for iOS
+     * App ID iOS (App Store ID / ID do app na AppsFlyer)
+     * Preencher em: App Settings → iOS app
      */
     'app_id_ios' => '',
 
     /**
-     * OneLink Template
-     * Used for deep linking
+     * Secret para validação de assinatura do webhook (futuro)
+     * Preencher quando configurar postbacks em: Integration → Webhooks
      */
-    'onelink_template' => '',
+    'webhook_secret' => '',
+
+    /**
+     * Media source (pid) — parâmetro de atribuição OneLink
+     */
+    'default_media_source' => 'User_invite',
+
+    /**
+     * Campanha (c) — parâmetro de atribuição OneLink
+     */
+    'default_campaign' => 'Indique e Ganhe Minas Mais',
+
+    /**
+     * AppsFlyer API Key
+     * Preencher em: Integration → API Access
+     */
+    'api_key' => '',
 
     /**
      * AppsFlyer API Endpoint
