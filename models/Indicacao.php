@@ -33,14 +33,14 @@ class Indicacao extends Model
     private const ADMIN_EFFECTIVE_STATUS_SQL = 'COALESCE(
         v.status,
         CASE i.status
-            WHEN :st_aguardando THEN :vf_aguardando_cadastro
-            WHEN :st_link THEN :vf_aguardando_cadastro
-            WHEN :st_cadastro_pendente THEN :vf_aguardando_validacao
-            WHEN :st_validado THEN :vf_aprovado
-            WHEN :st_premio THEN :vf_aprovado
-            WHEN :st_invalido THEN :vf_reprovado
-            WHEN :st_expirado THEN :vf_cancelado
-            ELSE :vf_aguardando_cadastro
+            WHEN :st_aguardando THEN :vf_aguardando_cadastro_es1
+            WHEN :st_link THEN :vf_aguardando_cadastro_es2
+            WHEN :st_cadastro_pendente THEN :vf_aguardando_validacao_es1
+            WHEN :st_validado THEN :vf_aprovado_es1
+            WHEN :st_premio THEN :vf_aprovado_es2
+            WHEN :st_invalido THEN :vf_reprovado_es1
+            WHEN :st_expirado THEN :vf_cancelado_es1
+            ELSE :vf_aguardando_cadastro_es3
         END
     )';
 
@@ -275,7 +275,7 @@ class Indicacao extends Model
                 LEFT JOIN validacao_indicacoes v ON v.indicacao_id = i.id
                 LEFT JOIN usuarios u_indicado ON v.usuario_indicado_id = u_indicado.id
                 WHERE 1=1';
-        $params = $this->adminStatusBindParams();
+        $params = [];
 
         $this->applyAdminFilters($sql, $params, $filters);
 
@@ -378,6 +378,12 @@ class Indicacao extends Model
     /** @return array<string, mixed> */
     private function adminStatusBindParams(): array
     {
+        $aguardandoCadastro = ValidacaoIndicacao::STATUS_AGUARDANDO_CADASTRO;
+        $aguardandoValidacao = ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO;
+        $aprovado = ValidacaoIndicacao::STATUS_APROVADO;
+        $reprovado = ValidacaoIndicacao::STATUS_REPROVADO;
+        $cancelado = ValidacaoIndicacao::STATUS_CANCELADO;
+
         return [
             'st_aguardando' => self::STATUS_AGUARDANDO,
             'st_link' => self::STATUS_LINK_ACESSADO,
@@ -386,11 +392,14 @@ class Indicacao extends Model
             'st_premio' => self::STATUS_PREMIO_LIBERADO,
             'st_invalido' => self::STATUS_INVALIDO,
             'st_expirado' => self::STATUS_EXPIRADO,
-            'vf_aguardando_cadastro' => ValidacaoIndicacao::STATUS_AGUARDANDO_CADASTRO,
-            'vf_aguardando_validacao' => ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO,
-            'vf_aprovado' => ValidacaoIndicacao::STATUS_APROVADO,
-            'vf_reprovado' => ValidacaoIndicacao::STATUS_REPROVADO,
-            'vf_cancelado' => ValidacaoIndicacao::STATUS_CANCELADO,
+            'vf_aguardando_cadastro_es1' => $aguardandoCadastro,
+            'vf_aguardando_cadastro_es2' => $aguardandoCadastro,
+            'vf_aguardando_cadastro_es3' => $aguardandoCadastro,
+            'vf_aguardando_validacao_es1' => $aguardandoValidacao,
+            'vf_aprovado_es1' => $aprovado,
+            'vf_aprovado_es2' => $aprovado,
+            'vf_reprovado_es1' => $reprovado,
+            'vf_cancelado_es1' => $cancelado,
         ];
     }
 
