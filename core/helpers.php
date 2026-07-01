@@ -160,6 +160,49 @@ function app_download_url(): string
     return $url;
 }
 
+/**
+ * URL OneLink base para Smart Script (template + redirection profile).
+ */
+function convite_smart_script_one_link_url(): string
+{
+    $config = AppsFlyerConfig::all();
+    $smart = $config['smart_script'] ?? [];
+
+    $base = rtrim(trim((string) ($smart['one_link_url'] ?? '')), '/');
+    $profile = trim((string) ($smart['redirection_profile'] ?? ''));
+
+    if ($base !== '' && $profile !== '') {
+        return $base . '/' . $profile;
+    }
+
+    if ($base !== '') {
+        return $base . '/';
+    }
+
+    return trim((string) ($config['onelink_template'] ?? ''));
+}
+
+/** @return array<string, mixed> */
+function convite_smart_script_payload(string $ref, string $indicadorUsuarioId = ''): array
+{
+    $config = AppsFlyerConfig::all();
+    $smart = $config['smart_script'] ?? [];
+
+    return [
+        'enabled' => (bool) ($smart['enabled'] ?? false),
+        'scriptUrl' => (string) ($smart['script_url'] ?? ''),
+        'oneLinkURL' => convite_smart_script_one_link_url(),
+        'ref' => strtoupper(trim($ref)),
+        'mediaSource' => (string) ($config['default_media_source'] ?? ''),
+        'campaign' => (string) ($config['default_campaign'] ?? ''),
+        'deepLinkValue' => (string) ($smart['deep_link_value'] ?? 'indique'),
+        'deepLinkSub4' => (string) ($smart['deep_link_sub4'] ?? 'indique_ganhe'),
+        'deepLinkSub5' => (string) ($smart['deep_link_sub5'] ?? 'homolog'),
+        'usuarioId' => $indicadorUsuarioId,
+        'fallbackUrl' => app_download_url(),
+    ];
+}
+
 function e(?string $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');

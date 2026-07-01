@@ -117,4 +117,17 @@ return [
         'log_payloads' => true,
         'log_responses' => true,
     ],
+
+    /**
+     * Smart Script V2 — Landing /convite (Sprint 3.4)
+     */
+    'smart_script' => [
+        'enabled' => true,
+        'script_url' => 'https://onelinksmartscript.appsflyer.com/onelink-smart-script-latest.js',
+        'one_link_url' => 'https://drogariasminasmais.onelink.me/zjoY/',
+        'redirection_profile' => 'indiqueganhe',
+        'deep_link_value' => 'indique',
+        'deep_link_sub4' => 'indique_ganhe',
+        'deep_link_sub5' => 'homolog',
+    ],
 ];
