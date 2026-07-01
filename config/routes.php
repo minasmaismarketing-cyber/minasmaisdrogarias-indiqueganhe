@@ -42,7 +42,9 @@ $router->get('/admin/usuarios/{id}', 'AdminController', 'showUsuario');
 $router->post('/admin/usuarios/bloquear', 'AdminController', 'blockUsuario');
 $router->post('/admin/usuarios/desbloquear', 'AdminController', 'unblockUsuario');
 $router->get('/admin/campanhas', 'AdminController', 'campanhas');
+$router->get('/admin/campanhas/{id}', 'CampanhasController', 'show');
 $router->get('/admin/indicacoes', 'AdminController', 'indicacoes');
+$router->get('/admin/indicacoes/{id}', 'AdminController', 'showIndicacao');
 $router->get('/admin/configuracoes', 'AdminController', 'configuracoes');
 // Validação de indicações (Etapa 13 - Motor de Validação)
 $router->get('/admin/validacoes', 'ValidacaoController', 'adminIndex');
@@ -82,8 +84,7 @@ $router->post('/admin/campanhas/excluir/{id}', 'CampanhasController', 'delete');
 // Notifications
 $router->get('/notificacoes', 'NotificacoesController', 'index');
 
-// Indicados routes
-$router->post('/participar', 'IndicadosController', 'participar');
+// Indicados routes (fluxo alternativo /cadastro-indicado)
 $router->get('/cadastro-indicado', 'IndicadosController', 'cadastro');
 $router->post('/salvar-indicado', 'IndicadosController', 'salvar');
 $router->get('/finalizado', 'IndicadosController', 'finalizado');

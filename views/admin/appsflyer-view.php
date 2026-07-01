@@ -1,87 +1,44 @@
 <?php declare(strict_types=1); ?>
 <?php $subtitle = 'Consulte informações do evento recebido.'; ?>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Informações do Evento</h2>
-        <span class="badge badge--<?= strtolower($event['af_status']) ?>">
-            <?= AppsFlyerStatus::from($event['af_status'])->icon() ?>
-            <?= e(AppsFlyerStatus::from($event['af_status'])->label()) ?>
-        </span>
-    </div>
-
-    <div class="info-grid">
-        <div class="info-grid__item">
-            <span class="info-grid__label">ID</span>
-            <span class="info-grid__value"><?= e($event['id']) ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">AppsFlyer ID</span>
-            <span class="info-grid__value"><?= e($event['appsflyer_id'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Nome do Evento</span>
-            <span class="info-grid__value"><?= e($event['event_name'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Valor do Evento</span>
-            <span class="info-grid__value"><?= e($event['event_value'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Tipo de Instalação</span>
-            <span class="info-grid__value">
-                <?php if ($event['install_type']): ?>
-                    <?= e(InstallType::from($event['install_type'])->label()) ?>
-                <?php else: ?>
-                    N/A
-                <?php endif; ?>
-            </span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Plataforma</span>
-            <span class="info-grid__value"><?= e($event['platform'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Media Source</span>
-            <span class="info-grid__value"><?= e($event['media_source'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Campanha</span>
-            <span class="info-grid__value"><?= e($event['campaign'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Campaign ID</span>
-            <span class="info-grid__value"><?= e($event['campaign_id'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Usuário ID</span>
-            <span class="info-grid__value"><?= e($event['usuario_id'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Indicação ID</span>
-            <span class="info-grid__value"><?= e($event['indicacao_id'] ?? 'N/A') ?></span>
-        </div>
-        <div class="info-grid__item">
-            <span class="info-grid__label">Criado em</span>
-            <span class="info-grid__value"><?= e(date('d/m/Y H:i:s', strtotime($event['created_at']))) ?></span>
-        </div>
-    </div>
-</section>
+<?php
+$eventLines = [
+    ['label' => 'ID:', 'value' => (string) $event['id']],
+    ['label' => 'AppsFlyer ID:', 'value' => (string) ($event['appsflyer_id'] ?? 'N/A')],
+    ['label' => 'Nome do Evento:', 'value' => (string) ($event['event_name'] ?? 'N/A')],
+    ['label' => 'Valor do Evento:', 'value' => (string) ($event['event_value'] ?? 'N/A')],
+    [
+        'label' => 'Tipo de Instalação:',
+        'value' => $event['install_type'] ? InstallType::from($event['install_type'])->label() : 'N/A',
+    ],
+    ['label' => 'Plataforma:', 'value' => (string) ($event['platform'] ?? 'N/A')],
+    ['label' => 'Media Source:', 'value' => (string) ($event['media_source'] ?? 'N/A')],
+    ['label' => 'Campanha:', 'value' => (string) ($event['campaign'] ?? 'N/A')],
+    ['label' => 'Campaign ID:', 'value' => (string) ($event['campaign_id'] ?? 'N/A')],
+    ['label' => 'Usuário ID:', 'value' => (string) ($event['usuario_id'] ?? 'N/A')],
+    ['label' => 'Indicação ID:', 'value' => (string) ($event['indicacao_id'] ?? 'N/A')],
+    ['label' => 'Criado em:', 'value' => date('d/m/Y H:i:s', strtotime($event['created_at']))],
+];
+$eventBadge = '<span class="badge badge--' . strtolower($event['af_status']) . '">'
+    . AppsFlyerStatus::from($event['af_status'])->icon() . ' '
+    . e(AppsFlyerStatus::from($event['af_status'])->label()) . '</span>';
+admin_detail_card('Informações do Evento', $eventLines, $eventBadge);
+?>
 
 <?php if ($event['raw_payload']): ?>
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Payload Original</h2>
-    </div>
+<section class="admin-card">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title">Payload Original</h2>
+    </header>
     <pre class="code-block"><?= e(json_encode($event['raw_payload'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></pre>
 </section>
 <?php endif; ?>
 
 <?php if ($event['af_status'] === AppsFlyerStatus::PENDING->value || $event['af_status'] === AppsFlyerStatus::RECEIVED->value): ?>
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Ações</h2>
-    </div>
+<section class="admin-card">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title">Ações</h2>
+    </header>
     <form method="POST" action="<?= url('/admin/appsflyer/validar') ?>" class="form">
         <?= csrf_field() ?>
         <input type="hidden" name="id" value="<?= $event['id'] ?>">

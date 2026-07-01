@@ -15,30 +15,18 @@ class AdminController extends Controller
     {
         Auth::requireAdmin();
 
-        $indicacaoModel = new Indicacao();
-        $validacaoModel = new ValidacaoIndicacao();
-        $cupomModel = new Cupom();
         $campanhaModel = new Campanha();
-
-        $totalIndicacoes = $indicacaoModel->countAll();
-        $validacaoStats = $validacaoModel->getStats();
-        $cupomStats = $cupomModel->getStats();
-        $cuponsGerados = (int) ($cupomStats['total'] ?? 0);
-
-        $aprovadas = (int) ($validacaoStats['validadas'] ?? 0);
-        $taxaConversao = $totalIndicacoes > 0
-            ? round(($aprovadas / $totalIndicacoes) * 100, 2)
-            : 0;
+        $metrics = (new AdminMetricsService())->getDashboardPayload();
 
         $campanhaAtiva = $campanhaModel->findActive();
         $recentEvents = $this->eventLogger->getRecentEvents(20);
 
         $this->view('admin.dashboard', [
             'title' => 'Admin Dashboard',
-            'totalIndicacoes' => $totalIndicacoes,
-            'validacaoStats' => $validacaoStats,
-            'cuponsGerados' => $cuponsGerados,
-            'taxaConversao' => $taxaConversao,
+            'totalIndicacoes' => $metrics['totalIndicacoes'],
+            'validacaoStats' => $metrics['validacaoStats'],
+            'cuponsGerados' => $metrics['cuponsGerados'],
+            'taxaConversao' => $metrics['taxaConversao'],
             'campanhaAtiva' => $campanhaAtiva,
             'recentEvents' => $recentEvents,
         ], 'admin');
@@ -97,15 +85,7 @@ class AdminController extends Controller
             $this->redirect('/admin/usuarios');
         }
 
-        $indicacaoModel = new Indicacao();
-        $validacaoModel = new ValidacaoIndicacao();
-        $cupomModel = new Cupom();
-
-        $resumo = [
-            'total_indicacoes' => $indicacaoModel->countByUsuario($id),
-            'cupons_gerados' => $cupomModel->countByUsuario($id),
-        ];
-        $resumo = array_merge($resumo, $validacaoModel->statsAdminUsuario($id));
+        $resumo = (new AdminMetricsService())->getMetricsForUsuario($id);
 
         $recentEvents = $this->eventLogger->getUserEvents($id, 50);
         $canBlock = empty($usuario['deleted_at']) && (int) ($usuario['ativo'] ?? 1) === 1 && $id !== (int) (Auth::id() ?? 0);
@@ -181,11 +161,37 @@ class AdminController extends Controller
         Auth::requireAdmin();
 
         $campanhaModel = new Campanha();
-        $campanhas = $campanhaModel->findAll();
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
+
+        $filters = [
+            'nome' => trim((string) ($_GET['nome'] ?? '')),
+            'status' => (string) ($_GET['status'] ?? Campanha::FILTER_TODOS),
+            'vigencia' => (string) ($_GET['vigencia'] ?? Campanha::FILTER_TODOS),
+        ];
+
+        if (!in_array($filters['status'], Campanha::ADMIN_STATUS_FILTERS, true)) {
+            $filters['status'] = Campanha::FILTER_TODOS;
+        }
+
+        if (!in_array($filters['vigencia'], Campanha::ADMIN_VIGENCIA_FILTERS, true)) {
+            $filters['vigencia'] = Campanha::FILTER_TODOS;
+        }
+
+        $total = $campanhaModel->countAllAdmin($filters);
+        $campanhas = $campanhaModel->findAllAdmin($filters, $limit, $offset);
+        $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
 
         $this->view('admin.campanhas', [
             'title' => 'Campanhas',
             'campanhas' => $campanhas,
+            'filters' => $filters,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
+            'hasNext' => $page < $totalPages,
+            'hasPrev' => $page > 1,
         ], 'admin');
     }
 
@@ -194,11 +200,95 @@ class AdminController extends Controller
         Auth::requireAdmin();
 
         $indicacaoModel = new Indicacao();
-        $indicacoes = $indicacaoModel->listAll();
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
+
+        $filters = [
+            'indicador' => trim((string) ($_GET['indicador'] ?? '')),
+            'indicado' => trim((string) ($_GET['indicado'] ?? '')),
+            'cpf' => trim((string) ($_GET['cpf'] ?? '')),
+            'whatsapp' => trim((string) ($_GET['whatsapp'] ?? '')),
+            'codigo' => trim((string) ($_GET['codigo'] ?? '')),
+            'status' => (string) ($_GET['status'] ?? Indicacao::FILTER_TODOS),
+        ];
+
+        if (!in_array($filters['status'], Indicacao::ADMIN_STATUS_FILTERS, true)) {
+            $filters['status'] = Indicacao::FILTER_TODOS;
+        }
+
+        $total = $indicacaoModel->countAllAdmin($filters);
+        $indicacoes = $indicacaoModel->findAllAdmin($filters, $limit, $offset);
+        $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
 
         $this->view('admin.indicacoes', [
             'title' => 'Indicações',
             'indicacoes' => $indicacoes,
+            'filters' => $filters,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
+            'hasNext' => $page < $totalPages,
+            'hasPrev' => $page > 1,
+        ], 'admin');
+    }
+
+    public function showIndicacao(int $id): void
+    {
+        Auth::requireAdmin();
+
+        $indicacaoModel = new Indicacao();
+        $indicacao = $indicacaoModel->findByIdAdmin($id);
+
+        if ($indicacao === null) {
+            Session::flash('error', 'Indicação não encontrada.');
+            $this->redirect('/admin/indicacoes');
+        }
+
+        $cupom = null;
+        if (!empty($indicacao['cupom_id'])) {
+            $cupom = [
+                'id' => $indicacao['cupom_id'],
+                'codigo' => $indicacao['cupom_codigo'],
+                'status' => $indicacao['cupom_status'],
+                'created_at' => $indicacao['cupom_created_at'],
+            ];
+        }
+
+        $validacaoData = null;
+        if (!empty($indicacao['validacao_id'])) {
+            $validacaoData = [
+                'id' => $indicacao['validacao_id'],
+                'status' => $indicacao['validacao_status'],
+                'elegivel' => (int) ($indicacao['validacao_elegivel'] ?? 0),
+                'motivo_bloqueio' => $indicacao['validacao_motivo_bloqueio'],
+                'created_at' => $indicacao['validacao_created_at'],
+                'updated_at' => $indicacao['validacao_updated_at'],
+            ];
+        }
+
+        $validadoEm = null;
+        if ($validacaoData !== null && in_array(
+            (string) $validacaoData['status'],
+            [ValidacaoIndicacao::STATUS_APROVADO, ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO, ValidacaoIndicacao::STATUS_REPROVADO, ValidacaoIndicacao::STATUS_CANCELADO],
+            true
+        )) {
+            $validadoEm = $validacaoData['updated_at'];
+        }
+
+        $timeline = $indicacaoModel->getAdminTimeline(
+            $id,
+            isset($indicacao['validacao_id']) ? (int) $indicacao['validacao_id'] : null,
+            $cupom
+        );
+
+        $this->view('admin.indicacao-view', [
+            'title' => 'Detalhes da Indicação',
+            'indicacao' => $indicacao,
+            'validacao' => $validacaoData,
+            'cupom' => $cupom,
+            'validadoEm' => $validadoEm,
+            'timeline' => $timeline,
         ], 'admin');
     }
 

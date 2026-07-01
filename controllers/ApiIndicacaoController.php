@@ -5,18 +5,18 @@ declare(strict_types=1);
 class ApiIndicacaoController extends Controller
 {
     private Usuario $usuarioModel;
-    private Indicado $indicadoModel;
     private Campanha $campanhaModel;
     private ApiLog $apiLogModel;
     private EventLogger $eventLogger;
+    private ReferralService $referralService;
 
     public function __construct()
     {
         $this->usuarioModel = new Usuario();
-        $this->indicadoModel = new Indicado();
         $this->campanhaModel = new Campanha();
         $this->apiLogModel = new ApiLog();
         $this->eventLogger = new EventLogger();
+        $this->referralService = new ReferralService();
     }
 
     /**
@@ -32,7 +32,6 @@ class ApiIndicacaoController extends Controller
         $statusCode = 200;
 
         try {
-            // Validate required fields
             $requiredFields = ['codigoIndicador', 'cpfIndicado', 'emailIndicado', 'telefoneIndicado', 'tipoEvento', 'plataforma'];
             foreach ($requiredFields as $field) {
                 if (empty($payload[$field])) {
@@ -47,19 +46,15 @@ class ApiIndicacaoController extends Controller
                 }
             }
 
-            // Sanitize data
             $codigoIndicador = $this->sanitize($payload['codigoIndicador']);
-            $cpfIndicado = $this->sanitize($payload['cpfIndicado']);
+            $cpfIndicado = Validator::onlyDigits($this->sanitize($payload['cpfIndicado']));
             $emailIndicado = $this->sanitize($payload['emailIndicado']);
-            $telefoneIndicado = $this->sanitize($payload['telefoneIndicado']);
-            $customerIdVtex = $this->sanitize($payload['customerIdVtex'] ?? '');
-            $appsflyerId = $this->sanitize($payload['appsflyerId'] ?? '');
+            $telefoneIndicado = Validator::onlyDigits($this->sanitize($payload['telefoneIndicado']));
             $tipoEvento = strtoupper($this->sanitize($payload['tipoEvento']));
             $plataforma = strtoupper($this->sanitize($payload['plataforma']));
 
-            // Validate tipoEvento
             $validTiposEvento = ['INSTALL', 'REENGAGEMENT', 'UNKNOWN'];
-            if (!in_array($tipoEvento, $validTiposEvento)) {
+            if (!in_array($tipoEvento, $validTiposEvento, true)) {
                 $response = [
                     'success' => false,
                     'message' => 'tipoEvento inválido. Valores aceitos: INSTALL, REENGAGEMENT, UNKNOWN',
@@ -70,9 +65,8 @@ class ApiIndicacaoController extends Controller
                 return;
             }
 
-            // Validate plataforma
             $validPlataformas = ['ANDROID', 'IOS', 'WEB'];
-            if (!in_array($plataforma, $validPlataformas)) {
+            if (!in_array($plataforma, $validPlataformas, true)) {
                 $response = [
                     'success' => false,
                     'message' => 'plataforma inválida. Valores aceitos: ANDROID, IOS, WEB',
@@ -83,20 +77,6 @@ class ApiIndicacaoController extends Controller
                 return;
             }
 
-            // Check if indicator code exists
-            $indicador = $this->usuarioModel->findByCodigo($codigoIndicador);
-            if ($indicador === null) {
-                $response = [
-                    'success' => false,
-                    'message' => 'Código do indicador não encontrado',
-                ];
-                $statusCode = 404;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
-                $this->sendJsonResponse($response, $statusCode);
-                return;
-            }
-
-            // Check if campaign is active
             $campanhaAtiva = $this->campanhaModel->findActive();
             if ($campanhaAtiva === null) {
                 $response = [
@@ -109,112 +89,27 @@ class ApiIndicacaoController extends Controller
                 return;
             }
 
-            // Check if CPF already participated
-            $cpfExistente = $this->indicadoModel->findByCpf($cpfIndicado);
-            if ($cpfExistente !== null) {
-                $response = [
-                    'success' => false,
-                    'message' => 'CPF já participou do programa',
-                ];
-                $statusCode = 400;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
-                $this->sendJsonResponse($response, $statusCode);
-                return;
+            $result = $this->referralService->registerApiIndication(
+                $codigoIndicador,
+                $cpfIndicado,
+                $emailIndicado,
+                $telefoneIndicado,
+                $tipoEvento
+            );
+
+            $statusCode = (int) ($result['status_code'] ?? 200);
+            unset($result['status_code']);
+
+            if ($result['success'] ?? false) {
+                $indicador = $this->usuarioModel->findByCodigo($codigoIndicador);
+                if ($indicador !== null) {
+                    $this->eventLogger->logIndicadoCadastrado((int) $indicador['id'], 'Indicado via API');
+                }
             }
 
-            // Check if CPF is same as indicator
-            if ($cpfIndicado === $indicador['cpf']) {
-                $response = [
-                    'success' => false,
-                    'message' => 'CPF do indicado não pode ser igual ao CPF do indicador',
-                ];
-                $statusCode = 400;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
-                $this->sendJsonResponse($response, $statusCode);
-                return;
-            }
-
-            // Check if email is duplicate
-            $emailExistente = $this->indicadoModel->findByEmail($emailIndicado);
-            if ($emailExistente !== null) {
-                $response = [
-                    'success' => false,
-                    'message' => 'E-mail já cadastrado',
-                ];
-                $statusCode = 400;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
-                $this->sendJsonResponse($response, $statusCode);
-                return;
-            }
-
-            // Check if phone is duplicate
-            $telefoneExistente = $this->indicadoModel->findByTelefone($telefoneIndicado);
-            if ($telefoneExistente !== null) {
-                $response = [
-                    'success' => false,
-                    'message' => 'Telefone já cadastrado',
-                ];
-                $statusCode = 400;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
-                $this->sendJsonResponse($response, $statusCode);
-                return;
-            }
-
-            // Determine status based on tipoEvento
-            $status = Indicado::STATUS_AGUARDANDO_VALIDACAO;
-            $motivo = null;
-
-            if ($tipoEvento === 'REENGAGEMENT') {
-                $status = Indicado::STATUS_INVALIDADO;
-                $motivo = 'APP_JA_EXISTENTE';
-            } elseif ($tipoEvento === 'UNKNOWN') {
-                $status = Indicado::STATUS_EM_ANALISE;
-            }
-
-            // Create indicado record
-            $indicadoId = $this->indicadoModel->create([
-                'usuario_id' => $indicador['id'],
-                'nome' => 'Indicado via API',
-                'cpf' => $cpfIndicado,
-                'email' => $emailIndicado,
-                'telefone' => $telefoneIndicado,
-                'status' => $status,
-                'motivo' => $motivo,
-                'customer_id_vtex' => $customerIdVtex,
-                'appsflyer_id' => $appsflyerId,
-                'tipo_evento' => $tipoEvento,
-                'plataforma' => $plataforma,
-            ]);
-
-            // Log event
-            $this->eventLogger->logIndicadoCadastrado($indicador['id'], 'Indicado via API');
-
-            // Prepare response
-            if ($status === Indicado::STATUS_AGUARDANDO_VALIDACAO) {
-                $response = [
-                    'success' => true,
-                    'status' => $status,
-                    'message' => 'Cadastro recebido com sucesso.',
-                ];
-            } elseif ($status === Indicado::STATUS_INVALIDADO) {
-                $response = [
-                    'success' => false,
-                    'status' => $status,
-                    'motivo' => $motivo,
-                    'message' => 'Indicação inválida.',
-                ];
-                $statusCode = 400;
-            } else {
-                $response = [
-                    'success' => true,
-                    'status' => $status,
-                    'message' => 'Cadastro recebido e em análise.',
-                ];
-            }
-
+            $response = $result;
             $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode);
             $this->sendJsonResponse($response, $statusCode);
-
         } catch (Exception $e) {
             $response = [
                 'success' => false,
@@ -246,8 +141,7 @@ class ApiIndicacaoController extends Controller
     private function getClientIp(): string
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        
-        // Check for proxy headers
+
         if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             $ip = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
         } elseif (isset($_SERVER['HTTP_X_REAL_IP'])) {

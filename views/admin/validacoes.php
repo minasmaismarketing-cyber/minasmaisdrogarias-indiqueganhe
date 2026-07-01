@@ -1,5 +1,5 @@
 <?php declare(strict_types=1); ?>
-<?php $subtitle = 'Gerencie a validação das indicações.'; ?>
+<?php $subtitle = 'Central operacional de validação das indicações.'; ?>
 
 <?php admin_filter_panel('admin-validacoes-filters', $filters, static function () use ($filters): void { ?>
     <form method="GET" action="<?= url('/admin/validacoes') ?>" class="form admin-filter-panel__form">
@@ -49,85 +49,80 @@
     </form>
 <?php }); ?>
 
-<section class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-card__value"><?= $stats['total'] ?? 0 ?></div>
-        <div class="stat-card__label">Total</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__value"><?= $stats['pendentes'] ?? 0 ?></div>
-        <div class="stat-card__label">Pendentes</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__value"><?= $stats['em_analise'] ?? 0 ?></div>
-        <div class="stat-card__label">Em Análise</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__value"><?= $stats['validadas'] ?? 0 ?></div>
-        <div class="stat-card__label">Validadas</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__value"><?= $stats['invalidadas'] ?? 0 ?></div>
-        <div class="stat-card__label">Inválidas</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__value"><?= $stats['canceladas'] ?? 0 ?></div>
-        <div class="stat-card__label">Canceladas</div>
-    </div>
+<section class="admin-stats stats-grid">
+    <article class="stat-card">
+        <span class="stat-card__value"><?= $stats['pendentes'] ?? 0 ?></span>
+        <span class="stat-card__label">Pendentes</span>
+    </article>
+    <article class="stat-card">
+        <span class="stat-card__value"><?= $stats['em_analise'] ?? 0 ?></span>
+        <span class="stat-card__label">Em análise</span>
+    </article>
+    <article class="stat-card">
+        <span class="stat-card__value"><?= $stats['validadas'] ?? 0 ?></span>
+        <span class="stat-card__label">Aprovadas</span>
+    </article>
+    <article class="stat-card">
+        <span class="stat-card__value"><?= $stats['invalidadas'] ?? 0 ?></span>
+        <span class="stat-card__label">Reprovadas</span>
+    </article>
+    <article class="stat-card">
+        <span class="stat-card__value"><?= $stats['canceladas'] ?? 0 ?></span>
+        <span class="stat-card__label">Canceladas</span>
+    </article>
 </section>
 
-<?php if ($stats['total'] > 0): ?>
-    <?php 
-    $taxaAprovacao = $stats['validadas'] > 0 
-        ? round(($stats['validadas'] / $stats['total']) * 100, 2) 
-        : 0;
-    ?>
-    <section class="mm-card">
-        <div class="mm-card__header">
-            <h2 class="mm-card__title">Taxa de Aprovação</h2>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-bar__fill" style="width: <?= $taxaAprovacao ?>%"></div>
-        </div>
-        <p class="progress-bar__label"><?= $taxaAprovacao ?>%</p>
-    </section>
-<?php endif; ?>
-
 <?php admin_table([
-    'title' => 'Lista de Validações',
+    'title' => 'Central de Validações',
+    'meta' => count($validacoes) . ' registro(s)',
     'emptyMessage' => 'Nenhuma validação encontrada.',
     'columns' => [
-        ['label' => 'Usuário'],
+        ['label' => 'Indicador'],
         ['label' => 'Indicado'],
-        ['label' => 'Data'],
-        ['label' => 'Motivo'],
+        ['label' => 'WhatsApp'],
+        ['label' => 'Campanha'],
         ['label' => 'Status'],
+        ['label' => 'Data da indicação'],
+        ['label' => 'Tempo aguardando'],
         ['label' => 'Ações', 'class' => 'admin-table__col--actions', 'align' => 'right'],
     ],
     'rows' => $validacoes,
-], static function (array $validacao): void { ?>
+], static function (array $validacao): void {
+    $status = (string) $validacao['status'];
+    $waitTime = ValidacaoIndicacao::waitTimeMeta($validacao);
+    $indicacaoDate = (string) ($validacao['indicacao_created_at'] ?? $validacao['created_at']);
+    ?>
     <tr>
         <td class="admin-table__td admin-table__td--wrap admin-table__td--primary">
-            <?= ValidacaoIndicacao::statusIcon($validacao['status']) ?>
-            <?= e($validacao['usuario_nome'] ?? 'N/A') ?>
+            <?= e((string) ($validacao['usuario_nome'] ?? 'N/A')) ?>
         </td>
-        <td class="admin-table__td admin-table__td--wrap"><?= e($validacao['nome_indicado'] ?: '—') ?></td>
-        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($validacao['created_at']))) ?></td>
         <td class="admin-table__td admin-table__td--wrap">
-            <?php if ($validacao['motivo']): ?>
-                <span class="admin-table__meta admin-table__meta--error"><?= e($validacao['motivo']) ?></span>
-            <?php else: ?>
-                —
-            <?php endif; ?>
+            <?= e((string) ($validacao['nome_indicado'] ?: '—')) ?>
         </td>
         <td class="admin-table__td">
-            <span class="badge badge--<?= strtolower($validacao['status']) ?>">
-                <?= e(ValidacaoIndicacao::statusLabel($validacao['status'])) ?>
+            <?= !empty($validacao['telefone_indicado']) ? e(format_phone((string) $validacao['telefone_indicado'])) : '—' ?>
+        </td>
+        <td class="admin-table__td admin-table__td--wrap">
+            <?= e((string) ($validacao['campanha_nome'] ?? '—')) ?>
+        </td>
+        <td class="admin-table__td">
+            <span class="badge <?= e(ValidacaoIndicacao::adminStatusBadgeClass($status)) ?>">
+                <?= ValidacaoIndicacao::adminStatusIcon($status) ?>
+                <?= e(ValidacaoIndicacao::adminStatusLabel($status)) ?>
             </span>
+        </td>
+        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($indicacaoDate))) ?></td>
+        <td class="admin-table__td">
+            <span class="wait-time <?= e($waitTime['class']) ?>"><?= e($waitTime['label']) ?></span>
         </td>
         <td class="admin-table__td admin-table__col--actions">
             <div class="admin-table__actions">
-                <a href="<?= url('/admin/validacoes/' . $validacao['id']) ?>" class="btn btn--sm btn--ghost">Detalhes</a>
+                <a
+                    href="<?= url('/admin/validacoes/' . $validacao['id']) ?>"
+                    class="btn btn--sm btn--ghost"
+                    aria-label="Ver detalhes da validação #<?= (int) $validacao['id'] ?>"
+                    title="Ver detalhes"
+                >👁</a>
                 <?php if (ValidacaoIndicacao::canStartReview($validacao['status'])): ?>
                     <form method="POST" action="<?= url('/admin/validacoes/iniciar') ?>" class="inline-form">
                         <?= csrf_field() ?>

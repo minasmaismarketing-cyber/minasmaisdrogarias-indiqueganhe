@@ -88,7 +88,7 @@ $buildPageUrl = static function (int $page) use ($filters): string {
 <?php }); ?>
 
 <?php if ($totalPages > 1): ?>
-    <nav class="pagination" aria-label="Paginação de usuários">
+    <nav class="admin-pagination pagination" aria-label="Paginação de usuários">
         <?php if ($hasPrev): ?>
             <a href="<?= e($buildPageUrl($currentPage - 1)) ?>" class="pagination__link pagination__link--prev">Anterior</a>
         <?php endif; ?>

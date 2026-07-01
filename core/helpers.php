@@ -234,6 +234,12 @@ function admin_breadcrumbs(): array
         return $crumbs;
     }
 
+    if (preg_match('#^/admin/indicacoes/(\d+)$#', $path) === 1) {
+        $crumbs[] = ['label' => 'Indicações', 'url' => url('/admin/indicacoes')];
+        $crumbs[] = ['label' => 'Detalhes', 'url' => null];
+        return $crumbs;
+    }
+
     if (preg_match('#^/admin/usuarios/(\d+)$#', $path) === 1) {
         $crumbs[] = ['label' => 'Usuários', 'url' => url('/admin/usuarios')];
         $crumbs[] = ['label' => 'Detalhes', 'url' => null];
@@ -254,6 +260,12 @@ function admin_breadcrumbs(): array
 
     if (preg_match('#^/admin/appsflyer/(\d+)$#', $path) === 1) {
         $crumbs[] = ['label' => 'AppsFlyer', 'url' => url('/admin/appsflyer')];
+        $crumbs[] = ['label' => 'Detalhes', 'url' => null];
+        return $crumbs;
+    }
+
+    if (preg_match('#^/admin/campanhas/(\d+)$#', $path) === 1) {
+        $crumbs[] = ['label' => 'Campanhas', 'url' => url('/admin/campanhas')];
         $crumbs[] = ['label' => 'Detalhes', 'url' => null];
         return $crumbs;
     }
@@ -335,4 +347,31 @@ function admin_table(array $config, callable $renderRow): void
     $adminTableClass = trim('admin-table' . (isset($config['class']) ? ' ' . $config['class'] : ''));
     $adminTableRenderRow = $renderRow;
     require BASE_PATH . '/views/partials/admin-table.php';
+}
+
+function admin_empty_state(string $message, string $icon = '📭'): void
+{
+    $adminEmptyMessage = $message;
+    $adminEmptyIcon = $icon;
+    require BASE_PATH . '/views/partials/admin-empty-state.php';
+}
+
+/**
+ * @param list<array{label: string, value: string, html?: bool, highlight?: bool}> $lines
+ */
+function admin_info_lines(array $lines): void
+{
+    $adminInfoLines = $lines;
+    require BASE_PATH . '/views/partials/admin-info-lines.php';
+}
+
+/**
+ * @param list<array{label: string, value: string, html?: bool, highlight?: bool}> $lines
+ */
+function admin_detail_card(string $title, array $lines, ?string $headerBadgeHtml = null): void
+{
+    $adminDetailTitle = $title;
+    $adminDetailHeaderBadge = $headerBadgeHtml;
+    $adminInfoLines = $lines;
+    require BASE_PATH . '/views/partials/admin-detail-card.php';
 }

@@ -33,9 +33,19 @@ class CupomRepository
         return $this->cupomModel->findByIndicacao($indicacaoId);
     }
 
-    public function findAll(array $filters = []): array
+    public function findAll(array $filters = [], int $limit = 0, int $offset = 0): array
     {
-        return $this->cupomModel->findAll($filters);
+        return $this->cupomModel->findAll($filters, $limit, $offset);
+    }
+
+    public function countFiltered(array $filters = []): int
+    {
+        return $this->cupomModel->countFiltered($filters);
+    }
+
+    public function findByIdForAdmin(int $id): ?array
+    {
+        return $this->cupomModel->findByIdForAdmin($id);
     }
 
     public function create(array $data): int
@@ -46,11 +56,6 @@ class CupomRepository
     public function updateStatus(int $id, string $status): void
     {
         $this->cupomModel->updateStatus($id, $status);
-    }
-
-    public function getStats(): array
-    {
-        return $this->cupomModel->getStats();
     }
 
     public function checkExpirados(): int

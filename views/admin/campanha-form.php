@@ -6,7 +6,7 @@ $subtitle = isset($campanha)
     : 'Configure os detalhes da nova campanha.';
 ?>
 
-<section class="mm-card">
+<section class="admin-card">
     <form method="POST" action="<?= url('/admin/campanhas' . (isset($campanha) ? '/editar/' . $campanha['id'] : '/criar')) ?>" class="form">
         <?= csrf_field() ?>
 

@@ -4,7 +4,7 @@
 /** @var bool $filterPanelOpen */
 /** @var callable $renderForm */
 ?>
-<section class="admin-filter-panel mm-card<?= $filterPanelOpen ? ' is-open' : '' ?>" data-admin-filter-panel>
+<section class="admin-filter-panel admin-card<?= $filterPanelOpen ? ' is-open' : '' ?>" data-admin-filter-panel>
     <button
         type="button"
         class="admin-filter-panel__toggle"

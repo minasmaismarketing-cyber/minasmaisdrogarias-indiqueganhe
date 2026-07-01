@@ -26,22 +26,6 @@ class ValidacaoIndicacao extends Model
         self::STATUS_BENEFICIO_LIBERADO,
     ];
 
-    public function createFromIndicacao(int $indicacaoId, ?int $usuarioIndicadorId, ?int $usuarioIndicadoId): int
-    {
-        $stmt = $this->db->prepare(
-            'INSERT INTO validacao_indicacoes (indicacao_id, usuario_indicador_id, usuario_indicado_id, status)
-             VALUES (:indicacao_id, :usuario_indicador_id, :usuario_indicado_id, :status)'
-        );
-        $stmt->execute([
-            'indicacao_id' => $indicacaoId,
-            'usuario_indicador_id' => $usuarioIndicadorId,
-            'usuario_indicado_id' => $usuarioIndicadoId,
-            'status' => self::STATUS_PENDENTE,
-        ]);
-
-        return (int) $this->db->lastInsertId();
-    }
-
     public function findByIndicacao(int $indicacaoId): ?array
     {
         $stmt = $this->db->prepare('SELECT * FROM validacao_indicacoes WHERE indicacao_id = :indicacao_id LIMIT 1');
@@ -147,35 +131,6 @@ class ValidacaoIndicacao extends Model
         $stmt->execute($params);
 
         return $stmt->fetchAll();
-    }
-
-    /** @return array<string, int|string|null> */
-    public function getStats(): array
-    {
-        $pendentes = implode("','", self::STATUSES_PENDENTES);
-        $aprovados = implode("','", self::STATUSES_APROVADOS);
-
-        $stmt = $this->db->query(
-            "SELECT
-                COUNT(*) AS total,
-                SUM(CASE WHEN status IN ('{$pendentes}') THEN 1 ELSE 0 END) AS pendentes,
-                SUM(CASE WHEN status = '" . self::STATUS_EM_ANALISE . "' THEN 1 ELSE 0 END) AS em_analise,
-                SUM(CASE WHEN status IN ('{$aprovados}') THEN 1 ELSE 0 END) AS validadas,
-                SUM(CASE WHEN status = '" . self::STATUS_REPROVADO . "' THEN 1 ELSE 0 END) AS invalidadas,
-                SUM(CASE WHEN status = '" . self::STATUS_CANCELADO . "' THEN 1 ELSE 0 END) AS canceladas
-             FROM validacao_indicacoes"
-        );
-
-        $row = $stmt->fetch();
-
-        return [
-            'total' => (int) ($row['total'] ?? 0),
-            'pendentes' => (int) ($row['pendentes'] ?? 0),
-            'em_analise' => (int) ($row['em_analise'] ?? 0),
-            'validadas' => (int) ($row['validadas'] ?? 0),
-            'invalidadas' => (int) ($row['invalidadas'] ?? 0),
-            'canceladas' => (int) ($row['canceladas'] ?? 0),
-        ];
     }
 
     public function startReview(int $id, ?string $adminEmail = null): bool
@@ -435,36 +390,6 @@ class ValidacaoIndicacao extends Model
         ];
     }
 
-    /** @return array<string, int> */
-    public function statsAdminUsuario(int $usuarioId): array
-    {
-        $pendentes = implode("','", self::STATUSES_PENDENTES);
-        $aprovados = implode("','", self::STATUSES_APROVADOS);
-
-        $stmt = $this->db->prepare(
-            "SELECT
-                SUM(CASE WHEN status IN ('{$pendentes}') THEN 1 ELSE 0 END) AS pendentes,
-                SUM(CASE WHEN status = :em_analise THEN 1 ELSE 0 END) AS em_analise,
-                SUM(CASE WHEN status IN ('{$aprovados}') THEN 1 ELSE 0 END) AS aprovadas,
-                SUM(CASE WHEN status = :reprovado THEN 1 ELSE 0 END) AS reprovadas
-             FROM validacao_indicacoes
-             WHERE usuario_indicador_id = :usuario_id"
-        );
-        $stmt->execute([
-            'em_analise' => self::STATUS_EM_ANALISE,
-            'reprovado' => self::STATUS_REPROVADO,
-            'usuario_id' => $usuarioId,
-        ]);
-        $row = $stmt->fetch();
-
-        return [
-            'pendentes' => (int) ($row['pendentes'] ?? 0),
-            'em_analise' => (int) ($row['em_analise'] ?? 0),
-            'aprovadas' => (int) ($row['aprovadas'] ?? 0),
-            'reprovadas' => (int) ($row['reprovadas'] ?? 0),
-        ];
-    }
-
     /** @return array<int, array<string, mixed>> */
     public function listByUsuarioIndicador(int $usuarioId, int $limit = 50, int $offset = 0): array
     {
@@ -511,5 +436,116 @@ class ValidacaoIndicacao extends Model
             self::STATUS_CANCELADO => '⚫',
             default => '❓',
         };
+    }
+
+    public static function adminStatusIcon(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_AGUARDANDO_CADASTRO => '🟡',
+            self::STATUS_PENDENTE => '🟠',
+            self::STATUS_AGUARDANDO_VALIDACAO => '🟠',
+            self::STATUS_EM_ANALISE => '🔵',
+            self::STATUS_APROVADO, self::STATUS_BENEFICIO_LIBERADO => '🟢',
+            self::STATUS_REPROVADO => '🔴',
+            self::STATUS_CANCELADO => '⚫',
+            default => self::statusIcon($status),
+        };
+    }
+
+    public static function adminStatusLabel(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_PENDENTE => 'Aguardando Validação',
+            self::STATUS_AGUARDANDO_CADASTRO => 'Aguardando Cadastro',
+            self::STATUS_AGUARDANDO_VALIDACAO => 'Aguardando Validação',
+            self::STATUS_EM_ANALISE => 'Em Análise',
+            self::STATUS_APROVADO, self::STATUS_BENEFICIO_LIBERADO => 'Aprovada',
+            self::STATUS_REPROVADO => 'Reprovada',
+            self::STATUS_CANCELADO => 'Cancelada',
+            default => self::statusLabel($status),
+        };
+    }
+
+    public static function adminStatusBadgeClass(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_AGUARDANDO_CADASTRO => 'badge--aguardando_cadastro',
+            self::STATUS_PENDENTE, self::STATUS_AGUARDANDO_VALIDACAO => 'badge--aguardando_validacao',
+            self::STATUS_EM_ANALISE => 'badge--em_analise',
+            self::STATUS_APROVADO, self::STATUS_BENEFICIO_LIBERADO => 'badge--aprovado',
+            self::STATUS_REPROVADO => 'badge--reprovado',
+            self::STATUS_CANCELADO => 'badge--cancelado',
+            default => 'badge--' . strtolower($status),
+        };
+    }
+
+    /** @return array{label: string, class: string, hours: float|null} */
+    public static function waitTimeMeta(array $validacao): array
+    {
+        $status = (string) ($validacao['status'] ?? '');
+        $terminalStatuses = [
+            self::STATUS_APROVADO,
+            self::STATUS_BENEFICIO_LIBERADO,
+            self::STATUS_REPROVADO,
+            self::STATUS_CANCELADO,
+        ];
+
+        if (in_array($status, $terminalStatuses, true)) {
+            return [
+                'label' => '—',
+                'class' => 'wait-time--neutral',
+                'hours' => null,
+            ];
+        }
+
+        $reference = (string) ($validacao['indicacao_created_at'] ?? $validacao['created_at'] ?? '');
+        if ($reference === '') {
+            return [
+                'label' => '—',
+                'class' => 'wait-time--neutral',
+                'hours' => null,
+            ];
+        }
+
+        $hours = max(0, (time() - strtotime($reference)) / 3600);
+
+        return [
+            'label' => self::formatWaitDuration($hours),
+            'class' => self::waitTimeClass($hours),
+            'hours' => $hours,
+        ];
+    }
+
+    private static function formatWaitDuration(float $hours): string
+    {
+        if ($hours < 1) {
+            return 'Menos de 1h';
+        }
+
+        if ($hours < 24) {
+            return (int) floor($hours) . 'h';
+        }
+
+        $days = (int) floor($hours / 24);
+        $remainingHours = (int) floor($hours - ($days * 24));
+
+        if ($remainingHours === 0) {
+            return $days . 'd';
+        }
+
+        return $days . 'd ' . $remainingHours . 'h';
+    }
+
+    private static function waitTimeClass(float $hours): string
+    {
+        if ($hours <= 24) {
+            return 'wait-time--ok';
+        }
+
+        if ($hours <= 72) {
+            return 'wait-time--warning';
+        }
+
+        return 'wait-time--critical';
     }
 }

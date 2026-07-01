@@ -20,6 +20,7 @@ $breadcrumbs = admin_breadcrumbs();
     <meta name="theme-color" content="#D71920">
     <title><?= e($pageTitle) ?> — Admin · Indique e Ganhe</title>
     <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/admin-design-system.css') ?>">
 </head>
 <body class="page page--admin">
     <div class="admin-shell">

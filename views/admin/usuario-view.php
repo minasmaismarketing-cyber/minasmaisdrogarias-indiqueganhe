@@ -1,57 +1,28 @@
 <?php declare(strict_types=1); ?>
 <?php $subtitle = 'Consulte informações e atividades do usuário.'; ?>
 
-<section class="mm-card mm-card--usuario-info">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Informações do Usuário</h2>
-    </div>
+<?php admin_detail_card('Informações do Usuário', [
+    ['label' => 'Nome:', 'value' => (string) $usuario['nome']],
+    ['label' => 'CPF:', 'value' => Usuario::formatCpfDisplay($usuario)],
+    ['label' => 'E-mail:', 'value' => (string) $usuario['email']],
+    ['label' => 'WhatsApp:', 'value' => $usuario['whatsapp'] ? format_phone((string) $usuario['whatsapp']) : '—'],
+    ['label' => 'Código de Indicação:', 'value' => (string) ($usuario['codigo_indicador'] ?? '—')],
+    ['label' => 'Perfil:', 'value' => Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))],
+    [
+        'label' => 'Status:',
+        'value' => '<span class="badge ' . Usuario::accountStatusBadgeClass($usuario) . '">'
+            . Usuario::accountStatusIcon($usuario) . ' '
+            . e(Usuario::accountStatusLabel($usuario)) . '</span>',
+        'html' => true,
+    ],
+    ['label' => 'Cadastro:', 'value' => date('d/m/Y H:i', strtotime($usuario['created_at']))],
+]); ?>
 
-    <ul class="usuario-info-lines">
-        <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">Nome:</span>
-            <span class="usuario-info-lines__value"><?= e($usuario['nome']) ?></span>
-        </li>
-        <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">CPF:</span>
-            <span class="usuario-info-lines__value"><?= e(Usuario::formatCpfDisplay($usuario)) ?></span>
-        </li>
-        <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">E-mail:</span>
-            <span class="usuario-info-lines__value"><?= e($usuario['email']) ?></span>
-        </li>
-        <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">WhatsApp:</span>
-            <span class="usuario-info-lines__value"><?= e($usuario['whatsapp'] ? format_phone((string) $usuario['whatsapp']) : '—') ?></span>
-        </li>
-        <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">Código de Indicação:</span>
-            <span class="usuario-info-lines__value"><?= e($usuario['codigo_indicador'] ?? '—') ?></span>
-        </li>
-        <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">Perfil:</span>
-            <span class="usuario-info-lines__value"><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></span>
-        </li>
-        <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">Status:</span>
-            <span class="usuario-info-lines__value">
-                <span class="badge <?= Usuario::accountStatusBadgeClass($usuario) ?>">
-                    <?= Usuario::accountStatusIcon($usuario) ?>
-                    <?= e(Usuario::accountStatusLabel($usuario)) ?>
-                </span>
-            </span>
-        </li>
-        <li class="usuario-info-lines__item">
-            <span class="usuario-info-lines__label">Cadastro:</span>
-            <span class="usuario-info-lines__value"><?= e(date('d/m/Y H:i', strtotime($usuario['created_at']))) ?></span>
-        </li>
-    </ul>
-</section>
-
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Resumo</h2>
-    </div>
-    <section class="stats-grid stats-grid--admin-dashboard">
+<section class="admin-card">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title">Resumo</h2>
+    </header>
+    <section class="admin-stats stats-grid stats-grid--admin-dashboard">
         <article class="stat-card">
             <span class="stat-card__value"><?= $resumo['total_indicacoes'] ?? 0 ?></span>
             <span class="stat-card__label">Total de Indicações</span>
@@ -80,10 +51,10 @@
 </section>
 
 <?php if ($canBlock || $canUnblock): ?>
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Ações</h2>
-    </div>
+<section class="admin-card">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title">Ações</h2>
+    </header>
     <?php if ($canBlock): ?>
         <form method="POST" action="<?= url('/admin/usuarios/bloquear') ?>" class="form" onsubmit="return confirm('Tem certeza que deseja bloquear este usuário?');">
             <?= csrf_field() ?>
@@ -101,13 +72,13 @@
 </section>
 <?php endif; ?>
 
-<section class="mm-card admin-dashboard-activities">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Últimas Atividades</h2>
-    </div>
+<section class="admin-card admin-dashboard-activities">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title">Últimas Atividades</h2>
+    </header>
 
     <?php if ($recentEvents === []): ?>
-        <p class="mm-card__text">Nenhuma atividade registrada.</p>
+        <?php admin_empty_state('Nenhuma atividade registrada.'); ?>
     <?php else: ?>
         <div class="admin-dashboard-activities__scroll">
             <div class="activity-timeline">

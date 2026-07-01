@@ -67,7 +67,7 @@ class Cupom extends Model
         return $row ?: null;
     }
 
-    public function findAll(array $filters = []): array
+    public function findAll(array $filters = [], int $limit = 0, int $offset = 0): array
     {
         $sql = 'SELECT c.*, u.nome as usuario_nome, i.nome_indicado, cam.nome as campanha_nome
                 FROM cupons c
@@ -77,9 +77,86 @@ class Cupom extends Model
                 WHERE 1=1';
         $params = [];
 
+        $this->applyListFilters($sql, $params, $filters);
+
+        $sql .= ' ORDER BY c.created_at DESC';
+
+        if ($limit > 0) {
+            $sql .= ' LIMIT :limit OFFSET :offset';
+        }
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        if ($limit > 0) {
+            $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function countFiltered(array $filters = []): int
+    {
+        $sql = 'SELECT COUNT(*) AS total
+                FROM cupons c
+                LEFT JOIN usuarios u ON c.usuario_id = u.id
+                LEFT JOIN indicacoes i ON c.indicacao_id = i.id
+                LEFT JOIN campanhas cam ON c.campanha_id = cam.id
+                WHERE 1=1';
+        $params = [];
+
+        $this->applyListFilters($sql, $params, $filters);
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByIdForAdmin(int $id): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT c.*,
+                    u.nome AS usuario_nome,
+                    u.cpf AS usuario_cpf,
+                    u.whatsapp AS usuario_whatsapp,
+                    cam.nome AS campanha_nome,
+                    i.codigo_referencia,
+                    i.codigo_indicador,
+                    i.status AS indicacao_status,
+                    i.created_at AS indicacao_created_at
+             FROM cupons c
+             LEFT JOIN usuarios u ON c.usuario_id = u.id
+             LEFT JOIN campanhas cam ON c.campanha_id = cam.id
+             LEFT JOIN indicacoes i ON c.indicacao_id = i.id
+             WHERE c.id = :id
+             LIMIT 1'
+        );
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @param array<string, mixed> $filters
+     *  @param array<string, mixed> $params
+     */
+    private function applyListFilters(string &$sql, array &$params, array $filters): void
+    {
         if (!empty($filters['codigo'])) {
             $sql .= ' AND c.codigo LIKE :codigo';
             $params['codigo'] = '%' . $filters['codigo'] . '%';
+        }
+
+        if (!empty($filters['indicador'])) {
+            $sql .= ' AND u.nome LIKE :indicador';
+            $params['indicador'] = '%' . $filters['indicador'] . '%';
         }
 
         if (!empty($filters['usuario_id'])) {
@@ -106,12 +183,6 @@ class Cupom extends Model
             $sql .= ' AND c.created_at <= :data_fim';
             $params['data_fim'] = $filters['data_fim'];
         }
-
-        $sql .= ' ORDER BY c.created_at DESC';
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
     }
 
     public function updateStatus(int $id, string $status, ?string $motivo = null): void
@@ -127,28 +198,6 @@ class Cupom extends Model
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-    }
-
-    public function getStats(): array
-    {
-        $stmt = $this->db->prepare(
-            'SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as disponiveis,
-                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as reservados,
-                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as utilizados,
-                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as expirados,
-                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as cancelados
-            FROM cupons'
-        );
-        $stmt->execute([
-            self::STATUS_DISPONIVEL,
-            self::STATUS_RESERVADO,
-            self::STATUS_UTILIZADO,
-            self::STATUS_EXPIRADO,
-            self::STATUS_CANCELADO,
-        ]);
-        return $stmt->fetch();
     }
 
     public function countByStatus(string $status): int
@@ -210,6 +259,21 @@ class Cupom extends Model
         };
     }
 
+    public static function adminStatusBadgeClass(string $status): string
+    {
+        return 'badge--' . strtolower($status);
+    }
+
+    public static function origemLabel(?string $origem): string
+    {
+        return match ($origem) {
+            'INDICACAO_VALIDADA' => 'Indicação validada',
+            'MANUAL' => 'Manual',
+            null, '' => 'Manual',
+            default => $origem,
+        };
+    }
+
     public static function tipoLabel(string $tipo): string
     {
         return match ($tipo) {
@@ -217,5 +281,39 @@ class Cupom extends Model
             self::TIPO_VALOR_FIXO => 'Valor Fixo',
             default => $tipo,
         };
+    }
+
+    /** @param list<int> $indicacaoIds
+     *  @return array<int, string>
+     */
+    public function findCampanhaNomesByIndicacaoIds(array $indicacaoIds): array
+    {
+        $indicacaoIds = array_values(array_unique(array_filter(array_map('intval', $indicacaoIds))));
+        if ($indicacaoIds === []) {
+            return [];
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach ($indicacaoIds as $index => $id) {
+            $key = 'id_' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $id;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT c.indicacao_id, cam.nome AS campanha_nome
+             FROM cupons c
+             INNER JOIN campanhas cam ON cam.id = c.campanha_id
+             WHERE c.indicacao_id IN (' . implode(', ', $placeholders) . ')'
+        );
+        $stmt->execute($params);
+
+        $map = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $map[(int) $row['indicacao_id']] = (string) $row['campanha_nome'];
+        }
+
+        return $map;
     }
 }

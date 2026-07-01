@@ -10,23 +10,23 @@
 /** @var string $adminTableClass */
 /** @var callable(mixed, int): void $adminTableRenderRow */
 ?>
-<section class="mm-card mm-card--admin-table">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title"><?= e($adminTableTitle) ?></h2>
+<section class="admin-card admin-card--table">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title"><?= e($adminTableTitle) ?></h2>
         <?php if ($adminTableMeta !== null || $adminTableHeaderActions !== null): ?>
-            <div class="mm-card__header-end">
+            <div class="admin-card__header-end">
                 <?php if ($adminTableMeta !== null): ?>
-                    <span class="mm-card__meta"><?= e($adminTableMeta) ?></span>
+                    <span class="admin-card__meta"><?= e($adminTableMeta) ?></span>
                 <?php endif; ?>
                 <?php if ($adminTableHeaderActions !== null): ?>
                     <?= $adminTableHeaderActions ?>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
-    </div>
+    </header>
 
     <?php if ($adminTableRows === []): ?>
-        <p class="mm-card__placeholder"><?= e($adminTableEmptyMessage) ?></p>
+        <?php admin_empty_state($adminTableEmptyMessage); ?>
     <?php else: ?>
         <div class="admin-table__scroll">
             <table class="<?= e($adminTableClass) ?><?= $adminTableZebra ? ' admin-table--zebra' : '' ?>">

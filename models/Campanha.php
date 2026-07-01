@@ -12,6 +12,28 @@ class Campanha extends Model
     public const TIPO_DESCONTO_PERCENTUAL = 'PERCENTUAL';
     public const TIPO_DESCONTO_VALOR_FIXO = 'VALOR_FIXO';
 
+    public const FILTER_TODOS = 'todos';
+    public const FILTER_VIGENCIA_VIGENTE = 'vigente';
+    public const FILTER_VIGENCIA_FUTURA = 'futura';
+    public const FILTER_VIGENCIA_ENCERRADA = 'encerrada';
+
+    /** @var list<string> */
+    public const ADMIN_STATUS_FILTERS = [
+        self::FILTER_TODOS,
+        self::STATUS_ATIVA,
+        self::STATUS_AGENDADA,
+        self::STATUS_FINALIZADA,
+        self::STATUS_INATIVA,
+    ];
+
+    /** @var list<string> */
+    public const ADMIN_VIGENCIA_FILTERS = [
+        self::FILTER_TODOS,
+        self::FILTER_VIGENCIA_VIGENTE,
+        self::FILTER_VIGENCIA_FUTURA,
+        self::FILTER_VIGENCIA_ENCERRADA,
+    ];
+
     public function create(array $data): int
     {
         $stmt = $this->db->prepare(
@@ -249,6 +271,170 @@ class Campanha extends Model
             self::STATUS_FINALIZADA => 'Finalizada',
             default => $status,
         };
+    }
+
+    public static function adminStatusLabel(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_FINALIZADA => 'Encerrada',
+            default => self::statusLabel($status),
+        };
+    }
+
+    public static function adminStatusIcon(string $status): string
+    {
+        return match ($status) {
+            self::STATUS_ATIVA => '🟢',
+            self::STATUS_AGENDADA => '🟡',
+            self::STATUS_FINALIZADA => '⚫',
+            self::STATUS_INATIVA => '⚪',
+            default => '❓',
+        };
+    }
+
+    public static function adminStatusBadgeClass(string $status): string
+    {
+        return 'badge--' . strtolower($status);
+    }
+
+    public static function formatVigencia(array $campanha): string
+    {
+        return date('d/m/Y', strtotime((string) $campanha['inicio']))
+            . ' — '
+            . date('d/m/Y', strtotime((string) $campanha['fim']));
+    }
+
+    /** @param array<string, mixed> $filters
+     *  @return array<int, array<string, mixed>>
+     */
+    public function findAllAdmin(array $filters = [], int $limit = 20, int $offset = 0): array
+    {
+        $sql = 'SELECT campanhas.*,
+                       ' . $this->adminMetricsSelectSql('campanhas.id') . '
+                FROM campanhas
+                WHERE 1=1';
+        $params = [];
+
+        $this->applyAdminFilters($sql, $params, $filters);
+
+        $sql .= ' ORDER BY campanhas.created_at DESC LIMIT :limit OFFSET :offset';
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function countAllAdmin(array $filters = []): int
+    {
+        $sql = 'SELECT COUNT(*) AS total FROM campanhas WHERE 1=1';
+        $params = [];
+
+        $this->applyAdminFilters($sql, $params, $filters);
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function findRecentCuponsByCampanha(int $campanhaId, int $limit = 10): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT c.*, u.nome AS usuario_nome
+             FROM cupons c
+             LEFT JOIN usuarios u ON c.usuario_id = u.id
+             WHERE c.campanha_id = :campanha_id
+             ORDER BY c.created_at DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue('campanha_id', $campanhaId, PDO::PARAM_INT);
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /** @return list<array{date: string, label: string, icon: string}> */
+    public function getAdminTimeline(array $campanha): array
+    {
+        $events = [
+            [
+                'date' => (string) $campanha['created_at'],
+                'label' => 'Criação',
+                'icon' => '📝',
+            ],
+        ];
+
+        if ((string) $campanha['status'] === self::STATUS_ATIVA) {
+            $events[] = [
+                'date' => (string) $campanha['updated_at'],
+                'label' => 'Ativação',
+                'icon' => '🟢',
+            ];
+        }
+
+        $fim = (string) ($campanha['fim'] ?? '');
+        $encerrada = (string) $campanha['status'] === self::STATUS_FINALIZADA
+            || ($fim !== '' && $fim < date('Y-m-d') && (string) $campanha['status'] !== self::STATUS_ATIVA);
+
+        if ($encerrada) {
+            $events[] = [
+                'date' => $fim !== '' ? $fim . ' 23:59:59' : (string) $campanha['updated_at'],
+                'label' => 'Encerramento',
+                'icon' => '⚫',
+            ];
+        }
+
+        usort($events, static function (array $a, array $b): int {
+            return strtotime($a['date']) <=> strtotime($b['date']);
+        });
+
+        return $events;
+    }
+
+    private function adminMetricsSelectSql(string $campanhaIdColumn): string
+    {
+        $utilizado = Cupom::STATUS_UTILIZADO;
+
+        return "(SELECT COUNT(DISTINCT c.indicacao_id) FROM cupons c WHERE c.campanha_id = {$campanhaIdColumn}) AS total_indicados,
+                (SELECT COUNT(*) FROM cupons c WHERE c.campanha_id = {$campanhaIdColumn}) AS cupons_gerados,
+                (SELECT COUNT(*) FROM cupons c WHERE c.campanha_id = {$campanhaIdColumn} AND c.status = '{$utilizado}') AS cupons_utilizados";
+    }
+
+    /** @param array<string, mixed> $filters
+     *  @param array<string, mixed> $params
+     */
+    private function applyAdminFilters(string &$sql, array &$params, array $filters): void
+    {
+        $nome = trim((string) ($filters['nome'] ?? ''));
+        if ($nome !== '') {
+            $sql .= ' AND campanhas.nome LIKE :nome';
+            $params['nome'] = '%' . $nome . '%';
+        }
+
+        $status = (string) ($filters['status'] ?? self::FILTER_TODOS);
+        if ($status !== self::FILTER_TODOS && in_array($status, self::ADMIN_STATUS_FILTERS, true)) {
+            $sql .= ' AND campanhas.status = :status';
+            $params['status'] = $status;
+        }
+
+        $vigencia = (string) ($filters['vigencia'] ?? self::FILTER_TODOS);
+        if ($vigencia === self::FILTER_VIGENCIA_VIGENTE) {
+            $sql .= ' AND CURDATE() BETWEEN campanhas.inicio AND campanhas.fim';
+        } elseif ($vigencia === self::FILTER_VIGENCIA_FUTURA) {
+            $sql .= ' AND campanhas.inicio > CURDATE()';
+        } elseif ($vigencia === self::FILTER_VIGENCIA_ENCERRADA) {
+            $sql .= ' AND campanhas.fim < CURDATE()';
+        }
     }
 
     public static function tipoDescontoLabel(string $tipo): string

@@ -1,11 +1,11 @@
 <?php declare(strict_types=1); ?>
 <?php $subtitle = 'Configure o sistema.'; ?>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Configurações Gerais</h2>
-    </div>
-    
+<section class="admin-card">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title">Configurações Gerais</h2>
+    </header>
+
     <div class="config-list">
         <div class="config-list__item">
             <span class="config-list__label">Papel do usuário logado</span>
@@ -22,11 +22,11 @@
     </div>
 </section>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Integrações</h2>
-    </div>
-    
+<section class="admin-card">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title">Integrações</h2>
+    </header>
+
     <div class="config-list">
         <div class="config-list__item">
             <span class="config-list__label">AppsFlyer</span>

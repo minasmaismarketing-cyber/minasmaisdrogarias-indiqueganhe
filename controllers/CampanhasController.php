@@ -111,6 +111,31 @@ class CampanhasController extends Controller
         ], 'admin');
     }
 
+    public function show(int $id): void
+    {
+        Auth::requireAdmin();
+
+        $campanhaModel = new Campanha();
+        $campanha = $campanhaModel->findById($id);
+
+        if ($campanha === null) {
+            Session::flash('error', 'Campanha não encontrada.');
+            $this->redirect('/admin/campanhas');
+        }
+
+        $stats = (new AdminMetricsService())->getMetricsForCampanha($id);
+        $recentCupons = $campanhaModel->findRecentCuponsByCampanha($id);
+        $timeline = $campanhaModel->getAdminTimeline($campanha);
+
+        $this->view('admin.campanha-view', [
+            'title' => 'Detalhes da Campanha',
+            'campanha' => $campanha,
+            'stats' => $stats,
+            'recentCupons' => $recentCupons,
+            'timeline' => $timeline,
+        ], 'admin');
+    }
+
     public function edit(int $id): void
     {
         Auth::requireAdmin();

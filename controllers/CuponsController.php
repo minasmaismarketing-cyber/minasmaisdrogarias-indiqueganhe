@@ -19,23 +19,36 @@ class CuponsController extends Controller
     {
         Auth::requireAdmin();
 
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
+
         $filters = [
-            'codigo' => $_GET['codigo'] ?? '',
-            'usuario_id' => $_GET['usuario_id'] ?? '',
-            'campanha_id' => $_GET['campanha_id'] ?? '',
-            'status' => $_GET['status'] ?? '',
-            'data_inicio' => $_GET['data_inicio'] ?? '',
-            'data_fim' => $_GET['data_fim'] ?? '',
+            'codigo' => trim((string) ($_GET['codigo'] ?? '')),
+            'indicador' => trim((string) ($_GET['indicador'] ?? '')),
+            'campanha_id' => (string) ($_GET['campanha_id'] ?? ''),
+            'status' => (string) ($_GET['status'] ?? ''),
+            'data_inicio' => (string) ($_GET['data_inicio'] ?? ''),
+            'data_fim' => (string) ($_GET['data_fim'] ?? ''),
         ];
 
-        $cupons = $this->cupomRepository->findAll($filters);
-        $stats = $this->cupomRepository->getStats();
+        $total = $this->cupomRepository->countFiltered($filters);
+        $cupons = $this->cupomRepository->findAll($filters, $limit, $offset);
+        $stats = (new AdminMetricsService())->getCupomStatusMetrics();
+        $campanhas = (new Campanha())->findAll();
+        $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
 
         $this->view('admin.cupons', [
             'title' => 'Gerenciamento de Cupons',
             'cupons' => $cupons,
             'stats' => $stats,
             'filters' => $filters,
+            'campanhas' => $campanhas,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
+            'hasNext' => $page < $totalPages,
+            'hasPrev' => $page > 1,
         ], 'admin');
     }
 
@@ -43,13 +56,16 @@ class CuponsController extends Controller
     {
         Auth::requireAdmin();
 
-        $cupom = $this->cupomRepository->findById($id);
+        $cupom = $this->cupomRepository->findByIdForAdmin($id);
         if ($cupom === null) {
             Session::flash('error', 'Cupom não encontrado.');
             $this->redirect('/admin/cupons');
         }
 
         $history = $this->cupomService->getHistory($id);
+        usort($history, static function (array $a, array $b): int {
+            return strtotime((string) $a['created_at']) <=> strtotime((string) $b['created_at']);
+        });
 
         $this->view('admin.cupom-view', [
             'title' => 'Detalhes do Cupom',

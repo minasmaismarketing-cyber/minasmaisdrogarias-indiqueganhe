@@ -1,10 +1,10 @@
 <?php declare(strict_types=1); ?>
 <?php $subtitle = 'Gerencie a integração com AppsFlyer.'; ?>
 
-<section class="mm-card">
-    <div class="mm-card__header">
-        <h2 class="mm-card__title">Status da Integração</h2>
-    </div>
+<section class="admin-card">
+    <header class="admin-card__header">
+        <h2 class="admin-card__title">Status da Integração</h2>
+    </header>
     
     <div class="integration-status">
         <span class="integration-status__indicator integration-status__indicator--<?= $integrationEnabled ? 'active' : 'inactive' ?>">
@@ -15,13 +15,13 @@
         </span>
     </div>
     
-    <p class="mm-card__text">
+    <p class="admin-card__text">
         A integração com AppsFlyer está atualmente <?= $integrationEnabled ? 'ativa' : 'inativa' ?>.
         Configure as credenciais em config/appsflyer.php para ativar.
     </p>
 </section>
 
-<section class="stats-grid">
+<section class="admin-stats stats-grid">
     <div class="stat-card">
         <div class="stat-card__value"><?= $stats['total'] ?? 0 ?></div>
         <div class="stat-card__label">Total</div>
