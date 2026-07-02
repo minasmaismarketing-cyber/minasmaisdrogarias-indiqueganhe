@@ -20,9 +20,13 @@
 
     --gray-100: #F5F5F5;
 
+    --gray-200: #E8E8E8;
+
     --gray-300: #DADADA;
 
     --gray-700: #555555;
+
+    --gray-900: #121212;
 
 
 
@@ -4790,6 +4794,270 @@ code {
 
     .convite-landing__benefit-desc {
         font-size: 0.75rem;
+    }
+}
+
+/* ==========================================================================
+   Sprint 3.6 — UX/UI polish (incremental)
+   ========================================================================== */
+
+.mm-card__header--stack {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.mm-card__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    line-height: 1.4;
+}
+
+.mm-card--premium {
+    border-color: rgba(215, 25, 32, 0.2);
+    box-shadow: var(--shadow-md);
+}
+
+.mm-card--info {
+    border-color: rgba(8, 66, 152, 0.15);
+    background: linear-gradient(180deg, var(--white) 0%, #f8fbff 100%);
+}
+
+.mm-card--danger {
+    border-color: rgba(215, 25, 32, 0.35);
+    background: linear-gradient(180deg, #fffafa 0%, #fff5f5 100%);
+}
+
+.mm-card--danger .mm-card__title {
+    color: var(--primary-dark);
+}
+
+.btn--primary {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.btn--primary:hover {
+    background: var(--primary-dark);
+}
+
+.btn--danger {
+    background: var(--primary-dark);
+    color: var(--white);
+}
+
+.btn--danger:hover {
+    background: #9a0b12;
+}
+
+.btn:focus-visible,
+.mm-bottom-nav__link:focus-visible,
+.pagination__link:focus-visible,
+.quick-links__item:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.mm-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1rem;
+    gap: 0.5rem;
+}
+
+.mm-empty-state__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.mm-empty-state__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--black);
+}
+
+.mm-empty-state__text {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    color: var(--gray-700);
+    max-width: 20rem;
+    line-height: 1.45;
+}
+
+.page-note--helpful {
+    padding: 0.75rem 1rem;
+    background: var(--gray-100);
+    border-radius: var(--radius-btn);
+    border: 1px solid var(--gray-200);
+}
+
+.page-note--helpful a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.page-note--helpful a:hover {
+    text-decoration: underline;
+}
+
+.coupons-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.coupon-card {
+    background: var(--white);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem;
+    transition: box-shadow var(--transition), transform var(--transition);
+}
+
+.coupon-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.coupon-card--disponivel {
+    border-left: 4px solid var(--success);
+}
+
+.coupon-card--reservado {
+    border-left: 4px solid var(--warning);
+}
+
+.coupon-card--utilizado {
+    border-left: 4px solid var(--gray-300);
+    opacity: 0.92;
+}
+
+.coupon-card--expirado,
+.coupon-card--cancelado {
+    border-left: 4px solid var(--gray-700);
+    opacity: 0.85;
+}
+
+.coupon-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.coupon-card__icon {
+    font-size: 1.125rem;
+    line-height: 1;
+}
+
+.coupon-card__status {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.coupon-card__code {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem;
+    background: var(--gray-100);
+    border-radius: var(--radius-btn);
+    margin-bottom: 0.75rem;
+}
+
+.coupon-card__code .coupon-card__value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--black);
+    letter-spacing: 0.04em;
+}
+
+.coupon-card__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.125rem;
+}
+
+.coupon-card__details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.coupon-card__detail .coupon-card__value {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--black);
+}
+
+.coupon-card__footer {
+    padding-top: 0.625rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.coupon-card__date {
+    font-size: 0.75rem;
+    color: var(--gray-700);
+}
+
+.coupon-card__copy {
+    margin-left: auto;
+}
+
+.validacao-list-compact__motivo {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+}
+
+.validacao-list-compact__motivo-label {
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.alert {
+    animation: slideUp 0.25s ease;
+}
+
+@media (max-width: 480px) {
+    .coupon-card__details {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .alert {
+        animation: none;
+    }
+
+    .coupon-card {
+        transition: none;
     }
 }
 

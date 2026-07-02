@@ -1,6 +1,6 @@
 <?php declare(strict_types=1); ?>
 
-<section class="page-hero">
+<section class="page-hero animate-slide">
     <h1 class="page-hero__title">Notificações</h1>
     <p class="page-hero__subtitle">Acompanhe as atualizações do sistema.</p>
 </section>

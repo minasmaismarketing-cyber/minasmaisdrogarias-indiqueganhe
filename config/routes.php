@@ -46,6 +46,7 @@ $router->get('/admin/campanhas/{id}', 'CampanhasController', 'show');
 $router->get('/admin/indicacoes', 'AdminController', 'indicacoes');
 $router->get('/admin/indicacoes/{id}', 'AdminController', 'showIndicacao');
 $router->get('/admin/configuracoes', 'AdminController', 'configuracoes');
+$router->get('/admin/diagnostico', 'DiagnosticoController', 'index');
 // Validação de indicações (Etapa 13 - Motor de Validação)
 $router->get('/admin/validacoes', 'ValidacaoController', 'adminIndex');
 $router->get('/admin/validacoes/{id}', 'ValidacaoController', 'show');

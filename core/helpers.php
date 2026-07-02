@@ -264,6 +264,7 @@ function admin_nav_items(): array
         ['label' => 'Cupons', 'path' => '/admin/cupons'],
         ['label' => 'Campanhas', 'path' => '/admin/campanhas'],
         ['label' => 'AppsFlyer', 'path' => '/admin/appsflyer'],
+        ['label' => 'Diagnóstico', 'path' => '/admin/diagnostico'],
         ['label' => 'Configurações', 'path' => '/admin/configuracoes'],
     ];
 }
@@ -294,6 +295,7 @@ function admin_breadcrumbs(): array
         '/admin/cupons' => 'Cupons',
         '/admin/campanhas' => 'Campanhas',
         '/admin/appsflyer' => 'AppsFlyer',
+        '/admin/diagnostico' => 'Diagnóstico',
         '/admin/configuracoes' => 'Configurações',
         '/admin/campanhas/criar' => 'Nova campanha',
     ];

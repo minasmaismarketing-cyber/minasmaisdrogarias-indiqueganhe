@@ -4,12 +4,13 @@ declare(strict_types=1);
 ?>
 <section class="page-hero animate-slide">
     <h1 class="page-hero__title">Minhas indicações</h1>
+    <p class="page-hero__subtitle">Acompanhe o status de cada indicação validada.</p>
 </section>
 
 <section class="mm-card">
-    <div class="mm-card__header">
+    <div class="mm-card__header mm-card__header--stack">
         <h2 class="mm-card__title">Histórico de Participação</h2>
-        <p class="mm-card__subtitle">Acompanhe o status das suas indicações validadas.</p>
+        <p class="mm-card__subtitle">Indicações registradas e validadas pelo programa.</p>
     </div>
 
     <?php if (($validacaoStats['total'] ?? 0) > 0): ?>
@@ -58,7 +59,8 @@ declare(strict_types=1);
                         </div>
                         <?php if (!empty($v['motivo_bloqueio'])): ?>
                             <p class="validacao-list-compact__motivo">
-                                ⚠️ <?= e(ValidacaoIndicacao::motivoLabel($v['motivo_bloqueio'])) ?>
+                                <span class="validacao-list-compact__motivo-label">Motivo:</span>
+                                <?= e(ValidacaoIndicacao::motivoLabel($v['motivo_bloqueio'])) ?>
                             </p>
                         <?php endif; ?>
                     </li>
@@ -66,7 +68,12 @@ declare(strict_types=1);
             </ul>
         </div>
     <?php else: ?>
-        <p class="mm-card__placeholder">Nenhuma indicação registrada ainda.</p>
+        <div class="mm-empty-state">
+            <span class="mm-empty-state__icon" aria-hidden="true">+</span>
+            <p class="mm-empty-state__title">Nenhuma indicação ainda</p>
+            <p class="mm-empty-state__text">Compartilhe seu código no Dashboard e acompanhe aqui quando suas indicações forem validadas.</p>
+            <a href="<?= url('/dashboard') ?>" class="btn btn--block btn--primary">Ir para Dashboard</a>
+        </div>
     <?php endif; ?>
 </section>
 

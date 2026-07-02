@@ -34,7 +34,7 @@
                 <span class="config-list__value">
                     <?= e((string) ($row['emoji'] ?? '')) ?> <?= e((string) ($row['label'] ?? '')) ?>
                     <?php if (!empty($row['detail'])): ?>
-                        <span class="config-list__value--inactive"> · <?= e((string) $row['detail']) ?></span>
+                        <span class="config-list__detail"><?= e((string) $row['detail']) ?></span>
                     <?php endif; ?>
                 </span>
             </div>

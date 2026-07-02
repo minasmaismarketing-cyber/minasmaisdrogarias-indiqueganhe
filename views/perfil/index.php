@@ -64,7 +64,7 @@
             <input type="text" value="<?= e((string) $user['codigo_indicador']) ?>" disabled class="input-disabled">
         </div>
 
-        <button type="submit" class="btn btn--block">Salvar alterações</button>
+        <button type="submit" class="btn btn--block btn--primary">Salvar alterações</button>
     </form>
 </section>
 
@@ -106,10 +106,10 @@
     <button type="button" class="btn btn--block btn--danger" id="btn-delete-account">Excluir minha conta</button>
 </section>
 
-<div id="delete-modal" class="modal" style="display: none;">
+<div id="delete-modal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
     <div class="modal__overlay"></div>
     <div class="modal__content">
-        <h3 class="modal__title">Confirmar exclusão de conta</h3>
+        <h3 class="modal__title" id="delete-modal-title">Confirmar exclusão de conta</h3>
         <p class="modal__text">Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.</p>
         <form method="POST" action="<?= url('/perfil/excluir') ?>" class="form">
             <?= csrf_field() ?>

@@ -683,10 +683,173 @@
     color: var(--gray-700);
 }
 
+.page--admin .config-list__detail {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--gray-700);
+    word-break: break-word;
+}
+
 @media (max-width: 640px) {
     .page--admin .admin-info-lines__item,
     .page--admin .config-list__item {
         grid-template-columns: 1fr;
         gap: 0.125rem;
+    }
+}
+
+/* ── Sprint 3.7 — Diagnóstico de indicação ── */
+.page--admin .admin-diagnostico-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--admin-space-sm);
+}
+
+.page--admin .admin-diagnostico-search .form-group {
+    flex: 1 1 16rem;
+    margin-bottom: 0;
+}
+
+.page--admin .admin-diagnostico-stats {
+    margin-bottom: var(--admin-space-md);
+}
+
+.page--admin .stat-card__value--sm {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.page--admin .badge--neutral {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.page--admin .badge--warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.page--admin .admin-diagnostico-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    gap: var(--admin-space-md);
+    align-items: start;
+}
+
+.page--admin .timeline--diagnostic {
+    position: relative;
+    padding-left: 0.25rem;
+}
+
+.page--admin .timeline--diagnostic .timeline__item {
+    position: relative;
+    padding-bottom: var(--admin-space-md);
+    border-left: 2px solid var(--gray-200);
+    margin-left: 0.875rem;
+    padding-left: 1.25rem;
+}
+
+.page--admin .timeline--diagnostic .timeline__item:last-child {
+    border-left-color: transparent;
+    padding-bottom: 0;
+}
+
+.page--admin .timeline--diagnostic .timeline__icon--step {
+    position: absolute;
+    left: -0.9375rem;
+    top: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--white);
+    border: 2px solid var(--gray-300);
+    color: var(--gray-700);
+}
+
+.page--admin .timeline__item--done .timeline__icon--step {
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.page--admin .timeline__item--pending .timeline__icon--step {
+    border-color: var(--warning);
+    color: var(--warning);
+}
+
+.page--admin .timeline__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.page--admin .timeline__meta {
+    margin: 0 0 0.375rem;
+    font-size: var(--admin-label-size);
+    color: var(--gray-700);
+}
+
+.page--admin .timeline--diagnostic .admin-info-lines {
+    margin-top: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    background: var(--gray-100);
+    border-radius: var(--radius-btn);
+}
+
+.page--admin .admin-collapse {
+    margin-top: var(--admin-space-md);
+}
+
+.page--admin .admin-collapse__summary {
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+    padding: var(--admin-space-md);
+}
+
+.page--admin .admin-collapse__summary::-webkit-details-marker {
+    display: none;
+}
+
+.page--admin .admin-collapse__body {
+    padding: 0 var(--admin-space-md) var(--admin-space-md);
+}
+
+.page--admin .admin-card__subtitle {
+    margin: 0 0 0.5rem;
+    font-size: var(--admin-label-size);
+    font-weight: 700;
+    color: var(--black);
+}
+
+.page--admin .code-block {
+    display: block;
+    max-height: 16rem;
+    overflow: auto;
+    margin: 0 0 0.75rem;
+    padding: 0.75rem;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-btn);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+@media (max-width: 960px) {
+    .page--admin .admin-diagnostico-layout {
+        grid-template-columns: 1fr;
     }
 }

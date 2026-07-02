@@ -63,7 +63,7 @@ $shareLink = Session::flash('share_link') ?? $inviteLink;
 
 
 <section class="mm-card mm-card--premium mm-card--highlight" id="meu-codigo">
-    <div class="mm-card__header">
+    <div class="mm-card__header mm-card__header--stack">
         <h2 class="mm-card__title">Meu código de indicação</h2>
         <p class="mm-card__subtitle">Compartilhe seu código e convide amigos.</p>
     </div>
@@ -105,7 +105,7 @@ $shareLink = Session::flash('share_link') ?? $inviteLink;
 
 <?php if ($validacaoStats['total'] > 0): ?>
 <section class="mm-card mm-card--info" id="validacoes-progress">
-    <div class="mm-card__header">
+    <div class="mm-card__header mm-card__header--stack">
         <h2 class="mm-card__title">Progresso de Indicações</h2>
         <p class="mm-card__subtitle">Acompanhe o status das suas indicações em validação.</p>
     </div>
@@ -136,7 +136,7 @@ $shareLink = Session::flash('share_link') ?? $inviteLink;
 
 
 
-<p class="page-note">Cupom, WhatsApp e integrações serão liberados nas próximas etapas.</p>
+<p class="page-note page-note--helpful">Acompanhe seus benefícios em <a href="<?= url('/meus-cupons') ?>">Meus Cupons</a> e o histórico em <a href="<?= url('/indicacoes') ?>">Minhas indicações</a>.</p>
 
 
 

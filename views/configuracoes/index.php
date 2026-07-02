@@ -37,7 +37,7 @@ declare(strict_types=1);
             <small class="form-help">Código de indicação não pode ser alterado</small>
         </div>
 
-        <button type="submit" class="btn btn--block">Salvar alterações</button>
+        <button type="submit" class="btn btn--block btn--primary">Salvar alterações</button>
     </form>
 </section>
 
