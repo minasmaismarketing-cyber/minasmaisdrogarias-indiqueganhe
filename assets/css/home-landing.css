@@ -887,6 +887,101 @@
     }
 }
 
+@media (max-width: 768px) {
+    /* Banner 1 — imagem mobile inteira, sem corte */
+    .mm-home__hero {
+        display: grid;
+        grid-template-areas:
+            "header"
+            "banner"
+            "content"
+            "summary";
+        min-height: 0;
+        padding-bottom: 0;
+        overflow: visible;
+    }
+
+    .mm-home__hero-inner {
+        display: contents;
+    }
+
+    .mm-home__header {
+        grid-area: header;
+    }
+
+    .mm-home__hero-bg {
+        grid-area: banner;
+        position: relative;
+        inset: auto;
+        width: 100%;
+        height: auto;
+        margin: 0;
+        padding: 0 12px;
+        box-sizing: border-box;
+        overflow: visible;
+        background-image: url('../images/banner1mobile.webp');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+
+    .mm-home__hero-bg::before {
+        content: url('../images/banner1mobile.webp');
+        display: block;
+        width: 100%;
+        height: auto;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .mm-home__hero-bg img {
+        display: none;
+    }
+
+    .mm-home__hero::before {
+        content: none;
+        display: none;
+    }
+
+    .mm-home__hero-content {
+        grid-area: content;
+    }
+
+    .mm-home__summary {
+        grid-area: summary;
+    }
+
+    /* Banner 2 — imagem mobile inteira, sem corte */
+    .mm-home__app-banner {
+        padding-top: 24px;
+        padding-bottom: 32px;
+    }
+
+    .mm-home__app-card {
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mm-home__app-card::before {
+        display: none;
+    }
+
+    .mm-home__app-card > img {
+        content: url('../images/banner2mobile.webp');
+        display: block;
+        position: relative;
+        inset: auto;
+        width: calc(100% - 24px);
+        height: auto;
+        margin: 0 auto;
+        object-fit: contain;
+        object-position: center;
+        opacity: 1;
+        order: -1;
+    }
+}
+
 /* Integração com layout public (Sprint 4.0) */
 .page--public:has(.mm-home) .mm-header,
 .page--public:has(.mm-home) .footer--public {
