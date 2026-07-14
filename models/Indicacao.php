@@ -53,28 +53,60 @@ class Indicacao extends Model
     /** @var string|null */
     private static ?string $adminListEnrichmentKey = null;
 
-    /** @return array<string, int> */
+    /**
+     * Cards do Dashboard do usuário — mesmas tabelas/status efetivo do Admin.
+     * Fonte: indicacoes + validacao_indicacoes (+ cupons DISPONIVEL para Liberadas).
+     *
+     * @return array{total: int, validadas: int, pendentes: int, liberadas: int}
+     */
     public function statsByUsuario(int $usuarioId): array
     {
+        $params = array_merge($this->adminStatusBindParams(), [
+            'usuario_id' => $usuarioId,
+            'm_aprovado' => ValidacaoIndicacao::STATUS_APROVADO,
+            'm_beneficio' => ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,
+            'm_aguardando_cadastro' => ValidacaoIndicacao::STATUS_AGUARDANDO_CADASTRO,
+            'm_aguardando_validacao' => ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO,
+            'm_pendente' => ValidacaoIndicacao::STATUS_PENDENTE,
+            'm_em_analise' => ValidacaoIndicacao::STATUS_EM_ANALISE,
+            'm_cupom_disponivel' => Cupom::STATUS_DISPONIVEL,
+        ]);
+
         $stmt = $this->db->prepare(
             'SELECT
                 COUNT(*) AS total,
-                SUM(CASE WHEN status IN (:validado, :premio_liberado) THEN 1 ELSE 0 END) AS validadas,
-                SUM(CASE WHEN status IN (:aguardando, :link, :cadastro_pendente) THEN 1 ELSE 0 END) AS pendentes,
-                SUM(CASE WHEN status = :premio_liberado OR premio_liberado = 1 THEN 1 ELSE 0 END) AS liberadas
-             FROM indicacoes
-             WHERE usuario_id = :usuario_id'
+                SUM(CASE WHEN admin_status IN (:m_aprovado, :m_beneficio) THEN 1 ELSE 0 END) AS validadas,
+                SUM(CASE WHEN admin_status IN (
+                    :m_aguardando_cadastro,
+                    :m_aguardando_validacao,
+                    :m_pendente,
+                    :m_em_analise
+                ) THEN 1 ELSE 0 END) AS pendentes,
+                SUM(CASE
+                    WHEN admin_status IN (:m_aprovado_lib, :m_beneficio_lib)
+                     AND EXISTS (
+                         SELECT 1
+                         FROM cupons c
+                         WHERE c.indicacao_id = scoped.id
+                           AND c.status = :m_cupom_disponivel
+                     )
+                    THEN 1 ELSE 0
+                END) AS liberadas
+             FROM (
+                SELECT
+                    i.id,
+                    ' . self::ADMIN_EFFECTIVE_STATUS_SQL . ' AS admin_status
+                FROM indicacoes i
+                LEFT JOIN validacao_indicacoes v ON v.indicacao_id = i.id
+                WHERE i.usuario_id = :usuario_id
+             ) scoped'
         );
-        $stmt->execute([
-            'usuario_id' => $usuarioId,
-            'validado' => self::STATUS_VALIDADO,
-            'premio_liberado' => self::STATUS_PREMIO_LIBERADO,
-            'aguardando' => self::STATUS_AGUARDANDO,
-            'link' => self::STATUS_LINK_ACESSADO,
-            'cadastro_pendente' => self::STATUS_CADASTRO_PENDENTE,
-        ]);
 
-        $row = $stmt->fetch();
+        $params['m_aprovado_lib'] = ValidacaoIndicacao::STATUS_APROVADO;
+        $params['m_beneficio_lib'] = ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO;
+
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: [];
 
         return [
             'total' => (int) ($row['total'] ?? 0),

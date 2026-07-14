@@ -34,28 +34,6 @@ class DashboardController extends Controller
             Logger::warning('Indicacoes table not found', ['error' => $e->getMessage()]);
         }
 
-        try {
-            $indicadoModel = new Indicado();
-            foreach ($indicadoModel->listByIndicador($codigo) as $indicado) {
-                if (($indicado['nome'] ?? '') === '' && ($indicado['cpf'] ?? '') === '') {
-                    continue;
-                }
-
-                $stats['total']++;
-
-                if ($indicado['status'] === Indicado::STATUS_VALIDADO) {
-                    $stats['validadas']++;
-                    $stats['liberadas']++;
-                } elseif ($indicado['status'] === Indicado::STATUS_AGUARDANDO_VALIDACAO) {
-                    $stats['pendentes']++;
-                } elseif ($indicado['status'] !== Indicado::STATUS_INVALIDADO) {
-                    $stats['pendentes']++;
-                }
-            }
-        } catch (PDOException $e) {
-            Logger::warning('Indicados table not found', ['error' => $e->getMessage()]);
-        }
-
         // Get or create user's link
         $linkModel = new LinkIndicacao();
         $link = $linkModel->findByUsuario($userId);
