@@ -21,19 +21,22 @@ declare(strict_types=1);
         </a>
 
         <?php if ($showAuth): ?>
+            <?php if (!$isGuest): ?>
+                <nav class="mm-header__nav" aria-label="Menu principal">
+                    <a href="<?= url('/dashboard') ?>" class="<?= request_path() === '/dashboard' ? 'is-active' : '' ?>">Início</a>
+                    <a href="<?= url('/indicacoes') ?>" class="<?= request_path() === '/indicacoes' ? 'is-active' : '' ?>">Indicações</a>
+                    <a href="<?= url('/perfil') ?>" class="<?= request_path() === '/perfil' ? 'is-active' : '' ?>">Perfil</a>
+                    <?php if (Auth::isAdmin()): ?>
+                        <a href="<?= url('/admin') ?>">Painel Administrativo</a>
+                    <?php endif; ?>
+                </nav>
+            <?php endif; ?>
+
             <div class="mm-header__user">
                 <?php if ($isGuest): ?>
                     <a href="<?= url('/login') ?>" class="mm-header__link">Entrar</a>
                     <a href="<?= url('/cadastro') ?>" class="btn btn--sm">Cadastrar</a>
                 <?php else: ?>
-                    <nav class="mm-header__nav-desktop" aria-label="Menu principal">
-                        <a href="<?= url('/dashboard') ?>" class="<?= request_path() === '/dashboard' ? 'is-active' : '' ?>">Início</a>
-                        <a href="<?= url('/indicacoes') ?>" class="<?= request_path() === '/indicacoes' ? 'is-active' : '' ?>">Indicações</a>
-                        <a href="<?= url('/perfil') ?>" class="<?= request_path() === '/perfil' ? 'is-active' : '' ?>">Perfil</a>
-                        <?php if (Auth::isAdmin()): ?>
-                            <a href="<?= url('/admin') ?>">Painel Administrativo</a>
-                        <?php endif; ?>
-                    </nav>
                     <div class="mm-header__user-info">
                         <?php if ($userName): ?>
                             <span class="mm-header__name"><?= e($userName) ?></span>
