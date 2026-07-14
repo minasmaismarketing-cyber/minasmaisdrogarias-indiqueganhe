@@ -48,6 +48,7 @@ $buildPageUrl = static function (int $page) use ($filters): string {
     'title' => 'Lista de Usuários',
     'meta' => $total . ' registro(s)',
     'emptyMessage' => 'Nenhum usuário encontrado.',
+    'class' => 'admin-table--expandable',
     'columns' => [
         ['label' => 'Nome'],
         ['label' => 'CPF'],
@@ -58,23 +59,39 @@ $buildPageUrl = static function (int $page) use ($filters): string {
         ['label' => 'Ações', 'class' => 'admin-table__col--actions', 'align' => 'right'],
     ],
     'rows' => $usuarios,
-], static function (array $usuario): void { ?>
-    <tr>
-        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary">
-            <?= e($usuario['nome']) ?>
+], static function (array $usuario): void {
+    $detailId = 'admin-acc-user-' . (int) $usuario['id'];
+    $cpfDisplay = Usuario::formatCpfDisplay($usuario);
+    $email = (string) $usuario['email'];
+    $summarySecondary = $cpfDisplay !== '—' && $cpfDisplay !== '' ? $cpfDisplay : $email;
+    ?>
+    <tr
+        class="admin-table__row--summary"
+        data-admin-accordion-trigger
+        tabindex="0"
+        role="button"
+        aria-expanded="false"
+        aria-controls="<?= e($detailId) ?>"
+    >
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary admin-table__td--mobile-show">
+            <div class="admin-table__summary-main">
+                <span class="admin-table__summary-title"><?= e($usuario['nome']) ?></span>
+                <span class="admin-table__chevron" aria-hidden="true"></span>
+            </div>
             <span class="badge <?= Usuario::accountStatusBadgeClass($usuario) ?>">
                 <?= Usuario::accountStatusIcon($usuario) ?>
                 <?= e(Usuario::accountStatusLabel($usuario)) ?>
             </span>
+            <span class="admin-table__summary-sub admin-table__mobile-only"><?= e($summarySecondary) ?></span>
         </td>
-        <td class="admin-table__td"><?= e(Usuario::formatCpfDisplay($usuario)) ?></td>
-        <td class="admin-table__td admin-table__td--wrap"><?= e($usuario['email']) ?></td>
-        <td class="admin-table__td"><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></td>
-        <td class="admin-table__td">
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($cpfDisplay) ?></td>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--mobile-hide"><?= e($email) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide">
             <?= (int) ($usuario['total_indicacoes'] ?? 0) ?> / <?= (int) ($usuario['total_cupons'] ?? 0) ?>
         </td>
-        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($usuario['created_at']))) ?></td>
-        <td class="admin-table__td admin-table__col--actions">
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e(date('d/m/Y H:i', strtotime($usuario['created_at']))) ?></td>
+        <td class="admin-table__td admin-table__col--actions admin-table__td--mobile-hide">
             <div class="admin-table__actions">
                 <a
                     href="<?= url('/admin/usuarios/' . $usuario['id']) ?>"
@@ -83,6 +100,45 @@ $buildPageUrl = static function (int $page) use ($filters): string {
                     title="Ver detalhes"
                 >👁</a>
             </div>
+        </td>
+    </tr>
+    <tr class="admin-table__row--details" id="<?= e($detailId) ?>" hidden>
+        <td colspan="7">
+            <dl class="admin-table__details">
+                <div>
+                    <dt>CPF</dt>
+                    <dd><?= e($cpfDisplay) ?></dd>
+                </div>
+                <div>
+                    <dt>E-mail</dt>
+                    <dd><?= e($email) ?></dd>
+                </div>
+                <div>
+                    <dt>Perfil</dt>
+                    <dd><?= e(Usuario::roleLabel((string) ($usuario['role'] ?? Usuario::ROLE_CLIENTE))) ?></dd>
+                </div>
+                <div>
+                    <dt>Indicações / Cupons</dt>
+                    <dd><?= (int) ($usuario['total_indicacoes'] ?? 0) ?> / <?= (int) ($usuario['total_cupons'] ?? 0) ?></dd>
+                </div>
+                <div>
+                    <dt>Cadastro</dt>
+                    <dd><?= e(date('d/m/Y H:i', strtotime($usuario['created_at']))) ?></dd>
+                </div>
+                <div class="admin-table__details-actions">
+                    <dt>Ações</dt>
+                    <dd>
+                        <div class="admin-table__actions">
+                            <a
+                                href="<?= url('/admin/usuarios/' . $usuario['id']) ?>"
+                                class="btn btn--sm btn--ghost"
+                                aria-label="Ver detalhes de <?= e($usuario['nome']) ?>"
+                                title="Ver detalhes"
+                            >👁</a>
+                        </div>
+                    </dd>
+                </div>
+            </dl>
         </td>
     </tr>
 <?php }); ?>

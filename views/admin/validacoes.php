@@ -76,6 +76,7 @@
     'title' => 'Central de Validações',
     'meta' => count($validacoes) . ' registro(s)',
     'emptyMessage' => 'Nenhuma validação encontrada.',
+    'class' => 'admin-table--expandable',
     'columns' => [
         ['label' => 'Indicador'],
         ['label' => 'Indicado'],
@@ -91,31 +92,15 @@
     $status = (string) $validacao['status'];
     $waitTime = ValidacaoIndicacao::waitTimeMeta($validacao);
     $indicacaoDate = (string) ($validacao['indicacao_created_at'] ?? $validacao['created_at']);
+    $detailId = 'admin-acc-val-' . (int) $validacao['id'];
+    $indicadorNome = (string) ($validacao['usuario_nome'] ?? 'N/A');
+    $indicadoNome = (string) ($validacao['nome_indicado'] ?: '—');
+    $whatsapp = !empty($validacao['telefone_indicado']) ? format_phone((string) $validacao['telefone_indicado']) : '—';
+    $campanha = (string) ($validacao['campanha_nome'] ?? '—');
+    $dataLabel = date('d/m/Y H:i', strtotime($indicacaoDate));
+
+    ob_start();
     ?>
-    <tr>
-        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary">
-            <?= e((string) ($validacao['usuario_nome'] ?? 'N/A')) ?>
-        </td>
-        <td class="admin-table__td admin-table__td--wrap">
-            <?= e((string) ($validacao['nome_indicado'] ?: '—')) ?>
-        </td>
-        <td class="admin-table__td">
-            <?= !empty($validacao['telefone_indicado']) ? e(format_phone((string) $validacao['telefone_indicado'])) : '—' ?>
-        </td>
-        <td class="admin-table__td admin-table__td--wrap">
-            <?= e((string) ($validacao['campanha_nome'] ?? '—')) ?>
-        </td>
-        <td class="admin-table__td">
-            <span class="badge <?= e(ValidacaoIndicacao::adminStatusBadgeClass($status)) ?>">
-                <?= ValidacaoIndicacao::adminStatusIcon($status) ?>
-                <?= e(ValidacaoIndicacao::adminStatusLabel($status)) ?>
-            </span>
-        </td>
-        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($indicacaoDate))) ?></td>
-        <td class="admin-table__td">
-            <span class="wait-time <?= e($waitTime['class']) ?>"><?= e($waitTime['label']) ?></span>
-        </td>
-        <td class="admin-table__td admin-table__col--actions">
             <div class="admin-table__actions">
                 <a
                     href="<?= url('/admin/validacoes/' . $validacao['id']) ?>"
@@ -151,6 +136,69 @@
                     </form>
                 <?php endif; ?>
             </div>
+    <?php
+    $actionsHtml = ob_get_clean();
+    ?>
+    <tr
+        class="admin-table__row--summary"
+        data-admin-accordion-trigger
+        tabindex="0"
+        role="button"
+        aria-expanded="false"
+        aria-controls="<?= e($detailId) ?>"
+    >
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary admin-table__td--mobile-show">
+            <div class="admin-table__summary-main">
+                <span class="admin-table__summary-title"><?= e($indicadorNome) ?></span>
+                <span class="admin-table__chevron" aria-hidden="true"></span>
+            </div>
+            <span class="admin-table__summary-sub admin-table__mobile-only"><?= e($indicadoNome) ?></span>
+        </td>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--mobile-hide">
+            <?= e($indicadoNome) ?>
+        </td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($whatsapp) ?></td>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--mobile-hide">
+            <?= e($campanha) ?>
+        </td>
+        <td class="admin-table__td admin-table__td--mobile-show">
+            <span class="badge <?= e(ValidacaoIndicacao::adminStatusBadgeClass($status)) ?>">
+                <?= ValidacaoIndicacao::adminStatusIcon($status) ?>
+                <?= e(ValidacaoIndicacao::adminStatusLabel($status)) ?>
+            </span>
+        </td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($dataLabel) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-show">
+            <span class="wait-time <?= e($waitTime['class']) ?>"><?= e($waitTime['label']) ?></span>
+        </td>
+        <td class="admin-table__td admin-table__col--actions admin-table__td--mobile-hide">
+            <?= $actionsHtml ?>
+        </td>
+    </tr>
+    <tr class="admin-table__row--details" id="<?= e($detailId) ?>" hidden>
+        <td colspan="8">
+            <dl class="admin-table__details">
+                <div>
+                    <dt>Indicado</dt>
+                    <dd><?= e($indicadoNome) ?></dd>
+                </div>
+                <div>
+                    <dt>WhatsApp</dt>
+                    <dd><?= e($whatsapp) ?></dd>
+                </div>
+                <div>
+                    <dt>Campanha</dt>
+                    <dd><?= e($campanha) ?></dd>
+                </div>
+                <div>
+                    <dt>Data da indicação</dt>
+                    <dd><?= e($dataLabel) ?></dd>
+                </div>
+                <div class="admin-table__details-actions">
+                    <dt>Ações</dt>
+                    <dd><?= $actionsHtml ?></dd>
+                </div>
+            </dl>
         </td>
     </tr>
 <?php }); ?>

@@ -605,6 +605,217 @@
     color: var(--primary-dark);
 }
 
+/* Accordion tables — desktop: comportamento atual */
+.page--admin .admin-table--expandable .admin-table__mobile-only,
+.page--admin .admin-table--expandable .admin-table__chevron {
+    display: none;
+}
+
+.page--admin .admin-table--expandable .admin-table__row--details {
+    display: none !important;
+}
+
+.page--admin .admin-table--expandable .admin-table__summary-main {
+    display: contents;
+}
+
+.page--admin .admin-table--expandable .admin-table__summary-title {
+    font-weight: inherit;
+}
+
+.page--admin .admin-table--expandable.admin-table--zebra tbody tr.admin-table__row--summary:nth-child(4n+1) {
+    background: rgba(245, 245, 245, 0.45);
+}
+
+.page--admin .admin-table--expandable.admin-table--zebra tbody tr.admin-table__row--summary:nth-child(4n+1):hover {
+    background: rgba(245, 245, 245, 0.85);
+}
+
+.page--admin .admin-table--expandable.admin-table--zebra tbody tr.admin-table__row--summary:nth-child(4n+3),
+.page--admin .admin-table--expandable.admin-table--zebra tbody tr.admin-table__row--summary:nth-child(4n+3):hover {
+    background: transparent;
+}
+
+.page--admin .admin-table--expandable.admin-table--zebra tbody tr.admin-table__row--summary:nth-child(4n+3):hover {
+    background: rgba(245, 245, 245, 0.85);
+}
+
+@media (max-width: 768px) {
+    .page--admin .admin-table--expandable.admin-table {
+        min-width: 0;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__scroll {
+        overflow-x: visible;
+        margin: 0;
+    }
+
+    .page--admin .admin-table--expandable thead {
+        display: none;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__mobile-only {
+        display: block;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__td--mobile-hide {
+        display: none !important;
+    }
+
+    .page--admin .admin-table--expandable tbody tr.admin-table__row--summary {
+        display: block;
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(18, 18, 18, 0.04);
+        cursor: pointer;
+        margin-bottom: 0.75rem;
+    }
+
+    .page--admin .admin-table--expandable.admin-table--zebra tbody tr.admin-table__row--summary,
+    .page--admin .admin-table--expandable.admin-table--zebra tbody tr.admin-table__row--summary:nth-child(even),
+    .page--admin .admin-table--expandable tbody tr.admin-table__row--summary:hover {
+        background: var(--white);
+    }
+
+    .page--admin .admin-table--expandable tbody tr.admin-table__row--summary.is-open {
+        border-color: var(--gray-300);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        margin-bottom: 0;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__td--mobile-show {
+        display: block;
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        white-space: normal;
+        border-bottom: 0;
+        padding: 0.65rem 0.875rem;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__td--mobile-show:first-child {
+        padding-top: 0.875rem;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__td--mobile-show:last-of-type {
+        padding-bottom: 0.875rem;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__summary-main {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__summary-title {
+        display: block;
+        font-weight: 700;
+        color: var(--black);
+        word-break: break-word;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__summary-sub {
+        margin-top: 0.35rem;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--gray-700);
+        word-break: break-word;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__chevron {
+        display: inline-flex;
+        flex-shrink: 0;
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.1rem;
+        background: center / contain no-repeat
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555555' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        transition: transform 0.2s ease;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__row--summary.is-open .admin-table__chevron {
+        transform: rotate(180deg);
+    }
+
+    .page--admin .admin-table--expandable .admin-table__row--details {
+        display: none !important;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__row--details:not([hidden]) {
+        display: block !important;
+        background: var(--gray-100);
+        border: 1px solid var(--gray-300);
+        border-top: 0;
+        border-radius: 0 0 12px 12px;
+        margin-top: -0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__row--details td {
+        display: block;
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        white-space: normal;
+        border-bottom: 0;
+        padding: 0.75rem 0.875rem 1rem;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__details {
+        margin: 0;
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__details > div {
+        display: grid;
+        gap: 0.2rem;
+        min-width: 0;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__details dt {
+        margin: 0;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--gray-700);
+    }
+
+    .page--admin .admin-table--expandable .admin-table__details dd {
+        margin: 0;
+        font-size: var(--admin-body-size);
+        font-weight: 500;
+        color: var(--black);
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__details-actions .admin-table__actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: stretch;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__details-actions .admin-table__actions .btn,
+    .page--admin .admin-table--expandable .admin-table__details-actions .admin-table__actions .inline-form {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 7rem;
+    }
+
+    .page--admin .admin-table--expandable .admin-table__details-actions .admin-table__actions .inline-form .btn {
+        width: 100%;
+    }
+}
+
 /* ── Pagination ── */
 .page--admin .admin-pagination,
 .page--admin .pagination {

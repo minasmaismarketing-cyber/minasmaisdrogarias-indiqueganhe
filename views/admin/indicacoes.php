@@ -59,6 +59,7 @@ $buildPageUrl = static function (int $page) use ($filters): string {
     'title' => 'Lista de Indicações',
     'meta' => $total . ' registro(s)',
     'emptyMessage' => 'Nenhuma indicação encontrada.',
+    'class' => 'admin-table--expandable',
     'columns' => [
         ['label' => 'Indicador'],
         ['label' => 'Indicado'],
@@ -72,29 +73,43 @@ $buildPageUrl = static function (int $page) use ($filters): string {
     'rows' => $indicacoes,
 ], static function (array $indicacao): void {
     $adminStatus = (string) ($indicacao['admin_status'] ?? Indicacao::resolveAdminStatus($indicacao));
+    $detailId = 'admin-acc-ind-' . (int) $indicacao['id'];
+    $indicadorNome = (string) ($indicacao['indicador_nome'] ?? '—');
+    $indicadoNome = (string) ($indicacao['indicado_nome'] ?? 'Aguardando cadastro');
+    $whatsapp = !empty($indicacao['indicado_whatsapp']) ? format_phone((string) $indicacao['indicado_whatsapp']) : '—';
+    $codigo = (string) ($indicacao['codigo_referencia'] ?? $indicacao['codigo_indicador'] ?? '—');
+    $cupom = !empty($indicacao['cupom_codigo']) ? (string) $indicacao['cupom_codigo'] : '—';
+    $data = date('d/m/Y H:i', strtotime($indicacao['created_at']));
     ?>
-    <tr>
-        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary">
-            <?= e((string) ($indicacao['indicador_nome'] ?? '—')) ?>
+    <tr
+        class="admin-table__row--summary"
+        data-admin-accordion-trigger
+        tabindex="0"
+        role="button"
+        aria-expanded="false"
+        aria-controls="<?= e($detailId) ?>"
+    >
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary admin-table__td--mobile-show">
+            <div class="admin-table__summary-main">
+                <span class="admin-table__summary-title"><?= e($indicadorNome) ?></span>
+                <span class="admin-table__chevron" aria-hidden="true"></span>
+            </div>
+            <span class="admin-table__summary-sub admin-table__mobile-only"><?= e($indicadoNome) ?></span>
         </td>
-        <td class="admin-table__td admin-table__td--wrap">
-            <?= e((string) ($indicacao['indicado_nome'] ?? 'Aguardando cadastro')) ?>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--mobile-hide">
+            <?= e($indicadoNome) ?>
         </td>
-        <td class="admin-table__td">
-            <?= !empty($indicacao['indicado_whatsapp']) ? e(format_phone((string) $indicacao['indicado_whatsapp'])) : '—' ?>
-        </td>
-        <td class="admin-table__td"><?= e((string) ($indicacao['codigo_referencia'] ?? $indicacao['codigo_indicador'] ?? '—')) ?></td>
-        <td class="admin-table__td">
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($whatsapp) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($codigo) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-show">
             <span class="badge badge--status badge--<?= strtolower($adminStatus) ?>">
                 <?= ValidacaoIndicacao::statusIcon($adminStatus) ?>
                 <?= e(Indicacao::adminStatusLabel($adminStatus)) ?>
             </span>
         </td>
-        <td class="admin-table__td">
-            <?= !empty($indicacao['cupom_codigo']) ? e((string) $indicacao['cupom_codigo']) : '—' ?>
-        </td>
-        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($indicacao['created_at']))) ?></td>
-        <td class="admin-table__td admin-table__col--actions">
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($cupom) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-show"><?= e($data) ?></td>
+        <td class="admin-table__td admin-table__col--actions admin-table__td--mobile-hide">
             <div class="admin-table__actions">
                 <a
                     href="<?= url('/admin/indicacoes/' . $indicacao['id']) ?>"
@@ -103,6 +118,41 @@ $buildPageUrl = static function (int $page) use ($filters): string {
                     title="Ver detalhes"
                 >👁</a>
             </div>
+        </td>
+    </tr>
+    <tr class="admin-table__row--details" id="<?= e($detailId) ?>" hidden>
+        <td colspan="8">
+            <dl class="admin-table__details">
+                <div>
+                    <dt>Indicado</dt>
+                    <dd><?= e($indicadoNome) ?></dd>
+                </div>
+                <div>
+                    <dt>WhatsApp</dt>
+                    <dd><?= e($whatsapp) ?></dd>
+                </div>
+                <div>
+                    <dt>Código</dt>
+                    <dd><?= e($codigo) ?></dd>
+                </div>
+                <div>
+                    <dt>Cupom</dt>
+                    <dd><?= e($cupom) ?></dd>
+                </div>
+                <div class="admin-table__details-actions">
+                    <dt>Ações</dt>
+                    <dd>
+                        <div class="admin-table__actions">
+                            <a
+                                href="<?= url('/admin/indicacoes/' . $indicacao['id']) ?>"
+                                class="btn btn--sm btn--ghost"
+                                aria-label="Ver detalhes da indicação #<?= (int) $indicacao['id'] ?>"
+                                title="Ver detalhes"
+                            >👁</a>
+                        </div>
+                    </dd>
+                </div>
+            </dl>
         </td>
     </tr>
 <?php }); ?>
