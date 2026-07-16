@@ -3,6 +3,8 @@
  *
  * Toda a URL do OneLink é gerada exclusivamente por
  * window.AF_SMART_SCRIPT.generateOneLinkURL() — sem montagem manual.
+ *
+ * Deferred deep linking: deep_link_value + deep_link_sub1–5 (afCustom).
  */
 (function () {
     'use strict';
@@ -54,11 +56,46 @@
     }
 
     /**
-     * Parâmetros oficiais AppsFlyer (pid, c, deep_link_value, af_sub1–5).
-     * ref é lido automaticamente da query string (?ref=) via keys: ['ref'].
+     * pid / c / deep_link_value + deep_link_sub1–5 via afCustom.
+     * ref (?ref=) → deep_link_sub1; deep_link_value fixo = indique.
      */
     function buildAfParameters(config) {
         var refFallback = readRefFromUrl();
+        var campaign = config.campaign || 'Indique e Ganhe Minas Mais';
+
+        var afCustom = [
+            {
+                paramKey: 'deep_link_sub1',
+                keys: ['ref'],
+                defaultValue: refFallback,
+            },
+        ];
+
+        if (config.deepLinkSub2) {
+            afCustom.push({
+                paramKey: 'deep_link_sub2',
+                keys: [],
+                defaultValue: String(config.deepLinkSub2),
+            });
+        }
+
+        afCustom.push(
+            {
+                paramKey: 'deep_link_sub3',
+                keys: [],
+                defaultValue: campaign,
+            },
+            {
+                paramKey: 'deep_link_sub4',
+                keys: [],
+                defaultValue: config.deepLinkSub4 || 'indique_ganhe',
+            },
+            {
+                paramKey: 'deep_link_sub5',
+                keys: [],
+                defaultValue: config.deepLinkSub5 || 'homolog',
+            }
+        );
 
         return {
             mediaSource: {
@@ -67,32 +104,13 @@
             },
             campaign: {
                 keys: [],
-                defaultValue: config.campaign || 'Indique e Ganhe Minas Mais',
+                defaultValue: campaign,
             },
             deepLinkValue: {
-                keys: ['ref'],
-                defaultValue: refFallback,
-            },
-            afSub1: {
-                keys: ['ref'],
-                defaultValue: refFallback,
-            },
-            afSub2: {
                 keys: [],
-                defaultValue: config.afSub2 || '1',
+                defaultValue: config.deepLinkValue || 'indique',
             },
-            afSub3: {
-                keys: [],
-                defaultValue: config.campaign || 'Indique e Ganhe Minas Mais',
-            },
-            afSub4: {
-                keys: [],
-                defaultValue: config.afSub4 || 'indique_ganhe',
-            },
-            afSub5: {
-                keys: [],
-                defaultValue: config.afSub5 || 'homolog',
-            },
+            afCustom: afCustom,
         };
     }
 

@@ -45,12 +45,13 @@ class ApiAuth
         }
 
         $providedToken = $matches[1];
-        $expectedToken = $_ENV['API_TOKEN'] ?? '';
+        // Token exclusivo da integração KOBE — sem fallback para API_TOKEN.
+        $expectedToken = trim((string) ($_ENV['KOBE_API_TOKEN'] ?? ''));
 
-        if (empty($expectedToken)) {
+        if ($expectedToken === '') {
             $this->sendJsonResponse([
                 'success' => false,
-                'message' => 'API token not configured on server.',
+                'message' => 'Erro interno do servidor.',
             ], 500);
             exit;
         }

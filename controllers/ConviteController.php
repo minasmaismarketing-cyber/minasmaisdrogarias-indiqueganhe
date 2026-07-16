@@ -12,6 +12,7 @@ class ConviteController extends Controller
 
         $indicadorPrimeiroNome = '';
         $indicadorNomeCompleto = '';
+        $indicadorId = '';
 
         if ($ref === '') {
             $error = 'Link de convite inválido.';
@@ -55,6 +56,7 @@ class ConviteController extends Controller
                         if (is_array($referrer)) {
                             $indicadorNomeCompleto = trim((string) ($referrer['nome'] ?? ''));
                             $indicadorPrimeiroNome = first_name_from_full($indicadorNomeCompleto);
+                            $indicadorId = trim((string) ($referrer['id'] ?? ''));
                         }
                     }
                 }
@@ -68,7 +70,9 @@ class ConviteController extends Controller
             'valid' => $valid,
             'indicadorPrimeiroNome' => $indicadorPrimeiroNome,
             'appDownloadUrl' => app_download_url(),
-            'smartScriptPayload' => $valid ? convite_smart_script_payload() : ['enabled' => false, 'scriptUrl' => ''],
+            'smartScriptPayload' => $valid
+                ? convite_smart_script_payload($ref, $indicadorId)
+                : ['enabled' => false, 'scriptUrl' => ''],
         ], 'convite');
     }
 

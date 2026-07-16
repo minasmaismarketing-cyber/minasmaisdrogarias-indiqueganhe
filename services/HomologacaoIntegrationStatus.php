@@ -100,7 +100,7 @@ final class HomologacaoIntegrationStatus
     /** @return array{name: string, emoji: string, label: string, detail: string} */
     private static function apiKobeRow(): array
     {
-        $token = trim((string) Env::get('API_TOKEN', ''));
+        $token = trim((string) Env::get('KOBE_API_TOKEN', ''));
         $configured = $token !== '';
 
         return [

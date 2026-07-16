@@ -126,8 +126,8 @@ return [
         'script_url' => 'https://onelinksmartscript.appsflyer.com/onelink-smart-script-latest.js',
         'one_link_url' => 'https://drogariasminasmais.onelink.me/zjoY/',
         'redirection_profile' => 'indiqueganhe',
-        'af_sub2' => '1',
-        'af_sub4' => 'indique_ganhe',
-        'af_sub5' => 'homolog',
+        'deep_link_value' => 'indique',
+        'deep_link_sub4' => 'indique_ganhe',
+        'deep_link_sub5' => 'homolog',
     ],
 ];

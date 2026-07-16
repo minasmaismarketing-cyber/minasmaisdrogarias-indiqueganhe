@@ -183,7 +183,7 @@ function convite_smart_script_one_link_url(): string
 }
 
 /** @return array<string, mixed> */
-function convite_smart_script_payload(string $ref = ''): array
+function convite_smart_script_payload(string $ref = '', string $indicadorId = ''): array
 {
     $config = AppsFlyerConfig::all();
     $smart = $config['smart_script'] ?? [];
@@ -194,9 +194,12 @@ function convite_smart_script_payload(string $ref = ''): array
         'oneLinkURL' => convite_smart_script_one_link_url(),
         'mediaSource' => (string) ($config['default_media_source'] ?? 'User_invite'),
         'campaign' => (string) ($config['default_campaign'] ?? 'Indique e Ganhe Minas Mais'),
-        'afSub2' => (string) ($smart['af_sub2'] ?? '1'),
-        'afSub4' => (string) ($smart['af_sub4'] ?? 'indique_ganhe'),
-        'afSub5' => (string) ($smart['af_sub5'] ?? 'homolog'),
+        'deepLinkValue' => (string) ($smart['deep_link_value'] ?? 'indique'),
+        'deepLinkSub2' => $indicadorId !== ''
+            ? $indicadorId
+            : (string) ($smart['deep_link_sub2'] ?? ''),
+        'deepLinkSub4' => (string) ($smart['deep_link_sub4'] ?? 'indique_ganhe'),
+        'deepLinkSub5' => (string) ($smart['deep_link_sub5'] ?? 'homolog'),
         'fallbackUrl' => app_download_url(),
     ];
 }
