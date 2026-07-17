@@ -17,7 +17,7 @@ $breadcrumbs = admin_breadcrumbs();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#D71920">
+    <?php require BASE_PATH . '/views/partials/head-pwa.php'; ?>
     <title><?= e($pageTitle) ?> — Admin · Indique e Ganhe</title>
     <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/admin-design-system.css') ?>">
@@ -114,5 +114,6 @@ $breadcrumbs = admin_breadcrumbs();
             });
         })();
     </script>
+    <?php require BASE_PATH . '/views/partials/pwa-register.php'; ?>
 </body>
 </html>

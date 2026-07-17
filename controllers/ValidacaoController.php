@@ -140,10 +140,19 @@ class ValidacaoController extends Controller
         $user = Auth::user();
         $adminEmail = $user !== null ? $user['email'] : null;
 
-        if ($this->validacaoModel->approve($id, $observacao, $adminEmail)) {
-            Session::flash('success', 'Validação aprovada com sucesso.');
-        } else {
-            Session::flash('error', 'Erro ao aprovar validação.');
+        try {
+            if ($this->validacaoModel->approve($id, $observacao, $adminEmail)) {
+                Session::flash('success', 'Validação aprovada com sucesso. Cupom 10% liberado ao indicador.');
+            } else {
+                Session::flash('error', 'Erro ao aprovar validação.');
+            }
+        } catch (Throwable $e) {
+            $message = $e->getMessage();
+            if (str_contains($message, 'Não há cupons disponíveis')) {
+                Session::flash('error', 'Não há cupons disponíveis para esta campanha.');
+            } else {
+                Session::flash('error', 'Erro ao aprovar validação: não foi possível liberar o cupom.');
+            }
         }
 
         $this->redirect('/admin/validacoes');

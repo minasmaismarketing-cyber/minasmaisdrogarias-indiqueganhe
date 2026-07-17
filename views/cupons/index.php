@@ -33,6 +33,12 @@
         </div>
     <?php else: ?>
         <?php foreach ($cupons as $cupom): ?>
+            <?php
+            $valor = (float) ($cupom['valor'] ?? 0);
+            $beneficio = ($cupom['tipo'] ?? '') === Cupom::TIPO_PERCENTUAL
+                ? rtrim(rtrim(number_format($valor, 2, ',', ''), '0'), ',') . '% OFF'
+                : 'R$ ' . number_format($valor, 2, ',', '.');
+            ?>
             <article class="coupon-card coupon-card--<?= strtolower($cupom['status']) ?>">
                 <div class="coupon-card__header">
                     <span class="coupon-card__icon"><?= Cupom::statusIcon($cupom['status']) ?></span>
@@ -41,24 +47,10 @@
                     </div>
                 </div>
 
-                <div class="coupon-card__code">
-                    <div>
-                        <span class="coupon-card__label">Código</span>
-                        <span class="coupon-card__value"><?= e($cupom['codigo']) ?></span>
-                    </div>
-                    <?php if ($cupom['status'] === Cupom::STATUS_DISPONIVEL): ?>
-                        <button type="button" class="btn btn--sm btn--ghost coupon-card__copy" data-copy="<?= e($cupom['codigo']) ?>">
-                            Copiar
-                        </button>
-                    <?php endif; ?>
-                </div>
-
                 <div class="coupon-card__details">
                     <div class="coupon-card__detail">
-                        <span class="coupon-card__label">Valor</span>
-                        <span class="coupon-card__value">
-                            <?= e($cupom['valor']) ?> <?= e(Cupom::tipoLabel($cupom['tipo'])) ?>
-                        </span>
+                        <span class="coupon-card__label">Benefício</span>
+                        <span class="coupon-card__value"><?= e($beneficio) ?></span>
                     </div>
                     <div class="coupon-card__detail">
                         <span class="coupon-card__label">Campanha</span>
@@ -73,6 +65,23 @@
                         </div>
                     <?php endif; ?>
                 </div>
+
+                <?php if ($cupom['status'] === Cupom::STATUS_DISPONIVEL): ?>
+                    <div class="coupon-card__code" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                        <button
+                            type="button"
+                            class="btn btn--block btn--primary coupon-card__copy"
+                            data-copy="<?= e($cupom['codigo']) ?>"
+                            data-copy-success="Cupom copiado"
+                            data-copy-toast="Cupom copiado"
+                        >
+                            Copiar meu cupom
+                        </button>
+                        <p class="coupon-card__hint" style="margin:0; font-size:0.75rem; opacity:0.7; line-height:1.35;">
+                            Uso único e intransferível. Não compartilhe: quem usar primeiro consome o cupom.
+                        </p>
+                    </div>
+                <?php endif; ?>
 
                 <div class="coupon-card__footer">
                     <span class="coupon-card__date">

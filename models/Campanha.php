@@ -95,6 +95,37 @@ class Campanha extends Model
         return self::$activeCampanhaCache;
     }
 
+    /**
+     * Campanha vinculada à indicação (coluna campanha_id, se existir; senão período de vigência na data da indicação).
+     *
+     * @param array<string, mixed> $indicacao
+     */
+    public function findForIndicacao(array $indicacao): ?array
+    {
+        if (!empty($indicacao['campanha_id'])) {
+            return $this->findById((int) $indicacao['campanha_id']);
+        }
+
+        $data = substr((string) ($indicacao['created_at'] ?? ''), 0, 10);
+        if ($data === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
+            return null;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT * FROM campanhas
+             WHERE :data BETWEEN inicio AND fim
+             ORDER BY CASE WHEN status = :ativa THEN 0 ELSE 1 END, id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'data' => $data,
+            'ativa' => self::STATUS_ATIVA,
+        ]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     public function findById(int $id): ?array
     {
         $stmt = $this->db->prepare('SELECT * FROM campanhas WHERE id = :id LIMIT 1');

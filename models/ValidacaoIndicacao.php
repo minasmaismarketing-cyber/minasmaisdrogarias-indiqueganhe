@@ -161,41 +161,47 @@ class ValidacaoIndicacao extends Model
         }
 
         $statusAnterior = (string) $validacao['status'];
-        $stmt = $this->db->prepare(
-            'UPDATE validacao_indicacoes
-             SET status = :status, elegivel = 1, updated_at = NOW()
-             WHERE id = :id'
-        );
-        $stmt->execute(['status' => self::STATUS_APROVADO, 'id' => $id]);
-
         $indicacaoId = (int) ($validacao['indicacao_id'] ?? 0);
-        if ($indicacaoId > 0) {
-            $this->syncIndicacaoStatus($indicacaoId, Indicacao::STATUS_VALIDADO);
+        $usuarioId = (int) ($validacao['usuario_indicador_id'] ?? 0);
+
+        $db = Database::getConnection();
+        $db->beginTransaction();
+
+        try {
+            // Estoque primeiro: se falhar, a validação permanece em análise
+            if ($indicacaoId > 0 && $usuarioId > 0) {
+                (new CupomService())->assignFromPoolForIndicacao($indicacaoId, $usuarioId, null, $adminEmail);
+            }
+
+            $stmt = $db->prepare(
+                'UPDATE validacao_indicacoes
+                 SET status = :status, elegivel = 1, updated_at = NOW()
+                 WHERE id = :id'
+            );
+            $stmt->execute(['status' => self::STATUS_APROVADO, 'id' => $id]);
+
+            if ($indicacaoId > 0) {
+                $this->syncIndicacaoStatus($indicacaoId, Indicacao::STATUS_VALIDADO);
+            }
+
+            $this->recordHistory(
+                $id,
+                $statusAnterior,
+                self::STATUS_APROVADO,
+                $observacao ?? 'Validação aprovada',
+                $adminEmail
+            );
+
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
         }
 
-        $this->recordHistory(
-            $id,
-            $statusAnterior,
-            self::STATUS_APROVADO,
-            $observacao ?? 'Validação aprovada',
-            $adminEmail
-        );
-
-        $usuarioId = (int) ($validacao['usuario_indicador_id'] ?? 0);
         if ($usuarioId > 0) {
             (new EventLogger())->logValidacaoAprovada($usuarioId, $id);
-        }
-
-        if ($indicacaoId > 0 && $usuarioId > 0) {
-            try {
-                (new CupomService())->generateForIndicacao($indicacaoId, $usuarioId);
-            } catch (Throwable $e) {
-                Logger::error('Failed to generate coupon', [
-                    'validacao_id' => $id,
-                    'indicacao_id' => $indicacaoId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
         }
 
         return true;

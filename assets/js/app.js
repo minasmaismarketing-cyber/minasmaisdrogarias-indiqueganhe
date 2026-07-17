@@ -81,9 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await navigator.clipboard.writeText(text);
                 const originalText = btn.textContent;
-                btn.textContent = 'Copiado!';
+                const successText = btn.dataset.copySuccess || 'Copiado!';
+                const toastText = btn.dataset.copyToast || successText;
+                btn.textContent = successText;
                 btn.classList.add('btn--success');
-                showToast('Copiado!', 'success');
+                showToast(toastText, 'success');
                 setTimeout(() => {
                     btn.textContent = originalText;
                     btn.classList.remove('btn--success');

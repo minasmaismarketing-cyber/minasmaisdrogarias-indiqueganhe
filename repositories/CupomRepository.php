@@ -53,6 +53,51 @@ class CupomRepository
         return $this->cupomModel->create($data);
     }
 
+    /** @param list<string> $codigos */
+    public function bulkInsertEstoque(
+        int $campanhaId,
+        array $codigos,
+        string $tipo,
+        float $valor,
+        string $origem = 'IMPORT_CSV'
+    ): int {
+        return $this->cupomModel->bulkInsertEstoque($campanhaId, $codigos, $tipo, $valor, $origem);
+    }
+
+    public function findDisponivelForUpdate(int $campanhaId): ?array
+    {
+        return $this->cupomModel->findDisponivelForUpdate($campanhaId);
+    }
+
+    public function assignToIndicacao(int $cupomId, int $usuarioId, int $indicacaoId): void
+    {
+        $this->cupomModel->assignToIndicacao($cupomId, $usuarioId, $indicacaoId);
+    }
+
+    public function deleteDisponivel(int $id): bool
+    {
+        return $this->cupomModel->deleteDisponivel($id);
+    }
+
+    /** @param list<int> $ids */
+    public function deleteDisponiveisBatch(array $ids): int
+    {
+        return $this->cupomModel->deleteDisponiveisBatch($ids);
+    }
+
+    /** @param list<string> $codigos
+     *  @return list<string>
+     */
+    public function filterExistingCodigos(array $codigos): array
+    {
+        return $this->cupomModel->filterExistingCodigos($codigos);
+    }
+
+    public function getEstoqueStats(?int $campanhaId = null): array
+    {
+        return $this->cupomModel->getEstoqueStats($campanhaId);
+    }
+
     public function updateStatus(int $id, string $status): void
     {
         $this->cupomModel->updateStatus($id, $status);

@@ -57,6 +57,11 @@ $router->post('/admin/validacoes/cancelar', 'ValidacaoController', 'cancel');
 
 // Cupons (Etapa 14 - Sistema de Cupons)
 $router->get('/admin/cupons', 'CuponsController', 'adminIndex');
+$router->get('/admin/cupons/importar', 'CuponsController', 'importForm');
+$router->post('/admin/cupons/importar/validar', 'CuponsController', 'importValidate');
+$router->post('/admin/cupons/importar/confirmar', 'CuponsController', 'importConfirm');
+$router->post('/admin/cupons/excluir', 'CuponsController', 'delete');
+$router->post('/admin/cupons/excluir-lote', 'CuponsController', 'deleteBatch');
 $router->get('/admin/cupons/{id}', 'CuponsController', 'show');
 $router->post('/admin/cupons/cancelar', 'CuponsController', 'cancel');
 $router->post('/admin/cupons/expirar', 'CuponsController', 'expire');

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 class CuponsController extends Controller
 {
+    private const IMPORT_SESSION_KEY = 'cupom_import_pending';
+
     private CupomService $cupomService;
     private CupomRepository $cupomRepository;
     private EventLogger $eventLogger;
@@ -35,6 +37,8 @@ class CuponsController extends Controller
         $total = $this->cupomRepository->countFiltered($filters);
         $cupons = $this->cupomRepository->findAll($filters, $limit, $offset);
         $stats = (new Cupom())->getFilteredStats($filters);
+        $campanhaFiltro = $filters['campanha_id'] !== '' ? (int) $filters['campanha_id'] : null;
+        $estoqueStats = $this->cupomRepository->getEstoqueStats($campanhaFiltro);
         $campanhas = (new Campanha())->findAll();
         $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
 
@@ -42,6 +46,7 @@ class CuponsController extends Controller
             'title' => 'Gerenciamento de Cupons',
             'cupons' => $cupons,
             'stats' => $stats,
+            'estoqueStats' => $estoqueStats,
             'filters' => $filters,
             'campanhas' => $campanhas,
             'currentPage' => $page,
@@ -50,6 +55,142 @@ class CuponsController extends Controller
             'hasNext' => $page < $totalPages,
             'hasPrev' => $page > 1,
         ], 'admin');
+    }
+
+    public function importForm(): void
+    {
+        Auth::requireAdmin();
+
+        $pending = Session::get(self::IMPORT_SESSION_KEY);
+        $campanhas = (new Campanha())->findAll();
+
+        $this->view('admin.cupons-import', [
+            'title' => 'Importar cupons',
+            'campanhas' => $campanhas,
+            'pending' => is_array($pending) ? $pending : null,
+        ], 'admin');
+    }
+
+    public function importValidate(): void
+    {
+        Auth::requireAdmin();
+
+        if (!Csrf::validateRequest()) {
+            Session::flash('error', 'Token de segurança inválido.');
+            $this->redirect('/admin/cupons/importar');
+        }
+
+        $campanhaId = (int) ($_POST['campanha_id'] ?? 0);
+        $file = $_FILES['arquivo'] ?? null;
+
+        if (!is_array($file)) {
+            Session::flash('error', 'Selecione um arquivo CSV.');
+            $this->redirect('/admin/cupons/importar');
+        }
+
+        try {
+            $result = $this->cupomService->validateCsvImport($file, $campanhaId);
+        } catch (InvalidArgumentException $e) {
+            Session::remove(self::IMPORT_SESSION_KEY);
+            Session::flash('error', $e->getMessage());
+            $this->redirect('/admin/cupons/importar');
+        }
+
+        Session::set(self::IMPORT_SESSION_KEY, [
+            'campanha_id' => $campanhaId,
+            'codigos' => $result['a_importar'],
+            'resumo' => $result['resumo'],
+            'validated_at' => time(),
+        ]);
+
+        Session::flash('success', 'Arquivo validado. Confira o resumo antes de confirmar.');
+        $this->redirect('/admin/cupons/importar');
+    }
+
+    public function importConfirm(): void
+    {
+        Auth::requireAdmin();
+
+        if (!Csrf::validateRequest()) {
+            Session::flash('error', 'Token de segurança inválido.');
+            $this->redirect('/admin/cupons/importar');
+        }
+
+        $pending = Session::get(self::IMPORT_SESSION_KEY);
+        if (!is_array($pending) || empty($pending['codigos']) || empty($pending['campanha_id'])) {
+            Session::flash('error', 'Nenhuma importação validada. Valide o arquivo primeiro.');
+            $this->redirect('/admin/cupons/importar');
+        }
+
+        $campanhaId = (int) $pending['campanha_id'];
+        $codigos = is_array($pending['codigos']) ? $pending['codigos'] : [];
+        $user = Auth::user();
+        $adminEmail = $user !== null ? (string) $user['email'] : null;
+
+        try {
+            $result = $this->cupomService->confirmCsvImport($campanhaId, $codigos, $adminEmail);
+            Session::remove(self::IMPORT_SESSION_KEY);
+            Session::flash(
+                'success',
+                sprintf(
+                    'Importação concluída: %d cupom(ns) inserido(s), %d ignorado(s).',
+                    $result['imported'],
+                    $result['skipped']
+                )
+            );
+            $this->redirect('/admin/cupons');
+        } catch (Throwable $e) {
+            Session::flash('error', $e->getMessage());
+            $this->redirect('/admin/cupons/importar');
+        }
+    }
+
+    public function delete(): void
+    {
+        Auth::requireAdmin();
+
+        if (!Csrf::validateRequest()) {
+            Session::flash('error', 'Token de segurança inválido.');
+            $this->redirect('/admin/cupons');
+        }
+
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            Session::flash('error', 'ID inválido.');
+            $this->redirect('/admin/cupons');
+        }
+
+        if ($this->cupomService->deleteDisponivel($id)) {
+            Session::flash('success', 'Cupom disponível excluído.');
+        } else {
+            Session::flash('error', 'Exclusão bloqueada. Apenas cupons disponíveis (sem atribuição) podem ser apagados.');
+        }
+
+        $this->redirect('/admin/cupons');
+    }
+
+    public function deleteBatch(): void
+    {
+        Auth::requireAdmin();
+
+        if (!Csrf::validateRequest()) {
+            Session::flash('error', 'Token de segurança inválido.');
+            $this->redirect('/admin/cupons');
+        }
+
+        $ids = $_POST['ids'] ?? [];
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+
+        $deleted = $this->cupomService->deleteDisponiveisBatch(array_map('intval', $ids));
+        if ($deleted > 0) {
+            Session::flash('success', $deleted . ' cupom(ns) disponível(is) excluído(s).');
+        } else {
+            Session::flash('error', 'Nenhum cupom disponível foi excluído.');
+        }
+
+        $this->redirect('/admin/cupons');
     }
 
     public function show(int $id): void

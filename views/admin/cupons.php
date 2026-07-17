@@ -1,6 +1,14 @@
 <?php declare(strict_types=1); ?>
 <?php
 $subtitle = 'Gerencie os cupons do programa Indique e Ganhe.';
+$estoqueStats = $estoqueStats ?? [
+    'total_importado' => 0,
+    'disponiveis' => 0,
+    'atribuidos' => 0,
+    'utilizados' => 0,
+    'cancelados' => 0,
+    'expirados' => 0,
+];
 $buildPageUrl = static function (int $page) use ($filters): string {
     $params = array_filter($filters, static fn ($value) => $value !== '');
     if ($page > 1) {
@@ -9,6 +17,11 @@ $buildPageUrl = static function (int $page) use ($filters): string {
     $query = http_build_query($params);
 
     return url('/admin/cupons' . ($query !== '' ? '?' . $query : ''));
+};
+$isEstoqueDisponivel = static function (array $cupom): bool {
+    return ($cupom['status'] ?? '') === Cupom::STATUS_DISPONIVEL
+        && empty($cupom['usuario_id'])
+        && empty($cupom['indicacao_id']);
 };
 ?>
 
@@ -66,32 +79,43 @@ $buildPageUrl = static function (int $page) use ($filters): string {
 
 <section class="admin-stats stats-grid">
     <article class="stat-card">
-        <span class="stat-card__value"><?= $stats['disponiveis'] ?? 0 ?></span>
-        <span class="stat-card__label">Disponíveis</span>
+        <span class="stat-card__value"><?= (int) ($estoqueStats['total_importado'] ?? 0) ?></span>
+        <span class="stat-card__label">Total importado</span>
     </article>
     <article class="stat-card">
-        <span class="stat-card__value"><?= $stats['reservados'] ?? 0 ?></span>
-        <span class="stat-card__label">Reservados</span>
+        <span class="stat-card__value"><?= (int) ($estoqueStats['disponiveis'] ?? 0) ?></span>
+        <span class="stat-card__label">Disponíveis (estoque)</span>
     </article>
     <article class="stat-card">
-        <span class="stat-card__value"><?= $stats['utilizados'] ?? 0 ?></span>
+        <span class="stat-card__value"><?= (int) ($estoqueStats['atribuidos'] ?? 0) ?></span>
+        <span class="stat-card__label">Atribuídos / liberados</span>
+    </article>
+    <article class="stat-card">
+        <span class="stat-card__value"><?= (int) ($estoqueStats['utilizados'] ?? 0) ?></span>
         <span class="stat-card__label">Utilizados</span>
     </article>
     <article class="stat-card">
-        <span class="stat-card__value"><?= $stats['expirados'] ?? 0 ?></span>
-        <span class="stat-card__label">Expirados</span>
-    </article>
-    <article class="stat-card">
-        <span class="stat-card__value"><?= $stats['cancelados'] ?? 0 ?></span>
+        <span class="stat-card__value"><?= (int) ($estoqueStats['cancelados'] ?? 0) ?></span>
         <span class="stat-card__label">Cancelados</span>
     </article>
+    <article class="stat-card">
+        <span class="stat-card__value"><?= (int) ($estoqueStats['expirados'] ?? 0) ?></span>
+        <span class="stat-card__label">Expirados</span>
+    </article>
 </section>
+
+<form method="POST" action="<?= url('/admin/cupons/excluir-lote') ?>" id="form-excluir-lote" onsubmit="return confirm('Excluir apenas os cupons disponíveis selecionados?');">
+    <?= csrf_field() ?>
+</form>
 
 <?php admin_table([
     'title' => 'Lista de Cupons',
     'meta' => $total . ' registro(s)',
+    'headerActions' => '<a href="' . e(url('/admin/cupons/importar')) . '" class="btn btn--sm btn--primary">Importar cupons</a>'
+        . ' <button type="submit" form="form-excluir-lote" class="btn btn--sm btn--danger">Excluir selecionados</button>',
     'emptyMessage' => 'Nenhum cupom encontrado.',
     'columns' => [
+        ['label' => ''],
         ['label' => 'Código'],
         ['label' => 'Indicador'],
         ['label' => 'Campanha'],
@@ -102,10 +126,16 @@ $buildPageUrl = static function (int $page) use ($filters): string {
         ['label' => 'Ações', 'class' => 'admin-table__col--actions', 'align' => 'right'],
     ],
     'rows' => $cupons,
-], static function (array $cupom): void {
+], static function (array $cupom) use ($isEstoqueDisponivel): void {
     $status = (string) $cupom['status'];
+    $estoque = $isEstoqueDisponivel($cupom);
     ?>
     <tr>
+        <td class="admin-table__td">
+            <?php if ($estoque): ?>
+                <input type="checkbox" name="ids[]" value="<?= (int) $cupom['id'] ?>" form="form-excluir-lote" aria-label="Selecionar cupom disponível">
+            <?php endif; ?>
+        </td>
         <td class="admin-table__td admin-table__td--primary"><?= e((string) $cupom['codigo']) ?></td>
         <td class="admin-table__td admin-table__td--wrap"><?= e((string) ($cupom['usuario_nome'] ?? '—')) ?></td>
         <td class="admin-table__td admin-table__td--wrap"><?= e((string) ($cupom['campanha_nome'] ?? '—')) ?></td>
@@ -113,6 +143,9 @@ $buildPageUrl = static function (int $page) use ($filters): string {
             <span class="badge <?= e(Cupom::adminStatusBadgeClass($status)) ?>">
                 <?= Cupom::statusIcon($status) ?>
                 <?= e(Cupom::statusLabel($status)) ?>
+                <?php if (!$estoque && $status === Cupom::STATUS_DISPONIVEL && !empty($cupom['usuario_id'])): ?>
+                    <span class="badge badge--info" style="margin-left:0.25rem;">Atribuído</span>
+                <?php endif; ?>
             </span>
         </td>
         <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($cupom['created_at']))) ?></td>
@@ -128,6 +161,13 @@ $buildPageUrl = static function (int $page) use ($filters): string {
                     aria-label="Ver detalhes do cupom <?= e((string) $cupom['codigo']) ?>"
                     title="Ver detalhes"
                 >👁</a>
+                <?php if ($estoque): ?>
+                    <form method="POST" action="<?= url('/admin/cupons/excluir') ?>" class="inline-form" onsubmit="return confirm('Excluir este cupom disponível?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= (int) $cupom['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--danger">Excluir</button>
+                    </form>
+                <?php endif; ?>
                 <?php if ($cupom['status'] === Cupom::STATUS_DISPONIVEL || $cupom['status'] === Cupom::STATUS_RESERVADO): ?>
                     <form method="POST" action="<?= url('/admin/cupons/cancelar') ?>" class="inline-form" onsubmit="return confirm('Tem certeza que deseja cancelar este cupom?');">
                         <?= csrf_field() ?>

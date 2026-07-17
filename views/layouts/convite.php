@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#D71920">
+    <?php require BASE_PATH . '/views/partials/head-pwa.php'; ?>
     <title><?= e($title ?? 'Indique e Ganhe') ?></title>
     <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
     <?php if (!empty($valid) && !empty($smartScriptPayload['enabled']) && !empty($smartScriptPayload['scriptUrl'])): ?>
@@ -23,5 +23,6 @@
     <?php if (!empty($valid)): ?>
         <script src="<?= asset('js/convite-landing-ui.js') ?>" defer></script>
     <?php endif; ?>
+    <?php require BASE_PATH . '/views/partials/pwa-register.php'; ?>
 </body>
 </html>
