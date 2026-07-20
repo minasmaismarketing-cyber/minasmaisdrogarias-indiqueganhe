@@ -54,7 +54,8 @@ class Cupom extends Model
         $placeholders = [];
         $params = [];
         foreach ($codigos as $i => $codigo) {
-            $placeholders[] = "(:codigo_{$i}, NULL, NULL, :campanha_id_{$i}, :tipo_{$i}, :valor_{$i}, :status_{$i}, :origem_{$i}, NULL, NULL)";
+            // NULL literais: estoque ainda sem dono (exige usuario_id/indicacao_id nullable)
+            $placeholders[] = "(:codigo_{$i}, NULL, NULL, :campanha_id_{$i}, :tipo_{$i}, :valor_{$i}, :status_{$i}, :origem_{$i}, NULL)";
             $params["codigo_{$i}"] = $codigo;
             $params["campanha_id_{$i}"] = $campanhaId;
             $params["tipo_{$i}"] = $tipo;
@@ -64,13 +65,14 @@ class Cupom extends Model
         }
 
         $sql = 'INSERT INTO cupons
-                (codigo, usuario_id, indicacao_id, campanha_id, tipo, valor, status, origem, validade, atribuido_em)
+                (codigo, usuario_id, indicacao_id, campanha_id, tipo, valor, status, origem, validade)
                 VALUES ' . implode(', ', $placeholders);
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->rowCount();
+        // PDO MySQL pode retornar 0 em multi-INSERT; o sucesso do execute basta
+        return count($codigos);
     }
 
     public function findByUsuario(int $usuarioId): array

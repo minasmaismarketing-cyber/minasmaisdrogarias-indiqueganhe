@@ -236,10 +236,15 @@ class CupomService
      */
     public function confirmCsvImport(int $campanhaId, array $codigos, ?string $adminEmail = null): array
     {
+        unset($adminEmail);
+
         if ($campanhaId <= 0 || $this->campanhaModel->findById($campanhaId) === null) {
             throw new InvalidArgumentException('Campanha inválida.');
         }
 
+        $this->assertEstoqueSchemaReady();
+
+        $recebidos = count($codigos);
         $safe = [];
         foreach ($codigos as $codigo) {
             $codigo = trim((string) $codigo);
@@ -250,7 +255,15 @@ class CupomService
 
         $safe = array_values(array_unique($safe));
         if ($safe === []) {
-            return ['imported' => 0, 'skipped' => 0];
+            Logger::info('Cupom import confirm', [
+                'endpoint' => '/admin/cupons/importar/confirmar',
+                'campanha_id' => $campanhaId,
+                'quantidade_recebida' => $recebidos,
+                'quantidade_inserida' => 0,
+                'quantidade_ignorada' => $recebidos,
+            ]);
+
+            return ['imported' => 0, 'skipped' => $recebidos];
         }
 
         $existentes = $this->repository->filterExistingCodigos($safe);
@@ -267,6 +280,14 @@ class CupomService
         }
 
         if ($toInsert === []) {
+            Logger::info('Cupom import confirm', [
+                'endpoint' => '/admin/cupons/importar/confirmar',
+                'campanha_id' => $campanhaId,
+                'quantidade_recebida' => $recebidos,
+                'quantidade_inserida' => 0,
+                'quantidade_ignorada' => count($safe),
+            ]);
+
             return ['imported' => 0, 'skipped' => count($safe)];
         }
 
@@ -290,16 +311,80 @@ class CupomService
                 $db->rollBack();
             }
             Logger::error('Falha na importação CSV de cupons', [
+                'endpoint' => '/admin/cupons/importar/confirmar',
                 'campanha_id' => $campanhaId,
-                'error' => $e->getMessage(),
+                'quantidade_recebida' => $recebidos,
+                'quantidade_inserida' => 0,
+                'quantidade_ignorada' => 0,
+                'exception' => $e->getMessage(),
             ]);
-            throw new RuntimeException('Falha ao importar cupons. Nenhuma alteração foi aplicada.');
+            throw new RuntimeException($this->humanizeImportException($e));
         }
+
+        Logger::info('Cupom import confirm', [
+            'endpoint' => '/admin/cupons/importar/confirmar',
+            'campanha_id' => $campanhaId,
+            'quantidade_recebida' => $recebidos,
+            'quantidade_inserida' => $imported,
+            'quantidade_ignorada' => count($safe) - count($toInsert),
+        ]);
 
         return [
             'imported' => $imported,
             'skipped' => count($safe) - count($toInsert),
         ];
+    }
+
+    /** Garante schema da Sprint 4.4 antes do INSERT de estoque. */
+    private function assertEstoqueSchemaReady(): void
+    {
+        $db = Database::getConnection();
+        $stmt = $db->query(
+            "SELECT COLUMN_NAME, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'cupons'
+               AND COLUMN_NAME IN ('codigo', 'usuario_id', 'indicacao_id')"
+        );
+        $cols = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $cols[(string) $row['COLUMN_NAME']] = $row;
+        }
+
+        if ($cols === []) {
+            throw new RuntimeException('Tabela cupons não encontrada.');
+        }
+
+        $usuarioNullable = (($cols['usuario_id']['IS_NULLABLE'] ?? 'NO') === 'YES');
+        $indicacaoNullable = (($cols['indicacao_id']['IS_NULLABLE'] ?? 'NO') === 'YES');
+        $codigoLen = (int) ($cols['codigo']['CHARACTER_MAXIMUM_LENGTH'] ?? 0);
+
+        if (!$usuarioNullable || !$indicacaoNullable || $codigoLen < 64) {
+            throw new RuntimeException(
+                'Estrutura do banco incompatível com estoque de cupons. Execute database/migration_sprint_4_4_cupons_estoque.sql na Hostinger.'
+            );
+        }
+    }
+
+    private function humanizeImportException(Throwable $e): string
+    {
+        $message = $e->getMessage();
+
+        if (
+            str_contains($message, "doesn't have a default value")
+            || str_contains($message, 'cannot be null')
+            || str_contains($message, 'atribuido_em')
+            || str_contains($message, 'usuario_id')
+            || str_contains($message, 'indicacao_id')
+        ) {
+            return 'Estrutura do banco incompatível com estoque de cupons. Execute database/migration_sprint_4_4_cupons_estoque.sql na Hostinger.';
+        }
+
+        if (str_contains($message, 'Duplicate') || str_contains($message, '1062')) {
+            return 'Alguns códigos já existem. Revalide o arquivo e tente novamente.';
+        }
+
+        return 'Falha ao importar cupons. Nenhuma alteração foi aplicada.';
     }
 
     public function deleteDisponivel(int $cupomId): bool

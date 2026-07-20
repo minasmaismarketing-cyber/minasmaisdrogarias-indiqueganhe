@@ -90,15 +90,26 @@ class CuponsController extends Controller
 
         try {
             $result = $this->cupomService->validateCsvImport($file, $campanhaId);
+            $token = $this->storePendingImportCodes($result['a_importar']);
         } catch (InvalidArgumentException $e) {
-            Session::remove(self::IMPORT_SESSION_KEY);
+            $this->clearPendingImport();
             Session::flash('error', $e->getMessage());
+            $this->redirect('/admin/cupons/importar');
+        } catch (Throwable $e) {
+            $this->clearPendingImport();
+            Logger::error('Cupom import validate failed', [
+                'endpoint' => '/admin/cupons/importar/validar',
+                'campanha_id' => $campanhaId,
+                'exception' => $e->getMessage(),
+            ]);
+            Session::flash('error', 'Não foi possível preparar a importação. Tente novamente.');
             $this->redirect('/admin/cupons/importar');
         }
 
         Session::set(self::IMPORT_SESSION_KEY, [
             'campanha_id' => $campanhaId,
-            'codigos' => $result['a_importar'],
+            'token' => $token,
+            'count' => count($result['a_importar']),
             'resumo' => $result['resumo'],
             'validated_at' => time(),
         ]);
@@ -117,32 +128,138 @@ class CuponsController extends Controller
         }
 
         $pending = Session::get(self::IMPORT_SESSION_KEY);
-        if (!is_array($pending) || empty($pending['codigos']) || empty($pending['campanha_id'])) {
+        if (!is_array($pending) || empty($pending['campanha_id']) || empty($pending['token'])) {
             Session::flash('error', 'Nenhuma importação validada. Valide o arquivo primeiro.');
             $this->redirect('/admin/cupons/importar');
         }
 
         $campanhaId = (int) $pending['campanha_id'];
-        $codigos = is_array($pending['codigos']) ? $pending['codigos'] : [];
+        $token = (string) $pending['token'];
+        $codigos = $this->loadPendingImportCodes($token);
+
+        if ($codigos === []) {
+            Logger::error('Cupom import confirm sem códigos', [
+                'endpoint' => '/admin/cupons/importar/confirmar',
+                'campanha_id' => $campanhaId,
+                'quantidade_recebida' => 0,
+                'quantidade_inserida' => 0,
+                'quantidade_ignorada' => 0,
+                'exception' => 'Arquivo temporário de importação ausente ou vazio',
+            ]);
+            Session::flash('error', 'Dados da validação expiraram. Valide o arquivo novamente.');
+            $this->clearPendingImport();
+            $this->redirect('/admin/cupons/importar');
+        }
+
         $user = Auth::user();
         $adminEmail = $user !== null ? (string) $user['email'] : null;
 
         try {
             $result = $this->cupomService->confirmCsvImport($campanhaId, $codigos, $adminEmail);
-            Session::remove(self::IMPORT_SESSION_KEY);
-            Session::flash(
-                'success',
-                sprintf(
-                    'Importação concluída: %d cupom(ns) inserido(s), %d ignorado(s).',
-                    $result['imported'],
-                    $result['skipped']
-                )
-            );
+            $this->clearPendingImport();
+
+            $imported = (int) $result['imported'];
+            $skipped = (int) $result['skipped'];
+            if ($imported > 0 && $skipped === 0) {
+                Session::flash(
+                    'success',
+                    number_format($imported, 0, ',', '.') . ' cupons importados com sucesso.'
+                );
+            } else {
+                Session::flash(
+                    'success',
+                    sprintf(
+                        'Importação concluída: %s cupom(ns) inserido(s), %s ignorado(s).',
+                        number_format($imported, 0, ',', '.'),
+                        number_format($skipped, 0, ',', '.')
+                    )
+                );
+            }
             $this->redirect('/admin/cupons');
         } catch (Throwable $e) {
+            Logger::error('Cupom import confirm failed', [
+                'endpoint' => '/admin/cupons/importar/confirmar',
+                'campanha_id' => $campanhaId,
+                'quantidade_recebida' => count($codigos),
+                'quantidade_inserida' => 0,
+                'quantidade_ignorada' => 0,
+                'exception' => $e->getMessage(),
+            ]);
             Session::flash('error', $e->getMessage());
             $this->redirect('/admin/cupons/importar');
         }
+    }
+
+    /** @param list<string> $codigos */
+    private function storePendingImportCodes(array $codigos): string
+    {
+        $dir = $this->pendingImportDir();
+        if (!is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
+            throw new RuntimeException('Não foi possível preparar o armazenamento temporário da importação.');
+        }
+
+        $token = bin2hex(random_bytes(16));
+        $path = $dir . DIRECTORY_SEPARATOR . $token . '.json';
+        $json = json_encode(['codigos' => array_values($codigos)], JSON_UNESCAPED_UNICODE);
+        if ($json === false || file_put_contents($path, $json) === false) {
+            throw new RuntimeException('Não foi possível salvar os códigos validados para confirmação.');
+        }
+
+        return $token;
+    }
+
+    /** @return list<string> */
+    private function loadPendingImportCodes(string $token): array
+    {
+        if (!preg_match('/^[a-f0-9]{32}$/', $token)) {
+            return [];
+        }
+
+        $path = $this->pendingImportDir() . DIRECTORY_SEPARATOR . $token . '.json';
+        if (!is_file($path)) {
+            return [];
+        }
+
+        $raw = file_get_contents($path);
+        if ($raw === false) {
+            return [];
+        }
+
+        $data = json_decode($raw, true);
+        if (!is_array($data) || !isset($data['codigos']) || !is_array($data['codigos'])) {
+            return [];
+        }
+
+        $codigos = [];
+        foreach ($data['codigos'] as $codigo) {
+            $codigo = trim((string) $codigo);
+            if ($codigo !== '') {
+                $codigos[] = $codigo;
+            }
+        }
+
+        return $codigos;
+    }
+
+    private function clearPendingImport(): void
+    {
+        $pending = Session::get(self::IMPORT_SESSION_KEY);
+        if (is_array($pending) && !empty($pending['token']) && is_string($pending['token'])) {
+            $token = $pending['token'];
+            if (preg_match('/^[a-f0-9]{32}$/', $token)) {
+                $path = $this->pendingImportDir() . DIRECTORY_SEPARATOR . $token . '.json';
+                if (is_file($path)) {
+                    @unlink($path);
+                }
+            }
+        }
+
+        Session::remove(self::IMPORT_SESSION_KEY);
+    }
+
+    private function pendingImportDir(): string
+    {
+        return BASE_PATH . '/storage/cupom_imports';
     }
 
     public function delete(): void

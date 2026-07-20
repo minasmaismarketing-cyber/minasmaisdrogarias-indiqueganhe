@@ -8,6 +8,10 @@ uploads/*
 uploads/logs/*
 !uploads/logs/.gitkeep
 
+# Importações temporárias de cupons (não versionar)
+storage/cupom_imports/*
+!storage/cupom_imports/.gitkeep
+
 # Sistema
 .DS_Store
 Thumbs.db
