@@ -63,9 +63,15 @@ $campanhaSelecionada = (int) ($pending['campanha_id'] ?? 0);
     </section>
 
     <?php if ((int) ($resumo['a_importar'] ?? 0) > 0): ?>
-        <form method="POST" action="<?= url('/admin/cupons/importar/confirmar') ?>" class="form" style="margin-top: 1.5rem;">
+        <form
+            method="POST"
+            action="<?= url('/admin/cupons/importar/confirmar') ?>"
+            class="form"
+            style="margin-top: 1.5rem;"
+            onsubmit="return confirm('Confirmar importação dos cupons validados?');"
+        >
             <?= csrf_field() ?>
-            <button type="submit" class="btn btn--primary" onclick="return confirm('Confirmar importação dos cupons validados?');">
+            <button type="submit" class="btn btn--primary">
                 Confirmar importação
             </button>
         </form>
