@@ -40,7 +40,26 @@ class Database
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
 
+        self::applySessionTimezone(self::$connection);
+
         return self::$connection;
+    }
+
+    /**
+     * Alinha NOW()/TIMESTAMP da sessão MySQL ao fuso da aplicação (tempo real BR).
+     * Usa offset numérico (ex.: -03:00) — compatível com Hostinger sem timezone tables.
+     */
+    public static function applySessionTimezone(PDO $pdo): void
+    {
+        $tzName = (string) Env::get('APP_TIMEZONE', 'America/Sao_Paulo');
+        try {
+            $tz = new DateTimeZone($tzName);
+        } catch (Exception $e) {
+            $tz = new DateTimeZone('America/Sao_Paulo');
+        }
+
+        $offset = (new DateTimeImmutable('now', $tz))->format('P');
+        $pdo->exec('SET time_zone = ' . $pdo->quote($offset));
     }
 
     public static function isConnected(): bool
@@ -91,6 +110,7 @@ class Database
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            self::applySessionTimezone(self::$connection);
             self::$connection->query('SELECT 1');
             $result['status'] = 'Connection OK';
             $result['connected'] = true;

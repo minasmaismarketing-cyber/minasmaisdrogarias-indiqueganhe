@@ -243,17 +243,77 @@ function format_cpf(string $cpf): string
 
 function format_phone(string $phone): string
 {
-    $phone = Validator::onlyDigits($phone);
+    $digits = Validator::onlyDigits($phone);
 
-    if (strlen($phone) === 11) {
-        return '(' . substr($phone, 0, 2) . ') ' . substr($phone, 2, 5) . '-' . substr($phone, 7);
+    if (strlen($digits) === 11) {
+        return sprintf(
+            '(%s) %s-%s',
+            substr($digits, 0, 2),
+            substr($digits, 2, 5),
+            substr($digits, 7)
+        );
     }
 
-    if (strlen($phone) === 10) {
-        return '(' . substr($phone, 0, 2) . ') ' . substr($phone, 2, 4) . '-' . substr($phone, 6);
+    if (strlen($digits) === 10) {
+        return sprintf(
+            '(%s) %s-%s',
+            substr($digits, 0, 2),
+            substr($digits, 2, 4),
+            substr($digits, 6)
+        );
     }
 
     return $phone;
+}
+
+/** Fuso horário oficial da aplicação (tempo real). */
+function app_timezone(): DateTimeZone
+{
+    static $tz = null;
+
+    if ($tz instanceof DateTimeZone) {
+        return $tz;
+    }
+
+    $name = (string) Env::get('APP_TIMEZONE', 'America/Sao_Paulo');
+    try {
+        $tz = new DateTimeZone($name);
+    } catch (Exception $e) {
+        $tz = new DateTimeZone('America/Sao_Paulo');
+    }
+
+    return $tz;
+}
+
+/**
+ * Formata data/hora no fuso da aplicação.
+ * Aceita strings do MySQL (Y-m-d H:i:s) já alinhadas pela sessão PDO.
+ */
+function format_datetime(mixed $value, string $format = 'd/m/Y H:i'): string
+{
+    if ($value === null) {
+        return '—';
+    }
+
+    $raw = trim((string) $value);
+    if ($raw === '' || $raw === '0000-00-00' || $raw === '0000-00-00 00:00:00') {
+        return '—';
+    }
+
+    try {
+        $dt = new DateTimeImmutable($raw, app_timezone());
+
+        return $dt->setTimezone(app_timezone())->format($format);
+    } catch (Exception $e) {
+        $ts = strtotime($raw);
+
+        return $ts !== false ? date($format, $ts) : '—';
+    }
+}
+
+function format_date(mixed $value, string $format = 'd/m/Y'): string
+{
+    return format_datetime($value, $format);
 }
 
 /** @return list<array{label: string, path: string}> */
