@@ -640,7 +640,7 @@
     background: rgba(245, 245, 245, 0.85);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
     .page--admin .admin-table--expandable.admin-table {
         min-width: 0;
         width: 100%;
@@ -799,16 +799,20 @@
 
     .page--admin .admin-table--expandable .admin-table__details-actions .admin-table__actions {
         display: flex;
-        flex-wrap: wrap;
-        justify-content: stretch;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
         gap: 0.5rem;
         width: 100%;
     }
 
     .page--admin .admin-table--expandable .admin-table__details-actions .admin-table__actions .btn,
     .page--admin .admin-table--expandable .admin-table__details-actions .admin-table__actions .inline-form {
-        flex: 1 1 calc(50% - 0.5rem);
-        min-width: 7rem;
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+        display: block;
     }
 
     .page--admin .admin-table--expandable .admin-table__details-actions .admin-table__actions .inline-form .btn {

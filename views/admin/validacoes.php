@@ -78,8 +78,8 @@
     'emptyMessage' => 'Nenhuma validação encontrada.',
     'class' => 'admin-table--expandable',
     'columns' => [
-        ['label' => 'Indicador'],
         ['label' => 'Indicado'],
+        ['label' => 'Indicador'],
         ['label' => 'WhatsApp'],
         ['label' => 'Campanha'],
         ['label' => 'Status'],
@@ -93,8 +93,20 @@
     $waitTime = ValidacaoIndicacao::waitTimeMeta($validacao);
     $indicacaoDate = (string) ($validacao['indicacao_created_at'] ?? $validacao['created_at']);
     $detailId = 'admin-acc-val-' . (int) $validacao['id'];
-    $indicadorNome = (string) ($validacao['usuario_nome'] ?? 'N/A');
-    $indicadoNome = (string) ($validacao['nome_indicado'] ?: '—');
+    $indicadorNome = trim((string) ($validacao['usuario_nome'] ?? ''));
+    if ($indicadorNome === '') {
+        $indicadorNome = 'N/A';
+    }
+
+    $indicadoRaw = trim((string) ($validacao['nome_indicado'] ?? ''));
+    if ($indicadoRaw !== '' && $indicadoRaw !== '—') {
+        $indicadoNome = $indicadoRaw;
+    } elseif (!empty($validacao['telefone_indicado']) || !empty($validacao['usuario_indicado_id'])) {
+        $indicadoNome = 'Indicado via API';
+    } else {
+        $indicadoNome = 'Sem nome informado';
+    }
+
     $whatsapp = !empty($validacao['telefone_indicado']) ? format_phone((string) $validacao['telefone_indicado']) : '—';
     $campanha = (string) ($validacao['campanha_nome'] ?? '—');
     $dataLabel = date('d/m/Y H:i', strtotime($indicacaoDate));
@@ -107,7 +119,7 @@
                     class="btn btn--sm btn--ghost"
                     aria-label="Ver detalhes da validação #<?= (int) $validacao['id'] ?>"
                     title="Ver detalhes"
-                >👁</a>
+                >Visualizar</a>
                 <?php if (ValidacaoIndicacao::canStartReview($validacao['status'])): ?>
                     <form method="POST" action="<?= url('/admin/validacoes/iniciar') ?>" class="inline-form">
                         <?= csrf_field() ?>
@@ -125,7 +137,7 @@
                         <?= csrf_field() ?>
                         <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
                         <input type="hidden" name="motivo" value="">
-                        <button type="submit" class="btn btn--sm btn--danger">Rejeitar</button>
+                        <button type="submit" class="btn btn--sm btn--danger">Reprovar</button>
                     </form>
                 <?php endif; ?>
                 <?php if (ValidacaoIndicacao::canCancel($validacao['status'])): ?>
@@ -149,13 +161,13 @@
     >
         <td class="admin-table__td admin-table__td--wrap admin-table__td--primary admin-table__td--mobile-show">
             <div class="admin-table__summary-main">
-                <span class="admin-table__summary-title"><?= e($indicadorNome) ?></span>
+                <span class="admin-table__summary-title"><?= e($indicadoNome) ?></span>
                 <span class="admin-table__chevron" aria-hidden="true"></span>
             </div>
-            <span class="admin-table__summary-sub admin-table__mobile-only"><?= e($indicadoNome) ?></span>
+            <span class="admin-table__summary-sub admin-table__mobile-only"><?= e($indicadorNome) ?></span>
         </td>
         <td class="admin-table__td admin-table__td--wrap admin-table__td--mobile-hide">
-            <?= e($indicadoNome) ?>
+            <?= e($indicadorNome) ?>
         </td>
         <td class="admin-table__td admin-table__td--mobile-hide"><?= e($whatsapp) ?></td>
         <td class="admin-table__td admin-table__td--wrap admin-table__td--mobile-hide">
@@ -179,8 +191,8 @@
         <td colspan="8">
             <dl class="admin-table__details">
                 <div>
-                    <dt>Indicado</dt>
-                    <dd><?= e($indicadoNome) ?></dd>
+                    <dt>Indicador</dt>
+                    <dd><?= e($indicadorNome) ?></dd>
                 </div>
                 <div>
                     <dt>WhatsApp</dt>

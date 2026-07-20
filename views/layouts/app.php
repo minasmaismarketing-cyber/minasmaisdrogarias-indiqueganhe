@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <?php require BASE_PATH . '/views/partials/head-pwa.php'; ?>
+    <?php require BASE_PATH . '/views/partials/layout-chrome.php'; ?>
     <title><?= e($title ?? 'Indique e Ganhe') ?></title>
     <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
 </head>

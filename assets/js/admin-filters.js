@@ -17,7 +17,7 @@
         });
     });
 
-    var mobileMq = window.matchMedia('(max-width: 768px)');
+    var mobileMq = window.matchMedia('(max-width: 991.98px)');
 
     function isMobileAccordion() {
         return mobileMq.matches;

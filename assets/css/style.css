@@ -427,7 +427,7 @@ a { color: var(--primary); }
 
 
 
-@media (max-width: 767px) {
+@media (max-width: 991.98px) {
 
     .mm-header__name {
 
@@ -1992,8 +1992,7 @@ a { color: var(--primary); }
 
 
 
-/* Desktop */
-
+/* Desktop (tablet+): tipografia/modais — navegação do app só a partir de 992px */
 @media (min-width: 768px) {
 
     :root {
@@ -2005,6 +2004,49 @@ a { color: var(--primary); }
     }
 
 
+
+    .mm-header__logo-img {
+
+        max-height: 48px;
+
+        max-width: 220px;
+
+    }
+
+
+
+    .mm-modal {
+
+        align-items: center;
+
+        padding: 1rem;
+
+    }
+
+
+
+    .mm-modal__dialog {
+
+        border-radius: var(--radius-card);
+
+        max-width: 480px;
+
+    }
+
+
+
+    .page-hero__title {
+
+        font-size: 2rem;
+
+    }
+
+}
+
+
+
+/* App chrome desktop: menu superior + sem bottom-nav */
+@media (min-width: 992px) {
 
     .mm-header__inner {
 
@@ -2052,17 +2094,11 @@ a { color: var(--primary); }
 
 
 
-    .mm-header__logo-img {
+    .page--app .mm-bottom-nav {
 
-        max-height: 48px;
-
-        max-width: 220px;
+        display: none;
 
     }
-
-
-
-    .page--app .mm-bottom-nav { display: none; }
 
 
 
@@ -2072,31 +2108,95 @@ a { color: var(--primary); }
 
     }
 
+}
 
 
-    .mm-modal {
 
-        align-items: center;
+/* PWA / classe JS: forçar chrome mobile (<992 ou iPhone standalone) */
+html.is-mobile-chrome .mm-header__nav,
+body.is-mobile-chrome .mm-header__nav {
 
-        padding: 1rem;
+    display: none !important;
+
+}
+
+
+
+html.is-mobile-chrome .mm-header__inner,
+body.is-mobile-chrome .mm-header__inner {
+
+    display: flex !important;
+
+    grid-template-columns: none !important;
+
+}
+
+
+
+html.is-mobile-chrome .mm-header__user,
+body.is-mobile-chrome .mm-header__user {
+
+    margin-left: auto !important;
+
+    justify-self: auto !important;
+
+    grid-column: auto !important;
+
+}
+
+
+
+html.is-mobile-chrome.page--app .mm-bottom-nav,
+html.is-mobile-chrome .page--app .mm-bottom-nav,
+body.is-mobile-chrome.page--app .mm-bottom-nav,
+body.is-mobile-chrome .page--app .mm-bottom-nav {
+
+    display: flex !important;
+
+}
+
+
+
+html.is-mobile-chrome .main--with-nav,
+body.is-mobile-chrome .main--with-nav {
+
+    padding-bottom: calc(var(--bottom-nav-h) + 1.5rem + env(safe-area-inset-bottom)) !important;
+
+}
+
+
+
+@media (display-mode: standalone) and (max-width: 991.98px) {
+
+    .mm-header__nav {
+
+        display: none !important;
 
     }
 
 
 
-    .mm-modal__dialog {
+    .page--app .mm-bottom-nav {
 
-        border-radius: var(--radius-card);
-
-        max-width: 480px;
+        display: flex !important;
 
     }
 
 
 
-    .page-hero__title {
+    .mm-header__inner {
 
-        font-size: 2rem;
+        display: flex !important;
+
+        grid-template-columns: none !important;
+
+    }
+
+
+
+    .main--with-nav {
+
+        padding-bottom: calc(var(--bottom-nav-h) + 1.5rem + env(safe-area-inset-bottom)) !important;
 
     }
 

@@ -114,12 +114,13 @@ $isEstoqueDisponivel = static function (array $cupom): bool {
     'headerActions' => '<a href="' . e(url('/admin/cupons/importar')) . '" class="btn btn--sm btn--primary">Importar cupons</a>'
         . ' <button type="submit" form="form-excluir-lote" class="btn btn--sm btn--danger">Excluir selecionados</button>',
     'emptyMessage' => 'Nenhum cupom encontrado.',
+    'class' => 'admin-table--expandable',
     'columns' => [
         ['label' => ''],
         ['label' => 'Código'],
-        ['label' => 'Indicador'],
-        ['label' => 'Campanha'],
         ['label' => 'Status'],
+        ['label' => 'Campanha'],
+        ['label' => 'Indicador'],
         ['label' => 'Data de geração'],
         ['label' => 'Data de utilização'],
         ['label' => 'Origem'],
@@ -129,38 +130,24 @@ $isEstoqueDisponivel = static function (array $cupom): bool {
 ], static function (array $cupom) use ($isEstoqueDisponivel): void {
     $status = (string) $cupom['status'];
     $estoque = $isEstoqueDisponivel($cupom);
+    $detailId = 'admin-acc-cupom-' . (int) $cupom['id'];
+    $codigo = (string) $cupom['codigo'];
+    $campanha = (string) ($cupom['campanha_nome'] ?? '—');
+    $indicador = (string) ($cupom['usuario_nome'] ?? '—');
+    $indicacaoId = !empty($cupom['indicacao_id']) ? (string) (int) $cupom['indicacao_id'] : '—';
+    $geradoEm = date('d/m/Y H:i', strtotime((string) $cupom['created_at']));
+    $utilizadoEm = !empty($cupom['utilizado_em']) ? date('d/m/Y H:i', strtotime((string) $cupom['utilizado_em'])) : '—';
+    $origem = Cupom::origemLabel($cupom['origem'] ?? null);
+
+    ob_start();
     ?>
-    <tr>
-        <td class="admin-table__td">
-            <?php if ($estoque): ?>
-                <input type="checkbox" name="ids[]" value="<?= (int) $cupom['id'] ?>" form="form-excluir-lote" aria-label="Selecionar cupom disponível">
-            <?php endif; ?>
-        </td>
-        <td class="admin-table__td admin-table__td--primary"><?= e((string) $cupom['codigo']) ?></td>
-        <td class="admin-table__td admin-table__td--wrap"><?= e((string) ($cupom['usuario_nome'] ?? '—')) ?></td>
-        <td class="admin-table__td admin-table__td--wrap"><?= e((string) ($cupom['campanha_nome'] ?? '—')) ?></td>
-        <td class="admin-table__td">
-            <span class="badge <?= e(Cupom::adminStatusBadgeClass($status)) ?>">
-                <?= Cupom::statusIcon($status) ?>
-                <?= e(Cupom::statusLabel($status)) ?>
-                <?php if (!$estoque && $status === Cupom::STATUS_DISPONIVEL && !empty($cupom['usuario_id'])): ?>
-                    <span class="badge badge--info" style="margin-left:0.25rem;">Atribuído</span>
-                <?php endif; ?>
-            </span>
-        </td>
-        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($cupom['created_at']))) ?></td>
-        <td class="admin-table__td">
-            <?= !empty($cupom['utilizado_em']) ? e(date('d/m/Y H:i', strtotime($cupom['utilizado_em']))) : '—' ?>
-        </td>
-        <td class="admin-table__td"><?= e(Cupom::origemLabel($cupom['origem'] ?? null)) ?></td>
-        <td class="admin-table__td admin-table__col--actions">
             <div class="admin-table__actions">
                 <a
                     href="<?= url('/admin/cupons/' . $cupom['id']) ?>"
                     class="btn btn--sm btn--ghost"
-                    aria-label="Ver detalhes do cupom <?= e((string) $cupom['codigo']) ?>"
+                    aria-label="Ver detalhes do cupom <?= e($codigo) ?>"
                     title="Ver detalhes"
-                >👁</a>
+                >Visualizar</a>
                 <?php if ($estoque): ?>
                     <form method="POST" action="<?= url('/admin/cupons/excluir') ?>" class="inline-form" onsubmit="return confirm('Excluir este cupom disponível?');">
                         <?= csrf_field() ?>
@@ -190,6 +177,87 @@ $isEstoqueDisponivel = static function (array $cupom): bool {
                     </form>
                 <?php endif; ?>
             </div>
+    <?php
+    $actionsHtml = ob_get_clean();
+    ?>
+    <tr
+        class="admin-table__row--summary"
+        data-admin-accordion-trigger
+        tabindex="0"
+        role="button"
+        aria-expanded="false"
+        aria-controls="<?= e($detailId) ?>"
+    >
+        <td class="admin-table__td admin-table__td--mobile-hide">
+            <?php if ($estoque): ?>
+                <input type="checkbox" name="ids[]" value="<?= (int) $cupom['id'] ?>" form="form-excluir-lote" aria-label="Selecionar cupom disponível">
+            <?php endif; ?>
+        </td>
+        <td class="admin-table__td admin-table__td--primary admin-table__td--mobile-show">
+            <div class="admin-table__summary-main">
+                <span class="admin-table__summary-title"><?= e($codigo) ?></span>
+                <span class="admin-table__chevron" aria-hidden="true"></span>
+            </div>
+            <span class="admin-table__summary-sub admin-table__mobile-only"><?= e($campanha) ?></span>
+        </td>
+        <td class="admin-table__td admin-table__td--mobile-show">
+            <span class="badge <?= e(Cupom::adminStatusBadgeClass($status)) ?>">
+                <?= Cupom::statusIcon($status) ?>
+                <?= e(Cupom::statusLabel($status)) ?>
+                <?php if (!$estoque && $status === Cupom::STATUS_DISPONIVEL && !empty($cupom['usuario_id'])): ?>
+                    <span class="badge badge--info" style="margin-left:0.25rem;">Atribuído</span>
+                <?php endif; ?>
+            </span>
+        </td>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--mobile-hide"><?= e($campanha) ?></td>
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--mobile-hide"><?= e($indicador) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($geradoEm) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($utilizadoEm) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($origem) ?></td>
+        <td class="admin-table__td admin-table__col--actions admin-table__td--mobile-hide">
+            <?= $actionsHtml ?>
+        </td>
+    </tr>
+    <tr class="admin-table__row--details" id="<?= e($detailId) ?>" hidden>
+        <td colspan="9">
+            <dl class="admin-table__details">
+                <?php if ($estoque): ?>
+                    <div>
+                        <dt>Selecionar</dt>
+                        <dd>
+                            <input type="checkbox" name="ids[]" value="<?= (int) $cupom['id'] ?>" form="form-excluir-lote" aria-label="Selecionar cupom disponível">
+                        </dd>
+                    </div>
+                <?php endif; ?>
+                <div>
+                    <dt>Indicador</dt>
+                    <dd><?= e($indicador) ?></dd>
+                </div>
+                <div>
+                    <dt>Indicação</dt>
+                    <dd><?= e($indicacaoId) ?></dd>
+                </div>
+                <div>
+                    <dt>Campanha</dt>
+                    <dd><?= e($campanha) ?></dd>
+                </div>
+                <div>
+                    <dt>Data de geração</dt>
+                    <dd><?= e($geradoEm) ?></dd>
+                </div>
+                <div>
+                    <dt>Data de utilização</dt>
+                    <dd><?= e($utilizadoEm) ?></dd>
+                </div>
+                <div>
+                    <dt>Origem</dt>
+                    <dd><?= e($origem) ?></dd>
+                </div>
+                <div class="admin-table__details-actions">
+                    <dt>Ações</dt>
+                    <dd><?= $actionsHtml ?></dd>
+                </div>
+            </dl>
         </td>
     </tr>
 <?php }); ?>

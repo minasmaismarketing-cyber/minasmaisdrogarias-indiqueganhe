@@ -51,6 +51,7 @@ $buildPageUrl = static function (int $page) use ($filters): string {
     'meta' => $total . ' registro(s)',
     'headerActions' => '<a href="' . e(url('/admin/campanhas/criar')) . '" class="btn btn--sm btn--primary">Criar</a>',
     'emptyMessage' => 'Nenhuma campanha encontrada.',
+    'class' => 'admin-table--expandable',
     'columns' => [
         ['label' => 'Nome'],
         ['label' => 'Status'],
@@ -64,28 +65,20 @@ $buildPageUrl = static function (int $page) use ($filters): string {
     'rows' => $campanhas,
 ], static function (array $campanha): void {
     $status = (string) $campanha['status'];
+    $detailId = 'admin-acc-camp-' . (int) $campanha['id'];
+    $nome = (string) $campanha['nome'];
+    $vigencia = Campanha::formatVigencia($campanha);
+    $criadoEm = date('d/m/Y H:i', strtotime((string) $campanha['created_at']));
+
+    ob_start();
     ?>
-    <tr>
-        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary"><?= e((string) $campanha['nome']) ?></td>
-        <td class="admin-table__td">
-            <span class="badge <?= e(Campanha::adminStatusBadgeClass($status)) ?>">
-                <?= Campanha::adminStatusIcon($status) ?>
-                <?= e(Campanha::adminStatusLabel($status)) ?>
-            </span>
-        </td>
-        <td class="admin-table__td"><?= e(Campanha::formatVigencia($campanha)) ?></td>
-        <td class="admin-table__td"><?= (int) ($campanha['total_indicados'] ?? 0) ?></td>
-        <td class="admin-table__td"><?= (int) ($campanha['cupons_gerados'] ?? 0) ?></td>
-        <td class="admin-table__td"><?= (int) ($campanha['cupons_utilizados'] ?? 0) ?></td>
-        <td class="admin-table__td"><?= e(date('d/m/Y H:i', strtotime($campanha['created_at']))) ?></td>
-        <td class="admin-table__td admin-table__col--actions">
             <div class="admin-table__actions">
                 <a
                     href="<?= url('/admin/campanhas/' . $campanha['id']) ?>"
                     class="btn btn--sm btn--ghost"
-                    aria-label="Ver detalhes de <?= e((string) $campanha['nome']) ?>"
+                    aria-label="Ver detalhes de <?= e($nome) ?>"
                     title="Ver detalhes"
-                >👁</a>
+                >Visualizar</a>
                 <a href="<?= url('/admin/campanhas/editar/' . $campanha['id']) ?>" class="btn btn--sm btn--ghost">Editar</a>
                 <form method="POST" action="<?= url('/admin/campanhas/duplicar/' . $campanha['id']) ?>" class="inline-form">
                     <?= csrf_field() ?>
@@ -107,6 +100,67 @@ $buildPageUrl = static function (int $page) use ($filters): string {
                     <button type="submit" class="btn btn--sm btn--danger">Excluir</button>
                 </form>
             </div>
+    <?php
+    $actionsHtml = ob_get_clean();
+    ?>
+    <tr
+        class="admin-table__row--summary"
+        data-admin-accordion-trigger
+        tabindex="0"
+        role="button"
+        aria-expanded="false"
+        aria-controls="<?= e($detailId) ?>"
+    >
+        <td class="admin-table__td admin-table__td--wrap admin-table__td--primary admin-table__td--mobile-show">
+            <div class="admin-table__summary-main">
+                <span class="admin-table__summary-title"><?= e($nome) ?></span>
+                <span class="admin-table__chevron" aria-hidden="true"></span>
+            </div>
+            <span class="admin-table__summary-sub admin-table__mobile-only"><?= e($vigencia) ?></span>
+        </td>
+        <td class="admin-table__td admin-table__td--mobile-show">
+            <span class="badge <?= e(Campanha::adminStatusBadgeClass($status)) ?>">
+                <?= Campanha::adminStatusIcon($status) ?>
+                <?= e(Campanha::adminStatusLabel($status)) ?>
+            </span>
+        </td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($vigencia) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= (int) ($campanha['total_indicados'] ?? 0) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= (int) ($campanha['cupons_gerados'] ?? 0) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= (int) ($campanha['cupons_utilizados'] ?? 0) ?></td>
+        <td class="admin-table__td admin-table__td--mobile-hide"><?= e($criadoEm) ?></td>
+        <td class="admin-table__td admin-table__col--actions admin-table__td--mobile-hide">
+            <?= $actionsHtml ?>
+        </td>
+    </tr>
+    <tr class="admin-table__row--details" id="<?= e($detailId) ?>" hidden>
+        <td colspan="8">
+            <dl class="admin-table__details">
+                <div>
+                    <dt>Vigência</dt>
+                    <dd><?= e($vigencia) ?></dd>
+                </div>
+                <div>
+                    <dt>Indicados</dt>
+                    <dd><?= (int) ($campanha['total_indicados'] ?? 0) ?></dd>
+                </div>
+                <div>
+                    <dt>Cupons gerados</dt>
+                    <dd><?= (int) ($campanha['cupons_gerados'] ?? 0) ?></dd>
+                </div>
+                <div>
+                    <dt>Cupons utilizados</dt>
+                    <dd><?= (int) ($campanha['cupons_utilizados'] ?? 0) ?></dd>
+                </div>
+                <div>
+                    <dt>Data de criação</dt>
+                    <dd><?= e($criadoEm) ?></dd>
+                </div>
+                <div class="admin-table__details-actions">
+                    <dt>Ações</dt>
+                    <dd><?= $actionsHtml ?></dd>
+                </div>
+            </dl>
         </td>
     </tr>
 <?php }); ?>
