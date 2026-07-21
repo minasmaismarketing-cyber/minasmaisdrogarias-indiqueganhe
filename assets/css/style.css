@@ -6372,12 +6372,29 @@ code {
 }
 
 .perfil-edit-trigger,
-.perfil-card--support .btn {
+.perfil-card--support .btn,
+.perfil-support__btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
     min-height: 48px;
+}
+
+.perfil-support__btn {
+    background: #25d366;
+    color: #fff;
+    border: none;
+}
+
+.perfil-support__btn:hover {
+    background: #1ebe57;
+    color: #fff;
+}
+
+.perfil-support__btn:focus-visible {
+    outline: 2px solid #128c7e;
+    outline-offset: 2px;
 }
 
 .perfil-btn-icon {

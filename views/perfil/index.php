@@ -16,16 +16,8 @@ $cpfFormatado = format_cpf((string) ($user['cpf'] ?? ''));
 $codigoIndicador = (string) ($user['codigo_indicador'] ?? '');
 $emailExibicao = (string) ($user['email'] ?? '');
 
-$supportRaw = trim((string) Env::get('SUPPORT_WHATSAPP', ''));
-$supportDigits = $supportRaw !== '' ? normalize_brazilian_whatsapp_number($supportRaw) : null;
-$supportUrl = null;
-$supportMasked = null;
-if ($supportDigits !== null) {
-    $supportUrl = 'https://wa.me/' . $supportDigits . '?text=' . rawurlencode(
-        'Olá! Vim pelo sistema Indique e Ganhe e preciso de suporte.'
-    );
-    $supportMasked = mask_whatsapp_phone_tail($supportDigits);
-}
+$supportMessage = 'Olá! Vim pelo sistema da campanha Indique e Ganhe da Minas Mais e gostaria de receber algumas informações. Pode me ajudar?';
+$supportUrl = 'https://wa.me/553599125296?text=' . rawurlencode($supportMessage);
 
 $openEditModal = !empty($errors['nome']) || !empty($errors['whatsapp']);
 $openPasswordModal = !empty($errors['senha_atual']) || !empty($errors['nova_senha']) || !empty($errors['confirmar_senha']);
@@ -169,24 +161,18 @@ $openDeleteModal = !empty($errors['senha']);
     <section class="perfil-card perfil-card--support" aria-labelledby="perfil-suporte-title">
         <h2 id="perfil-suporte-title" class="perfil-card__title">Precisa de ajuda?</h2>
         <p class="perfil-card__help">Fale com nosso suporte pelo WhatsApp.</p>
-        <?php if ($supportUrl !== null): ?>
-            <a
-                href="<?= e($supportUrl) ?>"
-                class="btn btn--block btn--primary"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                <svg class="perfil-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path fill="currentColor" d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.14 6.44 2.14 11.9c0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.02zm-7.01 15.24h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.37c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.24-8.23 8.24zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.4-.12-.56.12-.17.25-.64.8-.79.97-.14.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.3.37-.44.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07s.88 2.4 1 2.56c.12.17 1.75 2.67 4.25 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z"/>
-                </svg>
-                Falar com suporte
-            </a>
-            <?php if ($supportMasked !== null): ?>
-                <p class="perfil-support__hint">WhatsApp final <?= e($supportMasked) ?></p>
-            <?php endif; ?>
-        <?php else: ?>
-            <p class="perfil-support__unavailable" role="status">Canal de suporte WhatsApp ainda não configurado.</p>
-        <?php endif; ?>
+        <a
+            href="<?= e($supportUrl) ?>"
+            class="btn btn--block perfil-support__btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Falar com suporte pelo WhatsApp"
+        >
+            <svg class="perfil-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.14 6.44 2.14 11.9c0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.02zm-7.01 15.24h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.37c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.24-8.23 8.24zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.4-.12-.56.12-.17.25-.64.8-.79.97-.14.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.3.37-.44.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07s.88 2.4 1 2.56c.12.17 1.75 2.67 4.25 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z"/>
+            </svg>
+            Falar com suporte
+        </a>
         <p class="perfil-support__note">Ao iniciar o atendimento, informe que veio do sistema de Indique e Ganhe.</p>
     </section>
 
