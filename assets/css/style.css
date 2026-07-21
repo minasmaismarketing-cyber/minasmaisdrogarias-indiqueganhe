@@ -5194,6 +5194,199 @@ code {
     margin-left: auto;
 }
 
+/* —— Sprint 4.8: Home status + cupons UX —— */
+.page-hero--compact {
+    margin-bottom: 1rem;
+}
+
+.page-hero--compact .page-hero__subtitle {
+    display: none;
+}
+
+.dash-invite-copy {
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: var(--gray-700, #4b5563);
+    font-weight: 400;
+}
+
+.dash-invite-off {
+    display: inline-block;
+    margin: 0.15rem 0.15rem;
+    font-size: clamp(1.75rem, 6vw, 2.35rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #c62828;
+    letter-spacing: -0.02em;
+    vertical-align: baseline;
+}
+
+.indicacao-status-card {
+    display: flex;
+    gap: 0.875rem;
+    align-items: flex-start;
+    padding: 1.1rem 1.15rem;
+    margin-bottom: 1rem;
+    border-radius: 14px;
+    border: 1px solid transparent;
+}
+
+.indicacao-status-card__icon {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.indicacao-status-card__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.indicacao-status-card__title {
+    margin: 0 0 0.35rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.indicacao-status-card__body {
+    margin: 0 0 0.75rem;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    opacity: 0.92;
+}
+
+.indicacao-status-card__motivo {
+    margin: 0 0 0.85rem;
+    font-size: 0.92rem;
+    line-height: 1.4;
+}
+
+.indicacao-status-card__motivo-label {
+    font-weight: 700;
+}
+
+.indicacao-status-card__cta {
+    margin-top: 0.25rem;
+}
+
+.indicacao-status-card--success {
+    background: #e8f5e9;
+    border-color: #a5d6a7;
+    color: #1b5e20;
+}
+
+.indicacao-status-card--warning {
+    background: #fff8e1;
+    border-color: #ffe082;
+    color: #6d4c00;
+}
+
+.indicacao-status-card--danger {
+    background: #ffebee;
+    border-color: #ef9a9a;
+    color: #b71c1c;
+}
+
+.coupon-card--focus {
+    padding: 1.25rem 1.15rem;
+}
+
+.coupon-card__intro {
+    margin-bottom: 0.75rem;
+}
+
+.coupon-card__title {
+    margin: 0 0 0.25rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.coupon-card__beneficio {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-700, #4b5563);
+}
+
+.coupon-card__codigo-display {
+    margin: 0 0 1rem;
+    padding: 0.85rem 0.75rem;
+    text-align: center;
+    font-size: clamp(1.15rem, 4.5vw, 1.45rem);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    word-break: break-all;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.coupon-card__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.coupon-card__actions .coupon-card__copy {
+    margin-left: 0;
+    width: 100%;
+}
+
+.coupon-card__warning {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: var(--gray-700, #4b5563);
+    opacity: 0.9;
+}
+
+.coupon-card__used {
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 10px;
+    background: #e8f5e9;
+    color: #1b5e20;
+}
+
+.coupon-card__used-label {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.coupon-card__used-date {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+}
+
+.coupon-card__status-line {
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 480px) {
+    .indicacao-status-card {
+        padding: 1rem;
+    }
+
+    .dash-invite-off {
+        display: block;
+        margin: 0.35rem 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .indicacao-status-card {
+        transition: none;
+    }
+}
+
 .validacao-list-compact__motivo {
     display: flex;
     align-items: flex-start;
@@ -5224,4 +5417,5 @@ code {
         transition: none;
     }
 }
+
 

@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const shareData = {
                 title: 'Indique e Ganhe Minas Mais',
-                text: 'Participe comigo da campanha Minas Mais.',
+                text: 'Compartilhe e ganhe 10% OFF em qualquer compra no App Minas Mais!',
                 url: shareUrl
             };
 
