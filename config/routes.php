@@ -6,6 +6,9 @@ declare(strict_types=1);
 
 $router->get('/', 'HomeController', 'index');
 $router->get('/404', 'ErrorController', 'notFound');
+$router->get('/termos-de-uso', 'LegalController', 'termosDeUso');
+$router->get('/politica-de-privacidade', 'LegalController', 'politicaDePrivacidade');
+$router->get('/regulamento', 'LegalController', 'regulamento');
 
 $router->get('/cadastro', 'AuthController', 'registerForm');
 $router->post('/cadastro', 'AuthController', 'register');
