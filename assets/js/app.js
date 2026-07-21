@@ -101,10 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast toast--${type}`;
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
         toast.textContent = message;
         toast.style.cssText = `
             position: fixed;
-            bottom: 20px;
+            bottom: calc(88px + env(safe-area-inset-bottom, 0px));
             left: 50%;
             transform: translateX(-50%);
             padding: 12px 24px;
@@ -114,9 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
             font-weight: 500;
             z-index: 9999;
             animation: slideUp 0.3s ease;
+            max-width: calc(100vw - 32px);
+            text-align: center;
         `;
         document.body.appendChild(toast);
-        
+
         setTimeout(() => {
             toast.style.animation = 'slideDown 0.3s ease';
             setTimeout(() => toast.remove(), 300);

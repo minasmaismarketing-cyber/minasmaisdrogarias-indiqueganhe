@@ -5194,47 +5194,85 @@ code {
     margin-left: auto;
 }
 
-/* —— Sprint 4.8 / Hotfix: Home status + cupons UX —— */
-.page-hero--compact {
-    margin-bottom: 0.85rem;
+/* —— Hotfix UX Premium: Home + Cupons —— */
+.home-stack,
+.cupons-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem; /* ~22px */
+    padding-bottom: 0.5rem;
 }
 
-.page-hero--compact .page-hero__subtitle {
+.page-hero--compact {
+    margin-bottom: 0;
+}
+
+.page-hero--compact .page-hero__subtitle:not(.page-hero__subtitle--visible) {
     display: none;
 }
 
+.page-hero__subtitle--visible {
+    display: block;
+    margin: 0.35rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--gray-700, #4b5563);
+}
+
 .stats-grid--home {
-    margin-bottom: 1.25rem;
-    gap: 0.85rem;
+    margin: 0;
+    gap: 0.75rem;
 }
 
 .stats-grid--home .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 5.5rem;
     background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 14px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-    padding: 1rem 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    padding: 1.1rem 0.75rem;
 }
 
 .stats-grid--home .stat-card__value {
     color: var(--primary, #d71920);
-    font-size: clamp(1.5rem, 5vw, 1.85rem);
+    font-size: clamp(1.45rem, 5vw, 1.75rem);
+    font-weight: 800;
+    line-height: 1.1;
 }
 
 .stats-grid--home .stat-card__label {
     color: var(--gray-700, #4b5563);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: none;
     letter-spacing: 0;
+    margin-top: 0.35rem;
 }
 
 .dash-invite-card {
-    margin-top: 0.25rem;
+    margin: 0;
+    padding: 1.25rem;
+    background: #fff;
+    border: 1px solid rgba(215, 25, 32, 0.12);
+    border-radius: 20px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.04);
+}
+
+.dash-invite-card__title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--gray-900, #111827);
 }
 
 .dash-invite-copy {
-    font-size: 0.95rem;
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
     line-height: 1.45;
     color: var(--gray-700, #4b5563);
     font-weight: 400;
@@ -5242,39 +5280,75 @@ code {
 
 .dash-invite-off {
     display: inline-block;
-    margin: 0.15rem 0.15rem;
-    font-size: clamp(1.75rem, 6vw, 2.35rem);
+    margin: 0.1rem 0.1rem;
+    font-size: clamp(1.55rem, 5.5vw, 2.1rem);
     font-weight: 800;
     line-height: 1.1;
-    color: #c62828;
+    color: var(--primary, #d71920);
     letter-spacing: -0.02em;
     vertical-align: baseline;
 }
 
+.code-actions--premium {
+    margin-top: 1.15rem;
+}
+
+.code-actions--premium .btn {
+    min-height: 48px;
+}
+
+/* Status alert card */
 .indicacao-status-card--standalone {
+    position: relative;
     display: block;
-    margin: 0 0 1.35rem;
-    padding: 1.2rem 1.2rem 1.15rem;
-    border-radius: 16px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-    border: 1px solid transparent;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+.indicacao-status-card__accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+}
+
+.indicacao-status-card--success .indicacao-status-card__accent {
+    background: #2e7d32;
+}
+
+.indicacao-status-card--warning .indicacao-status-card__accent {
+    background: #e6a800;
+}
+
+.indicacao-status-card--danger .indicacao-status-card__accent {
+    background: rgba(183, 28, 28, 0.75);
+}
+
+.indicacao-status-card__inner {
+    padding: 1.25rem 1.25rem 1.2rem 1.35rem;
 }
 
 .indicacao-status-card__top {
     display: flex;
     gap: 0.85rem;
     align-items: flex-start;
-    margin-bottom: 0.85rem;
+    margin-bottom: 0.75rem;
 }
 
 .indicacao-status-card__badge {
     flex-shrink: 0;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.6rem;
+    height: 2.6rem;
     display: grid;
     place-items: center;
     border-radius: 999px;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 800;
     line-height: 1;
 }
@@ -5284,22 +5358,16 @@ code {
     min-width: 0;
 }
 
-.indicacao-status-card__title {
-    margin: 0 0 0.4rem;
-    font-size: 1.1rem;
-    font-weight: 800;
-    line-height: 1.25;
-    color: inherit;
-}
-
 .indicacao-status-card__seal {
     display: inline-block;
+    margin-bottom: 0.4rem;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.02em;
-    background: rgba(0, 0, 0, 0.06);
+    background: rgba(230, 168, 0, 0.18);
+    color: #7a5c00;
 }
 
 .indicacao-status-card__seal--ok {
@@ -5312,50 +5380,56 @@ code {
     color: #8e0000;
 }
 
+.indicacao-status-card__title {
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--gray-900, #111827);
+}
+
 .indicacao-status-card__content {
     padding-left: 0;
 }
 
 .indicacao-status-card__body {
     margin: 0 0 1rem;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     line-height: 1.45;
-    color: inherit;
-    opacity: 0.95;
+    color: var(--gray-700, #4b5563);
 }
 
 .indicacao-status-card__off {
     display: inline-block;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     font-weight: 800;
-    color: #c62828;
+    color: var(--primary, #d71920);
     letter-spacing: -0.02em;
 }
 
 .indicacao-status-card__motivo {
     margin: 0 0 1rem;
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     line-height: 1.45;
-}
-
-.indicacao-status-card__motivo-label {
-    font-weight: 700;
+    color: var(--gray-700, #4b5563);
 }
 
 .indicacao-status-card__cta {
     margin-top: 0.15rem;
+    min-height: 48px;
 }
 
 .indicacao-status-card__cta:focus-visible,
 #btn-dismiss-status-card:focus-visible,
-#btn-share-native:focus-visible {
+#btn-share-native:focus-visible,
+.coupon-card__copy:focus-visible,
+.beneficio-amigo-card .btn:focus-visible {
     outline: 2px solid var(--primary, #d71920);
     outline-offset: 2px;
 }
 
 .indicacao-status-card--success {
-    background: linear-gradient(180deg, #f7fbf7 0%, #ffffff 55%);
-    border-color: rgba(46, 125, 50, 0.28);
+    background: #fff;
     color: #1f2a1f;
 }
 
@@ -5366,20 +5440,18 @@ code {
 }
 
 .indicacao-status-card--warning {
-    background: linear-gradient(180deg, #fffdf5 0%, #ffffff 55%);
-    border-color: rgba(183, 149, 11, 0.35);
+    background: #fffef8;
     color: #3d3200;
 }
 
 .indicacao-status-card--warning .indicacao-status-card__badge {
-    background: rgba(245, 200, 66, 0.25);
+    background: rgba(245, 200, 66, 0.28);
     color: #7a5c00;
     border: 1px solid rgba(183, 149, 11, 0.35);
 }
 
 .indicacao-status-card--danger {
-    background: linear-gradient(180deg, #fff8f8 0%, #ffffff 55%);
-    border-color: rgba(183, 28, 28, 0.28);
+    background: #fff;
     color: #3a1515;
 }
 
@@ -5397,49 +5469,98 @@ code {
 }
 
 @media (max-width: 480px) {
-    .indicacao-status-card--standalone {
-        padding: 1.05rem 1rem;
-        margin-bottom: 1.25rem;
-    }
-
     .dash-invite-off {
         display: block;
         margin: 0.35rem 0;
     }
+
+    .indicacao-status-card__inner,
+    .dash-invite-card,
+    .coupon-card__inner,
+    .beneficio-amigo-card__inner {
+        padding: 1.2rem;
+    }
 }
 
-.coupon-card--focus {
-    padding: 1.25rem 1.15rem;
-}
-
-.coupon-card__intro {
-    margin-bottom: 0.75rem;
-}
-
-.coupon-card__title {
-    margin: 0 0 0.25rem;
-    font-size: 1.05rem;
-    font-weight: 700;
-}
-
-.coupon-card__beneficio {
+/* Cupons premium */
+.coupons-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
     margin: 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--gray-700, #4b5563);
 }
 
-.coupon-card__codigo-display {
-    margin: 0 0 1rem;
-    padding: 0.85rem 0.75rem;
-    text-align: center;
-    font-size: clamp(1.15rem, 4.5vw, 1.45rem);
+.coupon-card--premium {
+    position: relative;
+    display: block;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+.coupon-card__accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: #2e7d32;
+}
+
+.coupon-card--utilizado .coupon-card__accent {
+    background: #9e9e9e;
+}
+
+.coupon-card__inner {
+    padding: 1.25rem 1.25rem 1.2rem 1.35rem;
+}
+
+.coupon-card__seal {
+    display: inline-block;
+    margin-bottom: 0.65rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.coupon-card__seal--ok {
+    background: rgba(46, 125, 50, 0.12);
+    color: #1b5e20;
+}
+
+.coupon-card__seal--used {
+    background: rgba(0, 0, 0, 0.08);
+    color: #424242;
+}
+
+.coupon-card--premium .coupon-card__title {
+    margin: 0 0 0.35rem;
+    font-size: 1.2rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
-    word-break: break-all;
-    background: rgba(0, 0, 0, 0.04);
-    border-radius: 10px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    line-height: 1.25;
+    color: var(--gray-900, #111827);
+}
+
+.coupon-card__off {
+    margin: 0 0 0.45rem;
+    font-size: clamp(1.85rem, 7vw, 2.35rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--primary, #d71920);
+    letter-spacing: -0.02em;
+}
+
+.coupon-card__hint-text {
+    margin: 0 0 1.15rem;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    color: var(--gray-700, #4b5563);
 }
 
 .coupon-card__actions {
@@ -5451,62 +5572,118 @@ code {
 .coupon-card__actions .coupon-card__copy {
     margin-left: 0;
     width: 100%;
+    min-height: 48px;
 }
 
 .coupon-card__warning {
     margin: 0;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     line-height: 1.4;
     color: var(--gray-700, #4b5563);
     opacity: 0.9;
+    text-align: center;
 }
 
 .coupon-card__used {
     text-align: center;
-    padding: 0.75rem;
-    border-radius: 10px;
-    background: #e8f5e9;
-    color: #1b5e20;
-}
-
-.coupon-card__used-label {
-    margin: 0;
-    font-weight: 700;
-    font-size: 1rem;
+    padding: 0.65rem 0.5rem;
+    border-radius: 12px;
+    background: #f5f5f5;
+    color: #424242;
 }
 
 .coupon-card__used-date {
-    margin: 0.35rem 0 0;
+    margin: 0;
     font-size: 0.85rem;
 }
 
 .coupon-card__status-line {
     text-align: center;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    color: var(--gray-700, #4b5563);
+}
+
+/* Hide any legacy visible code display if present */
+.coupon-card__codigo-display {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
 
 .beneficio-amigo-list {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
-    margin-top: 1rem;
+    gap: 1.25rem;
+    margin: 0;
 }
 
-.beneficio-amigo-card .mm-card__title {
-    margin-bottom: 0.35rem;
+.beneficio-amigo-card {
+    position: relative;
+    display: block;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(215, 25, 32, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
 }
 
-.beneficio-amigo-card__nome {
-    margin: 0 0 0.75rem;
-    font-weight: 600;
-    font-size: 0.95rem;
+.beneficio-amigo-card__accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: rgba(215, 25, 32, 0.55);
+}
+
+.beneficio-amigo-card__inner {
+    padding: 1.25rem 1.25rem 1.2rem 1.35rem;
+}
+
+.beneficio-amigo-card__seal {
+    display: inline-block;
+    margin-bottom: 0.55rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: rgba(215, 25, 32, 0.1);
+    color: #9b1520;
+}
+
+.beneficio-amigo-card__title {
+    margin: 0 0 0.45rem;
+    font-size: 1.12rem;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--gray-900, #111827);
+}
+
+.beneficio-amigo-card__text {
+    margin: 0 0 1.1rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--gray-700, #4b5563);
+}
+
+.beneficio-amigo-card .btn {
+    min-height: 48px;
 }
 
 .beneficio-amigo-card__hint,
 .validacao-list-compact__share-hint {
-    margin: 0.5rem 0 0;
-    font-size: 0.78rem;
+    margin: 0.65rem 0 0;
+    font-size: 0.75rem;
     color: var(--gray-700, #4b5563);
     text-align: center;
 }
@@ -5517,19 +5694,11 @@ code {
     border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-@media (max-width: 480px) {
-    .dash-invite-off {
-        display: block;
-        margin: 0.35rem 0;
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .indicacao-status-card {
         transition: none;
     }
 }
-
 .validacao-list-compact__motivo {
     display: flex;
     align-items: flex-start;
