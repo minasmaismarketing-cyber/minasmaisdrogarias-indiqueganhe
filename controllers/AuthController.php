@@ -49,6 +49,7 @@ class AuthController extends Controller
             'email' => $input['email'],
             'senha_hash' => password_hash($input['senha'], PASSWORD_BCRYPT),
             'aceite_lgpd' => 1,
+            'accepted_terms_at' => date('Y-m-d H:i:s'),
             'codigo_indicador' => $codigo,
             'whatsapp' => $input['whatsapp'],
         ]);
@@ -297,7 +298,7 @@ class AuthController extends Controller
             'email' => strtolower(Validator::sanitizeString($_POST['email'] ?? '', 180)),
             'senha' => (string) ($_POST['senha'] ?? ''),
             'confirmar_senha' => (string) ($_POST['confirmar_senha'] ?? ''),
-            'aceite_lgpd' => isset($_POST['aceite_lgpd']) ? '1' : '',
+            'legal_acceptance' => ((string) ($_POST['legal_acceptance'] ?? '') === '1') ? '1' : '',
         ];
     }
 
@@ -337,8 +338,8 @@ class AuthController extends Controller
             $errors['confirmar_senha'] = 'As senhas não conferem.';
         }
 
-        if ($input['aceite_lgpd'] !== '1') {
-            $errors['aceite_lgpd'] = 'É necessário aceitar os termos LGPD.';
+        if ($input['legal_acceptance'] !== '1') {
+            $errors['legal_acceptance'] = 'Para criar sua conta, confirme que leu e aceitou os documentos obrigatórios.';
         }
 
         return $errors;

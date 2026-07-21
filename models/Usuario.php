@@ -57,9 +57,9 @@ class Usuario extends Model
     {
         $stmt = $this->db->prepare(
             'INSERT INTO usuarios
-            (nome, cpf, telefone, email, senha_hash, aceite_lgpd, codigo_indicador, cupom_recebido, whatsapp)
+            (nome, cpf, telefone, email, senha_hash, aceite_lgpd, accepted_terms_at, codigo_indicador, cupom_recebido, whatsapp)
             VALUES
-            (:nome, :cpf, :telefone, :email, :senha_hash, :aceite_lgpd, :codigo_indicador, 0, :whatsapp)'
+            (:nome, :cpf, :telefone, :email, :senha_hash, :aceite_lgpd, :accepted_terms_at, :codigo_indicador, 0, :whatsapp)'
         );
 
         $stmt->execute([
@@ -69,6 +69,7 @@ class Usuario extends Model
             'email' => $data['email'],
             'senha_hash' => $data['senha_hash'],
             'aceite_lgpd' => $data['aceite_lgpd'],
+            'accepted_terms_at' => $data['accepted_terms_at'] ?? null,
             'codigo_indicador' => $data['codigo_indicador'],
             'whatsapp' => $data['whatsapp'],
         ]);

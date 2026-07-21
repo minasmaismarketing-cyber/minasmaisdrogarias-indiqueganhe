@@ -9,7 +9,7 @@
 
         <?php $errors = $errors ?? []; require BASE_PATH . '/views/partials/alerts.php'; ?>
 
-        <form method="POST" action="<?= url('/cadastro') ?>" class="form" novalidate>
+        <form method="POST" action="<?= url('/cadastro') ?>" class="form" id="form-cadastro" novalidate>
             <?= csrf_field() ?>
 
             <div class="form-group">
@@ -50,14 +50,33 @@
             </div>
 
             <div class="form-group form-check">
-                <label class="checkbox">
-                    <input type="checkbox" name="aceite_lgpd" value="1" <?= old('aceite_lgpd') === '1' ? 'checked' : '' ?> required>
-                    <span>Li e aceito os termos da LGPD</span>
+                <label class="checkbox" for="legal_acceptance">
+                    <input
+                        type="checkbox"
+                        id="legal_acceptance"
+                        name="legal_acceptance"
+                        value="1"
+                        <?= old('legal_acceptance') === '1' ? 'checked' : '' ?>
+                        required
+                        aria-describedby="legal-acceptance-error"
+                    >
+                    <span>
+                        Declaro que tenho 18 anos ou mais, li e aceito os
+                        <a href="<?= e(url('/termos-de-uso')) ?>" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
+                        e o
+                        <a href="<?= e(url('/regulamento')) ?>" target="_blank" rel="noopener noreferrer">Regulamento da Campanha</a>,
+                        e declaro que li a
+                        <a href="<?= e(url('/politica-de-privacidade')) ?>" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.
+                    </span>
                 </label>
-                <?php if (!empty($errors['aceite_lgpd'])): ?><span class="form-error"><?= e($errors['aceite_lgpd']) ?></span><?php endif; ?>
+                <?php if (!empty($errors['legal_acceptance'])): ?>
+                    <span class="form-error" id="legal-acceptance-error"><?= e($errors['legal_acceptance']) ?></span>
+                <?php else: ?>
+                    <span class="form-error" id="legal-acceptance-error" hidden></span>
+                <?php endif; ?>
             </div>
 
-            <button type="submit" class="btn btn--block">Cadastrar</button>
+            <button type="submit" class="btn btn--block" id="btn-cadastrar" disabled>Cadastrar</button>
         </form>
 
         <p class="auth-card__footer">Já tem conta? <a href="<?= url('/login') ?>">Entrar</a></p>
@@ -67,3 +86,48 @@
 <footer class="page-footer">
     <p>© 2026 - Criado por NEXDEN Digital</p>
 </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const checkbox = document.getElementById('legal_acceptance');
+    const submitBtn = document.getElementById('btn-cadastrar');
+    const form = document.getElementById('form-cadastro');
+    const errorEl = document.getElementById('legal-acceptance-error');
+
+    if (!checkbox || !submitBtn || !form) {
+        return;
+    }
+
+    const syncSubmitState = () => {
+        submitBtn.disabled = !checkbox.checked;
+    };
+
+    checkbox.addEventListener('change', () => {
+        syncSubmitState();
+        if (checkbox.checked && errorEl) {
+            errorEl.hidden = true;
+            errorEl.textContent = '';
+        }
+    });
+
+    form.querySelectorAll('a[target="_blank"]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+    });
+
+    form.addEventListener('submit', (event) => {
+        if (!checkbox.checked) {
+            event.preventDefault();
+            submitBtn.disabled = true;
+            if (errorEl) {
+                errorEl.hidden = false;
+                errorEl.textContent = 'Para criar sua conta, confirme que leu e aceitou os documentos obrigatórios.';
+            }
+            checkbox.focus();
+        }
+    });
+
+    syncSubmitState();
+});
+</script>
