@@ -173,7 +173,9 @@ class ReferralService
 
     /**
      * Registra indicação recebida via API externa (KOBE) com validação automática.
+     * Consolida na indicação aberta do indicador sempre que possível.
      *
+     * @param array<string, mixed> $extra Campos opcionais (customerId, etc.)
      * @return array{success: bool, message: string, status_code: int, status?: string, motivo?: string}
      */
     public function registerApiIndication(
@@ -184,7 +186,8 @@ class ReferralService
         string $tipoEvento,
         ?string $nomeIndicado = null,
         ?string $idempotencyKey = null,
-        ?string $plataforma = null
+        ?string $plataforma = null,
+        array $extra = []
     ): array {
         $codigoIndicador = strtoupper(trim($codigoIndicador));
         $cpfIndicado = Validator::onlyDigits($cpfIndicado);
@@ -197,6 +200,10 @@ class ReferralService
             $idempotencyKey = null;
         }
         $nomePayload = $nomeIndicado !== null ? trim($nomeIndicado) : '';
+        $customerId = isset($extra['customerId']) ? trim((string) $extra['customerId']) : null;
+        if ($customerId === '') {
+            $customerId = null;
+        }
 
         if ($idempotencyKey !== null) {
             $cached = $this->findIdempotentResponse($idempotencyKey);
@@ -222,316 +229,414 @@ class ReferralService
         $referrer = $validation['user'];
         $referrerId = (int) $referrer['id'];
 
-        $existingLogical = $this->indicacaoModel->findApiProcessedByReferrerAndCpf($referrerId, $cpfIndicado);
-        if ($existingLogical !== null) {
-            $replay = $this->buildReplayResponse($existingLogical);
+        $existingFinal = $this->indicacaoModel->findApiProcessedByReferrerAndCpf($referrerId, $cpfIndicado);
+        if ($existingFinal !== null) {
+            $replay = $this->buildReplayResponse($existingFinal);
             Logger::info('API KOBE cadastro já processado (lógico)', [
-                'indicacao_id' => $existingLogical['id'] ?? null,
+                'indicacao_id' => $existingFinal['id'] ?? null,
                 'cpf' => $this->maskCpf($cpfIndicado),
             ]);
             return $this->storeAndReturnIdempotent($idempotencyKey, $replay);
         }
 
-        $matchedUser = $this->resolveIndicadoUsuario($cpfIndicado, $emailIndicado, $telefoneIndicado);
+        $matchedUser = $this->resolveIndicadoUsuario($cpfIndicado, $emailIndicado, $telefoneIndicado, $customerId);
         $displayName = $this->resolveNomeIndicado($nomePayload, $matchedUser);
 
-        if ($cpfIndicado === (string) $referrer['cpf']) {
-            return $this->finalizeRejectedApiIndication(
+        $located = $this->locateApiIndication(
+            $referrerId,
+            $codigoIndicador,
+            $cpfIndicado,
+            $emailIndicado,
+            $telefoneIndicado,
+            $idempotencyKey
+        );
+        $indicacaoId = (int) $located['indicacao_id'];
+        $strategy = (string) $located['strategy'];
+
+        $this->persistIndicadoDataOnIndicacao(
+            $indicacaoId,
+            $displayName,
+            $cpfIndicado,
+            $emailIndicado,
+            $telefoneIndicado,
+            $tipoEvento,
+            $plataforma,
+            $idempotencyKey,
+            $customerId,
+            $strategy,
+            $matchedUser !== null ? (int) $matchedUser['id'] : null
+        );
+
+        $validacao = $this->validacaoModel->findByIndicacao($indicacaoId);
+        if ($validacao === null) {
+            $this->ensureValidacaoForIndicacao(
+                $indicacaoId,
                 $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $cpfIndicado,
-                $emailIndicado,
-                $telefoneIndicado,
-                $matchedUser,
-                $tipoEvento,
-                $plataforma,
+                $matchedUser !== null ? (int) $matchedUser['id'] : null
+            );
+            $validacao = $this->validacaoModel->findByIndicacao($indicacaoId);
+        }
+        if ($validacao === null) {
+            throw new RuntimeException('Validação não criada para indicação API');
+        }
+
+        $validacaoId = (int) $validacao['id'];
+        $this->validacaoModel->recordApiHistory(
+            $validacaoId,
+            (string) $validacao['status'],
+            (string) $validacao['status'],
+            'Cadastro recebido via API. Associação: ' . $strategy
+        );
+
+        $campanhaDiag = $this->diagnoseCampaign();
+        if (!($campanhaDiag['ok'] ?? false)) {
+            return $this->rejectLocatedIndication(
+                $validacaoId,
+                $idempotencyKey,
+                (string) $campanhaDiag['motivo'],
+                (string) $campanhaDiag['message'],
+                $cpfIndicado
+            );
+        }
+
+        if ($cpfIndicado === (string) $referrer['cpf']) {
+            return $this->rejectLocatedIndication(
+                $validacaoId,
                 $idempotencyKey,
                 'AUTOINDICACAO',
-                'CPF do indicado não pode ser igual ao CPF do indicador'
+                'CPF do indicado não pode ser igual ao CPF do indicador',
+                $cpfIndicado
             );
         }
 
-        if ($tipoEvento === 'REENGAGEMENT') {
-            return $this->finalizeRejectedApiIndication(
-                $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $cpfIndicado,
-                $emailIndicado,
-                $telefoneIndicado,
-                $matchedUser,
-                $tipoEvento,
-                $plataforma,
-                $idempotencyKey,
-                'APP_JA_EXISTENTE',
-                'Indicação inválida.',
-                self::API_STATUS_INVALIDADO
-            );
-        }
-
-        if ($this->indicacaoModel->cpfAlreadyParticipated($cpfIndicado)) {
-            return $this->finalizeRejectedApiIndication(
-                $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $cpfIndicado,
-                $emailIndicado,
-                $telefoneIndicado,
-                $matchedUser,
-                $tipoEvento,
-                $plataforma,
+        // CPF é o identificador principal. REENGAGEMENT NÃO reprova automaticamente.
+        if ($this->indicacaoModel->cpfAlreadyParticipated($cpfIndicado, $indicacaoId)) {
+            return $this->rejectLocatedIndication(
+                $validacaoId,
                 $idempotencyKey,
                 'CPF_JA_PARTICIPOU',
-                'CPF já participou do programa'
+                'CPF já participou do programa',
+                $cpfIndicado,
+                'Cadastro recusado: CPF já utilizado anteriormente nesta campanha.'
             );
         }
 
         if ($matchedUser !== null || $this->usuarioModel->cpfExists($cpfIndicado)) {
             $motivo = 'CPF_JA_CADASTRADO';
+            $message = 'CPF já cadastrado';
             if ($matchedUser !== null && Validator::onlyDigits((string) ($matchedUser['cpf'] ?? '')) !== $cpfIndicado) {
                 if (strtolower((string) ($matchedUser['email'] ?? '')) === $emailIndicado) {
                     $motivo = 'EMAIL_JA_CADASTRADO';
+                    $message = 'E-mail já cadastrado';
                 } else {
                     $motivo = 'TELEFONE_JA_CADASTRADO';
+                    $message = 'Telefone já cadastrado';
                 }
             }
 
-            return $this->finalizeRejectedApiIndication(
-                $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $cpfIndicado,
-                $emailIndicado,
-                $telefoneIndicado,
-                $matchedUser,
-                $tipoEvento,
-                $plataforma,
+            return $this->rejectLocatedIndication(
+                $validacaoId,
                 $idempotencyKey,
                 $motivo,
-                $motivo === 'EMAIL_JA_CADASTRADO' ? 'E-mail já cadastrado'
-                    : ($motivo === 'TELEFONE_JA_CADASTRADO' ? 'Telefone já cadastrado' : 'CPF já participou do programa')
+                $message,
+                $cpfIndicado
             );
         }
 
-        if ($this->usuarioModel->emailExists($emailIndicado)) {
-            return $this->finalizeRejectedApiIndication(
-                $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $cpfIndicado,
-                $emailIndicado,
-                $telefoneIndicado,
-                null,
-                $tipoEvento,
-                $plataforma,
-                $idempotencyKey,
-                'EMAIL_JA_CADASTRADO',
-                'E-mail já cadastrado'
-            );
-        }
-
-        if ($this->indicacaoModel->emailAlreadyParticipated($emailIndicado)) {
-            return $this->finalizeRejectedApiIndication(
-                $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $cpfIndicado,
-                $emailIndicado,
-                $telefoneIndicado,
-                null,
-                $tipoEvento,
-                $plataforma,
-                $idempotencyKey,
-                'EMAIL_JA_CADASTRADO',
-                'E-mail já cadastrado'
-            );
-        }
-
-        if ($this->indicacaoModel->phoneAlreadyIndicated($telefoneIndicado)
-            || $this->indicacaoModel->findActiveByReferrerAndPhone($referrerId, $telefoneIndicado) !== null
+        if ($this->usuarioModel->emailExists($emailIndicado)
+            || $this->indicacaoModel->emailAlreadyParticipated($emailIndicado, $indicacaoId)
         ) {
-            return $this->finalizeRejectedApiIndication(
-                $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $cpfIndicado,
-                $emailIndicado,
-                $telefoneIndicado,
-                null,
-                $tipoEvento,
-                $plataforma,
+            return $this->rejectLocatedIndication(
+                $validacaoId,
+                $idempotencyKey,
+                'EMAIL_JA_CADASTRADO',
+                'E-mail já cadastrado',
+                $cpfIndicado
+            );
+        }
+
+        if ($this->indicacaoModel->phoneAlreadyIndicated($telefoneIndicado, $indicacaoId)) {
+            return $this->rejectLocatedIndication(
+                $validacaoId,
                 $idempotencyKey,
                 'TELEFONE_JA_CADASTRADO',
-                'Telefone já cadastrado'
+                'Telefone já cadastrado',
+                $cpfIndicado
             );
         }
 
-        $db = Database::getConnection();
-        $db->beginTransaction();
-
-        try {
-            $indicacaoId = $this->completeIndicacaoRegistration(
-                $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $telefoneIndicado,
-                null,
-                'API',
-                $cpfIndicado,
-                $emailIndicado,
-                $tipoEvento,
-                $plataforma,
-                $idempotencyKey
-            );
-
-            $validacao = $this->validacaoModel->findByIndicacao($indicacaoId);
-            if ($validacao === null) {
-                throw new RuntimeException('Validação não criada para indicação API');
-            }
-
-            $validacaoId = (int) $validacao['id'];
+        if ($tipoEvento === 'UNKNOWN') {
+            $this->validacaoModel->updateStatus($validacaoId, ValidacaoIndicacao::STATUS_EM_ANALISE);
             $this->validacaoModel->recordApiHistory(
                 $validacaoId,
                 (string) $validacao['status'],
-                (string) $validacao['status'],
-                'Cadastro recebido via API'
+                ValidacaoIndicacao::STATUS_EM_ANALISE,
+                'Evento UNKNOWN — dados insuficientes para decisão automática'
             );
 
-            if ($tipoEvento === 'UNKNOWN') {
-                $this->validacaoModel->updateStatus($validacaoId, ValidacaoIndicacao::STATUS_EM_ANALISE);
-                $this->validacaoModel->recordApiHistory(
-                    $validacaoId,
-                    ValidacaoIndicacao::STATUS_PENDENTE,
-                    ValidacaoIndicacao::STATUS_EM_ANALISE,
-                    'Evento UNKNOWN — análise manual necessária'
-                );
+            $response = [
+                'success' => true,
+                'status' => self::API_STATUS_EM_ANALISE,
+                'message' => 'Cadastro recebido e em análise.',
+                'status_code' => 200,
+            ];
 
-                $db->commit();
-
-                $response = [
-                    'success' => true,
-                    'status' => self::API_STATUS_EM_ANALISE,
-                    'message' => 'Cadastro recebido e em análise.',
-                    'status_code' => 200,
-                ];
-
-                Logger::info('API KOBE UNKNOWN em análise', [
-                    'indicacao_id' => $indicacaoId,
-                    'cpf' => $this->maskCpf($cpfIndicado),
-                ]);
-
-                return $this->storeAndReturnIdempotent($idempotencyKey, $response);
-            }
-
-            // INSTALL (e demais elegíveis): aprovação automática + cupom
-            $approval = $this->validacaoModel->approveAutomatically($validacaoId);
-
-            $db->commit();
-
-            if (!($approval['ok'] ?? false)) {
-                $response = [
-                    'success' => true,
-                    'status' => self::API_STATUS_AGUARDANDO_VALIDACAO,
-                    'message' => 'Cadastro recebido com sucesso.',
-                    'status_code' => 200,
-                ];
-                return $this->storeAndReturnIdempotent($idempotencyKey, $response);
-            }
-
-            if (!empty($approval['cupom_assigned'])) {
-                $response = [
-                    'success' => true,
-                    'status' => self::API_STATUS_BENEFICIO_LIBERADO,
-                    'message' => 'Indicação aprovada e benefício liberado.',
-                    'status_code' => 200,
-                ];
-            } else {
-                $response = [
-                    'success' => true,
-                    'status' => self::API_STATUS_BENEFICIO_PENDENTE,
-                    'message' => 'Indicação aprovada. O benefício será liberado em breve.',
-                    'status_code' => 200,
-                ];
-            }
-
-            Logger::info('API KOBE resultado automático', [
+            Logger::info('API KOBE UNKNOWN em análise', [
                 'indicacao_id' => $indicacaoId,
-                'resultado' => $response['status'],
-                'motivo' => $approval['motivo'] ?? null,
                 'cpf' => $this->maskCpf($cpfIndicado),
             ]);
 
             return $this->storeAndReturnIdempotent($idempotencyKey, $response);
+        }
+
+        // INSTALL e REENGAGEMENT elegíveis: aprovação automática + cupom (um por indicador)
+        $db = Database::getConnection();
+        $ownTx = !$db->inTransaction();
+        if ($ownTx) {
+            $db->beginTransaction();
+        }
+
+        try {
+            $approval = $this->validacaoModel->approveAutomatically($validacaoId);
+            if ($ownTx) {
+                $db->commit();
+            }
         } catch (Throwable $e) {
-            if ($db->inTransaction()) {
+            if ($ownTx && $db->inTransaction()) {
                 $db->rollBack();
             }
-            Logger::error('API KOBE falha ao processar cadastro', [
-                'error' => $e->getMessage(),
-                'cpf' => $this->maskCpf($cpfIndicado),
-            ]);
             throw $e;
         }
+
+        if (!($approval['ok'] ?? false)) {
+            $response = [
+                'success' => true,
+                'status' => self::API_STATUS_AGUARDANDO_VALIDACAO,
+                'message' => 'Cadastro recebido com sucesso.',
+                'status_code' => 200,
+            ];
+            return $this->storeAndReturnIdempotent($idempotencyKey, $response);
+        }
+
+        $approvalMotivo = (string) ($approval['motivo'] ?? '');
+        if ($approvalMotivo === 'BENEFICIO_PENDENTE_SEM_ESTOQUE') {
+            $response = [
+                'success' => true,
+                'status' => self::API_STATUS_BENEFICIO_PENDENTE,
+                'message' => 'Indicação aprovada. O benefício será liberado em breve.',
+                'status_code' => 200,
+            ];
+        } else {
+            $message = $approvalMotivo === 'BENEFICIO_JA_LIBERADO'
+                ? 'Indicação processada. Benefício já havia sido liberado anteriormente.'
+                : 'Indicação aprovada e benefício liberado.';
+            $response = [
+                'success' => true,
+                'status' => self::API_STATUS_BENEFICIO_LIBERADO,
+                'message' => $message,
+                'status_code' => 200,
+            ];
+        }
+
+        Logger::info('API KOBE resultado automático', [
+            'indicacao_id' => $indicacaoId,
+            'tipo_evento' => $tipoEvento,
+            'resultado' => $response['status'],
+            'motivo' => $approvalMotivo !== '' ? $approvalMotivo : null,
+            'cpf' => $this->maskCpf($cpfIndicado),
+            'associacao' => $strategy,
+        ]);
+
+        return $this->storeAndReturnIdempotent($idempotencyKey, $response);
     }
 
     /**
-     * @param array<string, mixed>|null $matchedUser
-     * @return array{success: bool, message: string, status_code: int, status?: string, motivo?: string}
+     * @return array{indicacao_id: int, strategy: string}
      */
-    private function finalizeRejectedApiIndication(
+    private function locateApiIndication(
         int $referrerId,
         string $codigoIndicador,
+        string $cpfIndicado,
+        string $emailIndicado,
+        string $telefoneIndicado,
+        ?string $idempotencyKey
+    ): array {
+        if ($idempotencyKey !== null) {
+            $byKey = $this->indicacaoModel->findByIdempotencyKey($idempotencyKey);
+            if ($byKey !== null && (int) $byKey['usuario_id'] === $referrerId) {
+                return ['indicacao_id' => (int) $byKey['id'], 'strategy' => 'idempotency_key'];
+            }
+        }
+
+        $byCpf = $this->indicacaoModel->findByReferrerAndCpf($referrerId, $cpfIndicado);
+        if ($byCpf !== null && $this->isOpenOrReusableIndicacao($byCpf)) {
+            return ['indicacao_id' => (int) $byCpf['id'], 'strategy' => 'codigo_cpf'];
+        }
+
+        $byPhone = $this->indicacaoModel->findActiveByReferrerAndPhone($referrerId, $telefoneIndicado);
+        if ($byPhone !== null && $this->isOpenOrReusableIndicacao($byPhone)) {
+            return ['indicacao_id' => (int) $byPhone['id'], 'strategy' => 'codigo_telefone'];
+        }
+
+        $byEmail = $this->indicacaoModel->findByReferrerAndEmail($referrerId, $emailIndicado);
+        if ($byEmail !== null && $this->isOpenOrReusableIndicacao($byEmail)) {
+            return ['indicacao_id' => (int) $byEmail['id'], 'strategy' => 'codigo_email'];
+        }
+
+        $open = $this->indicacaoModel->findOpenByReferrer($referrerId);
+        if ($open !== null) {
+            return ['indicacao_id' => (int) $open['id'], 'strategy' => 'indicacao_aberta'];
+        }
+
+        $db = Database::getConnection();
+        $codigoReferencia = $this->generateCodigoReferencia();
+        $stmt = $db->prepare(
+            'INSERT INTO indicacoes
+            (usuario_id, codigo_indicador, codigo_referencia, status, origem)
+            VALUES (:usuario_id, :codigo, :codigo_ref, :status, :origem)'
+        );
+        $stmt->execute([
+            'usuario_id' => $referrerId,
+            'codigo' => $codigoIndicador,
+            'codigo_ref' => $codigoReferencia,
+            'status' => Indicacao::STATUS_CADASTRO_PENDENTE,
+            'origem' => 'API',
+        ]);
+        $newId = (int) $db->lastInsertId();
+        $this->ensureValidacaoForIndicacao($newId, $referrerId, null);
+
+        return ['indicacao_id' => $newId, 'strategy' => 'nova_indicacao'];
+    }
+
+    /** @param array<string, mixed> $indicacao */
+    private function isOpenOrReusableIndicacao(array $indicacao): bool
+    {
+        $status = (string) ($indicacao['status'] ?? '');
+
+        return in_array($status, [
+            Indicacao::STATUS_AGUARDANDO,
+            Indicacao::STATUS_LINK_ACESSADO,
+            Indicacao::STATUS_CADASTRO_PENDENTE,
+        ], true);
+    }
+
+    private function persistIndicadoDataOnIndicacao(
+        int $indicacaoId,
         string $displayName,
         string $cpfIndicado,
         string $emailIndicado,
         string $telefoneIndicado,
-        ?array $matchedUser,
         string $tipoEvento,
         ?string $plataforma,
         ?string $idempotencyKey,
+        ?string $customerId,
+        string $strategy,
+        ?int $usuarioIndicadoId
+    ): void {
+        $current = $this->indicacaoModel->findById($indicacaoId);
+        $existingNome = trim((string) ($current['nome_indicado'] ?? ''));
+        $nomeFinal = $displayName;
+        if ($displayName === self::FALLBACK_NOME_API
+            && $existingNome !== ''
+            && $existingNome !== self::FALLBACK_NOME_API
+        ) {
+            $nomeFinal = $existingNome;
+        }
+
+        $db = Database::getConnection();
+        try {
+            $stmt = $db->prepare(
+                'UPDATE indicacoes SET
+                    nome_indicado = :nome,
+                    telefone_indicado = CASE
+                        WHEN :telefone = \'\' THEN telefone_indicado ELSE :telefone2 END,
+                    cpf_indicado = CASE WHEN :cpf = \'\' THEN cpf_indicado ELSE :cpf2 END,
+                    email_indicado = CASE WHEN :email = \'\' THEN email_indicado ELSE :email2 END,
+                    customer_id = COALESCE(:customer_id, customer_id),
+                    tipo_evento = COALESCE(:tipo_evento, tipo_evento),
+                    plataforma = COALESCE(:plataforma, plataforma),
+                    idempotency_key = COALESCE(:idempotency_key, idempotency_key),
+                    associacao_estrategia = :strategy,
+                    origem = CASE WHEN origem IS NULL OR origem = \'\' THEN \'API\' ELSE origem END,
+                    status = :status,
+                    updated_at = NOW()
+                 WHERE id = :id'
+            );
+            $stmt->execute([
+                'nome' => $nomeFinal,
+                'telefone' => $telefoneIndicado,
+                'telefone2' => $telefoneIndicado,
+                'cpf' => $cpfIndicado,
+                'cpf2' => $cpfIndicado,
+                'email' => $emailIndicado,
+                'email2' => $emailIndicado,
+                'customer_id' => $customerId,
+                'tipo_evento' => $tipoEvento !== '' ? $tipoEvento : null,
+                'plataforma' => $plataforma,
+                'idempotency_key' => $idempotencyKey,
+                'strategy' => $strategy,
+                'status' => Indicacao::STATUS_CADASTRO_PENDENTE,
+                'id' => $indicacaoId,
+            ]);
+        } catch (Throwable) {
+            $stmt = $db->prepare(
+                'UPDATE indicacoes SET
+                    nome_indicado = :nome,
+                    telefone_indicado = CASE WHEN :telefone = \'\' THEN telefone_indicado ELSE :telefone2 END,
+                    cpf_indicado = CASE WHEN :cpf = \'\' THEN cpf_indicado ELSE :cpf2 END,
+                    email_indicado = CASE WHEN :email = \'\' THEN email_indicado ELSE :email2 END,
+                    tipo_evento = COALESCE(:tipo_evento, tipo_evento),
+                    plataforma = COALESCE(:plataforma, plataforma),
+                    idempotency_key = COALESCE(:idempotency_key, idempotency_key),
+                    status = :status,
+                    updated_at = NOW()
+                 WHERE id = :id'
+            );
+            $stmt->execute([
+                'nome' => $nomeFinal,
+                'telefone' => $telefoneIndicado,
+                'telefone2' => $telefoneIndicado,
+                'cpf' => $cpfIndicado,
+                'cpf2' => $cpfIndicado,
+                'email' => $emailIndicado,
+                'email2' => $emailIndicado,
+                'tipo_evento' => $tipoEvento !== '' ? $tipoEvento : null,
+                'plataforma' => $plataforma,
+                'idempotency_key' => $idempotencyKey,
+                'status' => Indicacao::STATUS_CADASTRO_PENDENTE,
+                'id' => $indicacaoId,
+            ]);
+        }
+
+        if ($usuarioIndicadoId !== null) {
+            $this->ensureValidacaoForIndicacao($indicacaoId, (int) ($current['usuario_id'] ?? 0), $usuarioIndicadoId);
+        }
+    }
+
+    /**
+     * @return array{success: bool, message: string, status_code: int, status?: string, motivo?: string}
+     */
+    private function rejectLocatedIndication(
+        int $validacaoId,
+        ?string $idempotencyKey,
         string $motivo,
         string $message,
-        string $apiStatus = self::API_STATUS_INVALIDADO
+        string $cpfIndicado,
+        ?string $timelineNote = null
     ): array {
-        $db = Database::getConnection();
-        $db->beginTransaction();
-
-        try {
-            $indicacaoId = $this->completeIndicacaoRegistration(
-                $referrerId,
-                $codigoIndicador,
-                $displayName,
-                $telefoneIndicado,
-                $matchedUser !== null ? (int) $matchedUser['id'] : null,
-                'API',
-                $cpfIndicado,
-                $emailIndicado,
-                $tipoEvento,
-                $plataforma,
-                $idempotencyKey
+        $this->validacaoModel->rejectAutomatically($validacaoId, $motivo);
+        if ($timelineNote !== null) {
+            $this->validacaoModel->recordApiHistory(
+                $validacaoId,
+                ValidacaoIndicacao::STATUS_REPROVADO,
+                ValidacaoIndicacao::STATUS_REPROVADO,
+                $timelineNote
             );
-
-            $validacao = $this->validacaoModel->findByIndicacao($indicacaoId);
-            if ($validacao !== null) {
-                $this->validacaoModel->rejectAutomatically((int) $validacao['id'], $motivo);
-            }
-
-            $db->commit();
-        } catch (Throwable $e) {
-            if ($db->inTransaction()) {
-                $db->rollBack();
-            }
-            Logger::warning('API KOBE falha ao persistir reprovação', [
-                'motivo' => $motivo,
-                'error' => $e->getMessage(),
-                'cpf' => $this->maskCpf($cpfIndicado),
-            ]);
         }
 
         $response = [
             'success' => false,
-            'status' => $apiStatus,
+            'status' => self::API_STATUS_INVALIDADO,
             'motivo' => $motivo,
             'message' => $message,
             'status_code' => 400,
@@ -540,9 +645,41 @@ class ReferralService
         Logger::info('API KOBE reprovação automática', [
             'motivo' => $motivo,
             'cpf' => $this->maskCpf($cpfIndicado),
+            'validacao_id' => $validacaoId,
         ]);
 
         return $this->storeAndReturnIdempotent($idempotencyKey, $response);
+    }
+
+    /** @return array{ok: bool, motivo?: string, message?: string, campanha?: array<string, mixed>} */
+    private function diagnoseCampaign(): array
+    {
+        $campanhaModel = new Campanha();
+        $active = $campanhaModel->findActive();
+        if ($active !== null) {
+            return ['ok' => true, 'campanha' => $active];
+        }
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare(
+            'SELECT * FROM campanhas WHERE CURDATE() BETWEEN inicio AND fim ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute();
+        $inPeriod = $stmt->fetch();
+
+        if ($inPeriod !== false && (string) ($inPeriod['status'] ?? '') !== Campanha::STATUS_ATIVA) {
+            return [
+                'ok' => false,
+                'motivo' => 'CAMPANHA_INATIVA',
+                'message' => 'Nenhuma campanha ativa encontrada',
+            ];
+        }
+
+        return [
+            'ok' => false,
+            'motivo' => 'CAMPANHA_EXPIRADA',
+            'message' => 'Nenhuma campanha ativa encontrada',
+        ];
     }
 
     /** @param array<string, mixed>|null $matchedUser */
@@ -563,8 +700,12 @@ class ReferralService
     }
 
     /** @return array<string, mixed>|null */
-    private function resolveIndicadoUsuario(string $cpf, string $email, string $telefone): ?array
-    {
+    private function resolveIndicadoUsuario(
+        string $cpf,
+        string $email,
+        string $telefone,
+        ?string $customerId = null
+    ): ?array {
         $byCpf = $this->usuarioModel->findByCpf($cpf);
         if ($byCpf !== null) {
             return $byCpf;
@@ -575,7 +716,15 @@ class ReferralService
             return $byEmail;
         }
 
-        return $this->usuarioModel->findByTelefone($telefone);
+        $byPhone = $this->usuarioModel->findByTelefone($telefone);
+        if ($byPhone !== null) {
+            return $byPhone;
+        }
+
+        // customerId: apenas se futuramente houver coluna canônica em usuarios; não inventar match.
+        unset($customerId);
+
+        return null;
     }
 
     /** @param array<string, mixed> $indicacao */
@@ -712,6 +861,11 @@ class ReferralService
 
     private function recordShare(int $usuarioId, string $codigo): int
     {
+        $open = $this->indicacaoModel->findOpenByReferrer($usuarioId);
+        if ($open !== null) {
+            return (int) $open['id'];
+        }
+
         $db = Database::getConnection();
         $codigoReferencia = $this->generateCodigoReferencia();
         $stmt = $db->prepare(
@@ -734,6 +888,12 @@ class ReferralService
 
     private function recordLinkAccess(int $usuarioId, string $codigo): int
     {
+        $open = $this->indicacaoModel->findOpenByReferrer($usuarioId);
+        if ($open !== null) {
+            $this->indicacaoModel->touchUltimoClique((int) $open['id']);
+            return (int) $open['id'];
+        }
+
         $db = Database::getConnection();
         $codigoReferencia = $this->generateCodigoReferencia();
         $stmt = $db->prepare(
@@ -750,6 +910,7 @@ class ReferralService
 
         $indicacaoId = (int) $db->lastInsertId();
         $this->ensureValidacaoForIndicacao($indicacaoId, $usuarioId, null);
+        $this->indicacaoModel->touchUltimoClique($indicacaoId);
 
         return $indicacaoId;
     }
@@ -769,16 +930,12 @@ class ReferralService
     ): int {
         $existing = $this->indicacaoModel->findActiveByReferrerAndPhone($referrerUserId, $telefoneIndicado);
 
-        if ($existing !== null) {
-            $existingStatus = (string) ($existing['status'] ?? '');
-            $reusable = in_array($existingStatus, [
-                Indicacao::STATUS_AGUARDANDO,
-                Indicacao::STATUS_LINK_ACESSADO,
-                Indicacao::STATUS_CADASTRO_PENDENTE,
-            ], true);
-            if (!$reusable) {
-                $existing = null;
-            }
+        if ($existing !== null && !$this->isOpenOrReusableIndicacao($existing)) {
+            $existing = null;
+        }
+
+        if ($existing === null) {
+            $existing = $this->indicacaoModel->findOpenByReferrer($referrerUserId);
         }
 
         if ($existing !== null) {

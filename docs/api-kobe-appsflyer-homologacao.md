@@ -158,9 +158,11 @@ Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` 
 
 | Valor | Comportamento |
 |-------|---------------|
-| `INSTALL` | Validação **automática**. Elegível → aprova + cupom 10% ao indicador (`BENEFICIO_LIBERADO`). Sem estoque → `BENEFICIO_PENDENTE`. |
-| `REENGAGEMENT` | Reprovado automaticamente → `INVALIDADO` / motivo `APP_JA_EXISTENTE` (HTTP 400) |
-| `UNKNOWN` | Aceito → status `EM_ANALISE` (análise manual; sem cupom automático) |
+| `INSTALL` | Avalia elegibilidade pelo **CPF** (e demais regras). Elegível → aprova + cupom 10% ao indicador (`BENEFICIO_LIBERADO`). Sem estoque → `BENEFICIO_PENDENTE`. |
+| `REENGAGEMENT` | **Não** reprova automaticamente por app já instalado. Avalia pelo CPF como INSTALL. |
+| `UNKNOWN` | `EM_ANALISE` apenas quando não houver dados suficientes para decisão automática |
+
+**Elegibilidade:** CPF é o identificador principal. Dispositivo/IP/reinstalação **não** definem aprovação ou reprovação.
 
 **plataforma**
 
@@ -218,7 +220,19 @@ Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` 
 }
 ```
 
-## Exemplo de resposta — reengagement
+## Exemplo de resposta — reengagement elegível (CPF novo)
+
+**HTTP 200**
+
+```json
+{
+  "success": true,
+  "status": "BENEFICIO_LIBERADO",
+  "message": "Indicação aprovada e benefício liberado."
+}
+```
+
+## Exemplo de resposta — CPF já participante
 
 **HTTP 400**
 
@@ -226,8 +240,8 @@ Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` 
 {
   "success": false,
   "status": "INVALIDADO",
-  "motivo": "APP_JA_EXISTENTE",
-  "message": "Indicação inválida."
+  "motivo": "CPF_JA_PARTICIPOU",
+  "message": "CPF já participou do programa"
 }
 ```
 
@@ -288,18 +302,20 @@ Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` 
 6. App envia POST /api/indicacao/confirmar-cadastro (Bearer KOBE_API_TOKEN)
    — opcional: header Idempotency-Key e campo nomeIndicado
 7. Backend (automático):
-   a. Valida payload e campanha ativa
-   b. Persiste dados do indicado (nome/CPF/e-mail/telefone)
-   c. Decide resultado: aprovar / reprovar / EM_ANALISE (UNKNOWN)
-   d. INSTALL elegível → aprova + atribui cupom 10% ao INDICADOR
-   e. Sem estoque → BENEFICIO_PENDENTE (não reprova)
-   f. Metadados AppsFlyer (se enviados) → AppsFlyerService::processApiEvent()
-   g. Logs mascarados em api_logs + uploads/logs/appsflyer/api_kobe.log
+   a. Valida payload
+   b. Associa à indicação aberta do indicador (uma por vez) ou cria se necessário
+   c. Persiste dados do indicado (nome/CPF/e-mail/telefone/customerId)
+   d. Decide pelo CPF: aprovar / reprovar / EM_ANALISE (UNKNOWN)
+   e. REENGAGEMENT não bloqueia por si só — elegibilidade pelo CPF
+   f. INSTALL/REENGAGEMENT elegível → cupom 10% ao INDICADOR (máx. 1 por indicador)
+   g. Sem estoque → BENEFICIO_PENDENTE (não reprova)
+   h. Metadados AppsFlyer (se enviados) → AppsFlyerService::processApiEvent()
+   i. Logs mascarados em api_logs + uploads/logs/appsflyer/api_kobe.log
 8. Dashboard do indicador atualiza (validadas / liberadas / Meus Cupons)
 9. Admin permanece para auditoria e exceções (UNKNOWN, sem estoque, fraude)
 ```
 
-**Nota:** não existe evento “app aberto” neste endpoint. Para atualizar status no momento da abertura do app, a KOBE precisaria enviar um evento adicional.
+**Nota:** não existe evento “app aberto” neste endpoint. Cliques no link consolidam em uma indicação aberta; cadastros abandonados **sem** POST da KOBE não atualizam o backend.
 
 **Rate limit:** pendência — não implementado de forma frágil nesta sprint (ver `docs/API_CONTRACT_KOBE.md`).
 
@@ -359,5 +375,6 @@ Payload legado (ainda aceito):
 5. `nomeIndicado` e `Idempotency-Key` são **opcionais**, mas recomendados.
 6. Configurar `KOBE_API_TOKEN` no `.env` do servidor (não versionar o valor real).
 7. Logs de homologação: `uploads/logs/appsflyer/api_kobe.log` (CPF/e-mail/telefone mascarados).
-8. Executar `database/migration_sprint_4_6_automacao_indicacoes.sql` na Hostinger antes do deploy.
-9. Cupom de 10% é destinado ao **indicador**, nunca gerado fictício.
+8. Executar `database/migration_sprint_4_6_automacao_indicacoes.sql` e `database/migration_sprint_4_7_consolidacao_indicacoes.sql` na Hostinger antes do deploy.
+9. Cupom de 10% é destinado ao **indicador** (no máximo um por indicador).
+10. CPF é o identificador principal; REENGAGEMENT não reprova automaticamente.

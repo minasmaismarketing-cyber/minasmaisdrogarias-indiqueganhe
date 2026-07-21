@@ -76,6 +76,18 @@ $plataforma = trim((string) ($validacao['plataforma'] ?? ($indicacao['plataforma
     ['label' => 'Origem:', 'value' => $origem !== '' ? $origem : '—'],
     ['label' => 'tipoEvento:', 'value' => $tipoEvento !== '' ? $tipoEvento : '—'],
     ['label' => 'Plataforma:', 'value' => $plataforma !== '' ? $plataforma : '—'],
+    [
+        'label' => 'Customer ID:',
+        'value' => !empty($indicacao['customer_id'] ?? ($validacao['customer_id'] ?? null))
+            ? (string) ($indicacao['customer_id'] ?? $validacao['customer_id'])
+            : '—',
+    ],
+    [
+        'label' => 'Associação:',
+        'value' => !empty($indicacao['associacao_estrategia'] ?? null)
+            ? (string) $indicacao['associacao_estrategia']
+            : '—',
+    ],
 ]); ?>
 
 <section class="admin-card">

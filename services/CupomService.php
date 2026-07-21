@@ -44,6 +44,10 @@ class CupomService
             return (int) ($existing['id'] ?? 0);
         }
 
+        if ($this->repository->indicadorJaPossuiCupomAtribuido($usuarioId)) {
+            throw new RuntimeException('Indicador já possui benefício liberado nesta campanha.');
+        }
+
         if ($campanhaId === null || $campanhaId <= 0) {
             $campanhaId = $this->resolveCampanhaIdForIndicacao($indicacaoId);
         }

@@ -381,15 +381,25 @@ class ValidacaoIndicacao extends Model
                     $cupomAssigned = true;
                     $finalStatus = self::STATUS_BENEFICIO_LIBERADO;
                 } catch (RuntimeException $e) {
-                    if (!str_contains($e->getMessage(), 'Não há cupons disponíveis')) {
+                    $msg = $e->getMessage();
+                    if (str_contains($msg, 'Não há cupons disponíveis')) {
+                        $motivo = 'BENEFICIO_PENDENTE_SEM_ESTOQUE';
+                        Logger::warning('Indicação aprovada sem cupom disponível', [
+                            'validacao_id' => $id,
+                            'indicacao_id' => $indicacaoId,
+                            'automatic' => $automatic,
+                        ]);
+                    } elseif (str_contains($msg, 'já possui benefício')) {
+                        $cupomAssigned = false;
+                        $finalStatus = self::STATUS_BENEFICIO_LIBERADO;
+                        $motivo = 'BENEFICIO_JA_LIBERADO';
+                        Logger::info('Benefício já liberado anteriormente para o indicador', [
+                            'validacao_id' => $id,
+                            'usuario_id' => $usuarioId,
+                        ]);
+                    } else {
                         throw $e;
                     }
-                    $motivo = 'BENEFICIO_PENDENTE_SEM_ESTOQUE';
-                    Logger::warning('Indicação aprovada sem cupom disponível', [
-                        'validacao_id' => $id,
-                        'indicacao_id' => $indicacaoId,
-                        'automatic' => $automatic,
-                    ]);
                 }
             }
 
@@ -404,11 +414,12 @@ class ValidacaoIndicacao extends Model
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
 
+            $markPremio = $cupomAssigned || $motivo === 'BENEFICIO_JA_LIBERADO';
             if ($indicacaoId > 0) {
                 $this->syncIndicacaoStatus(
                     $indicacaoId,
-                    $cupomAssigned ? Indicacao::STATUS_PREMIO_LIBERADO : Indicacao::STATUS_VALIDADO,
-                    $cupomAssigned
+                    $markPremio ? Indicacao::STATUS_PREMIO_LIBERADO : Indicacao::STATUS_VALIDADO,
+                    $markPremio
                 );
             }
 
@@ -416,6 +427,8 @@ class ValidacaoIndicacao extends Model
             if ($motivo === 'BENEFICIO_PENDENTE_SEM_ESTOQUE') {
                 $historyNote = ($automatic ? 'Indicação aprovada automaticamente' : 'Validação aprovada')
                     . '. Indicação aprovada, mas sem cupom disponível.';
+            } elseif ($motivo === 'BENEFICIO_JA_LIBERADO') {
+                $historyNote = 'Benefício já liberado anteriormente para este indicador. Novo cupom não foi atribuído.';
             } elseif ($cupomAssigned) {
                 $historyNote = ($automatic ? 'Indicação aprovada automaticamente. Cupom liberado.' : ($observacao . '. Cupom liberado.'));
             }
@@ -613,6 +626,9 @@ class ValidacaoIndicacao extends Model
             'AUTOINDICACAO', 'AUTO_INDICACAO' => 'Autoindicação',
             'APP_JA_EXISTENTE' => 'App já existente (reengagement)',
             'BENEFICIO_PENDENTE_SEM_ESTOQUE' => 'Indicação aprovada, mas sem cupom disponível.',
+            'BENEFICIO_JA_LIBERADO' => 'Benefício já liberado anteriormente',
+            'CAMPANHA_INATIVA' => 'Campanha inativa',
+            'CAMPANHA_EXPIRADA' => 'Campanha expirada',
             'INVALIDO' => 'Inválido',
             default => $motivo,
         };

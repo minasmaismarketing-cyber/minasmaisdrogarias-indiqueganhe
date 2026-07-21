@@ -91,15 +91,14 @@ class ApiIndicacaoController extends Controller
             }
 
             $campanhaAtiva = $this->campanhaModel->findActive();
-            if ($campanhaAtiva === null) {
-                $response = [
-                    'success' => false,
-                    'message' => 'Nenhuma campanha ativa encontrada',
-                ];
-                $statusCode = 400;
-                $this->logApiCall($endpoint, $payload, $response, $ip, $statusCode, $startedAt);
-                $this->sendJsonResponse($response, $statusCode);
-                return;
+            // Campanha é validada dentro do ReferralService para ainda assim
+            // atualizar a indicação aberta com motivo CAMPANHA_INATIVA/EXPIRADA.
+
+            $optional = [];
+            if (!empty($payload['customerId'])) {
+                $optional['customerId'] = trim(strip_tags((string) $payload['customerId']));
+            } elseif (!empty($payload['customer_id'])) {
+                $optional['customerId'] = trim(strip_tags((string) $payload['customer_id']));
             }
 
             $result = $this->referralService->registerApiIndication(
@@ -110,19 +109,26 @@ class ApiIndicacaoController extends Controller
                 $tipoEvento,
                 $nomeIndicado,
                 $idempotencyKey,
-                $plataforma
+                $plataforma,
+                $optional
             );
 
             $statusCode = (int) ($result['status_code'] ?? 200);
             unset($result['status_code']);
 
-            if ($result['success'] ?? false) {
-                $indicador = $this->usuarioModel->findByCodigo($codigoIndicador);
-                if ($indicador !== null) {
+            $indicador = $this->usuarioModel->findByCodigo($codigoIndicador);
+            if ($indicador !== null) {
+                if ($result['success'] ?? false) {
                     $nomeEvento = $nomeIndicado ?? 'Indicado via API';
                     $this->eventLogger->logIndicadoCadastrado((int) $indicador['id'], $nomeEvento);
-                    $this->persistAppsFlyerMetadata($payload, (int) $indicador['id'], $telefoneIndicado);
                 }
+                $this->persistAppsFlyerMetadata($payload, (int) $indicador['id'], $telefoneIndicado);
+            }
+
+            if ($campanhaAtiva === null && !isset($result['motivo'])) {
+                Logger::warning('API KOBE sem campanha ativa no momento da chamada', [
+                    'codigo' => $codigoIndicador,
+                ]);
             }
 
             $response = $result;

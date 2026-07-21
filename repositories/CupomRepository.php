@@ -127,4 +127,18 @@ class CupomRepository
     {
         return $this->cupomModel->findByIndicacao($indicacaoId) !== null;
     }
+
+    /** Indicador já recebeu cupom atribuído (regra: um benefício por indicador). */
+    public function indicadorJaPossuiCupomAtribuido(int $usuarioId): bool
+    {
+        $stmt = Database::getConnection()->prepare(
+            'SELECT id FROM cupons
+             WHERE usuario_id = :usuario_id
+               AND usuario_id IS NOT NULL
+             LIMIT 1'
+        );
+        $stmt->execute(['usuario_id' => $usuarioId]);
+
+        return (bool) $stmt->fetch();
+    }
 }

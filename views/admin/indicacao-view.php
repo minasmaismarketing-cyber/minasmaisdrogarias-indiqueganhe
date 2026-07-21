@@ -43,6 +43,14 @@ $codigoIndicacao = (string) ($indicacao['codigo_referencia'] ?? $indicacao['codi
     ['label' => 'Origem:', 'value' => !empty($indicacao['origem']) ? (string) $indicacao['origem'] : '—'],
     ['label' => 'tipoEvento:', 'value' => !empty($indicacao['tipo_evento']) ? (string) $indicacao['tipo_evento'] : '—'],
     ['label' => 'Plataforma:', 'value' => !empty($indicacao['plataforma']) ? (string) $indicacao['plataforma'] : '—'],
+    ['label' => 'Customer ID:', 'value' => !empty($indicacao['customer_id']) ? (string) $indicacao['customer_id'] : '—'],
+    ['label' => 'Associação:', 'value' => !empty($indicacao['associacao_estrategia']) ? (string) $indicacao['associacao_estrategia'] : '—'],
+    [
+        'label' => 'Último clique:',
+        'value' => !empty($indicacao['data_ultimo_clique'])
+            ? date('d/m/Y H:i', strtotime((string) $indicacao['data_ultimo_clique']))
+            : '—',
+    ],
 ]); ?>
 
 <?php

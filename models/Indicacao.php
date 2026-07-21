@@ -153,67 +153,182 @@ class Indicacao extends Model
         return $row ?: null;
     }
 
-    public function phoneAlreadyIndicated(string $telefone, int $excludeReferrerId = 0): bool
+    public function phoneAlreadyIndicated(string $telefone, int $excludeIndicacaoId = 0): bool
     {
         $sql = 'SELECT id FROM indicacoes
                 WHERE telefone_indicado = :telefone
-                  AND status IN (:cadastro_pendente, :validado, :premio_liberado)
-                LIMIT 1';
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
+                  AND status IN (:cadastro_pendente, :validado, :premio_liberado)';
+        $params = [
             'telefone' => $telefone,
             'cadastro_pendente' => self::STATUS_CADASTRO_PENDENTE,
             'validado' => self::STATUS_VALIDADO,
             'premio_liberado' => self::STATUS_PREMIO_LIBERADO,
-        ]);
+        ];
+
+        if ($excludeIndicacaoId > 0) {
+            $sql .= ' AND id <> :exclude_id';
+            $params['exclude_id'] = $excludeIndicacaoId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
 
         return (bool) $stmt->fetch();
     }
 
-    public function cpfAlreadyParticipated(string $cpf): bool
+    public function cpfAlreadyParticipated(string $cpf, int $excludeIndicacaoId = 0): bool
     {
         $cpf = preg_replace('/\D/', '', $cpf) ?? '';
         if ($cpf === '') {
             return false;
         }
 
-        $stmt = $this->db->prepare(
-            'SELECT id FROM indicacoes
+        $sql = 'SELECT id FROM indicacoes
              WHERE cpf_indicado = :cpf
-               AND status IN (:cadastro_pendente, :validado, :premio_liberado)
-             LIMIT 1'
-        );
-        $stmt->execute([
+               AND status IN (:cadastro_pendente, :validado, :premio_liberado, :invalido)';
+        $params = [
             'cpf' => $cpf,
             'cadastro_pendente' => self::STATUS_CADASTRO_PENDENTE,
             'validado' => self::STATUS_VALIDADO,
             'premio_liberado' => self::STATUS_PREMIO_LIBERADO,
-        ]);
+            'invalido' => self::STATUS_INVALIDO,
+        ];
+
+        if ($excludeIndicacaoId > 0) {
+            $sql .= ' AND id <> :exclude_id';
+            $params['exclude_id'] = $excludeIndicacaoId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
 
         return (bool) $stmt->fetch();
     }
 
-    public function emailAlreadyParticipated(string $email): bool
+    public function emailAlreadyParticipated(string $email, int $excludeIndicacaoId = 0): bool
     {
         $email = strtolower(trim($email));
         if ($email === '') {
             return false;
         }
 
-        $stmt = $this->db->prepare(
-            'SELECT id FROM indicacoes
+        $sql = 'SELECT id FROM indicacoes
              WHERE LOWER(email_indicado) = :email
-               AND status IN (:cadastro_pendente, :validado, :premio_liberado)
-             LIMIT 1'
-        );
-        $stmt->execute([
+               AND status IN (:cadastro_pendente, :validado, :premio_liberado, :invalido)';
+        $params = [
             'email' => $email,
             'cadastro_pendente' => self::STATUS_CADASTRO_PENDENTE,
             'validado' => self::STATUS_VALIDADO,
             'premio_liberado' => self::STATUS_PREMIO_LIBERADO,
-        ]);
+            'invalido' => self::STATUS_INVALIDO,
+        ];
+
+        if ($excludeIndicacaoId > 0) {
+            $sql .= ' AND id <> :exclude_id';
+            $params['exclude_id'] = $excludeIndicacaoId;
+        }
+
+        $sql .= ' LIMIT 1';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
 
         return (bool) $stmt->fetch();
+    }
+
+    /**
+     * Única indicação aberta do indicador (AGUARDANDO / LINK_ACESSADO / CADASTRO_PENDENTE).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findOpenByReferrer(int $usuarioId): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT i.*
+             FROM indicacoes i
+             WHERE i.usuario_id = :usuario_id
+               AND i.status IN (:aguardando, :link, :cadastro)
+             ORDER BY i.id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'usuario_id' => $usuarioId,
+            'aguardando' => self::STATUS_AGUARDANDO,
+            'link' => self::STATUS_LINK_ACESSADO,
+            'cadastro' => self::STATUS_CADASTRO_PENDENTE,
+        ]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByReferrerAndCpf(int $referrerId, string $cpf): ?array
+    {
+        $cpf = preg_replace('/\D/', '', $cpf) ?? '';
+        if ($cpf === '') {
+            return null;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT * FROM indicacoes
+             WHERE usuario_id = :usuario_id AND cpf_indicado = :cpf
+             ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute(['usuario_id' => $referrerId, 'cpf' => $cpf]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByReferrerAndEmail(int $referrerId, string $email): ?array
+    {
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return null;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT * FROM indicacoes
+             WHERE usuario_id = :usuario_id AND LOWER(email_indicado) = :email
+             ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute(['usuario_id' => $referrerId, 'email' => $email]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    public function touchUltimoClique(int $indicacaoId): void
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'UPDATE indicacoes
+                 SET data_ultimo_clique = NOW(),
+                     status = CASE WHEN status = :aguardando THEN :link ELSE status END,
+                     updated_at = NOW()
+                 WHERE id = :id'
+            );
+            $stmt->execute([
+                'aguardando' => self::STATUS_AGUARDANDO,
+                'link' => self::STATUS_LINK_ACESSADO,
+                'id' => $indicacaoId,
+            ]);
+        } catch (Throwable) {
+            $stmt = $this->db->prepare(
+                'UPDATE indicacoes
+                 SET status = CASE WHEN status = :aguardando THEN :link ELSE status END,
+                     updated_at = NOW()
+                 WHERE id = :id'
+            );
+            $stmt->execute([
+                'aguardando' => self::STATUS_AGUARDANDO,
+                'link' => self::STATUS_LINK_ACESSADO,
+                'id' => $indicacaoId,
+            ]);
+        }
     }
 
     /** @return array<string, mixed>|null */
@@ -229,14 +344,17 @@ class Indicacao extends Model
              FROM indicacoes i
              WHERE i.usuario_id = :usuario_id
                AND i.cpf_indicado = :cpf
-               AND i.origem = :origem
+               AND i.status IN (:validado, :premio, :invalido, :expirado)
              ORDER BY i.id DESC
              LIMIT 1'
         );
         $stmt->execute([
             'usuario_id' => $referrerId,
             'cpf' => $cpf,
-            'origem' => 'API',
+            'validado' => self::STATUS_VALIDADO,
+            'premio' => self::STATUS_PREMIO_LIBERADO,
+            'invalido' => self::STATUS_INVALIDO,
+            'expirado' => self::STATUS_EXPIRADO,
         ]);
         $row = $stmt->fetch();
 
@@ -322,10 +440,20 @@ class Indicacao extends Model
         if (!empty($indicacao['nome_indicado']) || !empty($indicacao['telefone_indicado'])) {
             $timeline[] = [
                 'step' => 'cadastro',
-                'label' => 'Cadastro',
+                'label' => 'Cadastro recebido',
                 'date' => $indicacao['updated_at'],
                 'status' => 'completed',
                 'icon' => '📝',
+            ];
+        }
+
+        if (!empty($indicacao['cpf_indicado']) || !empty($indicacao['email_indicado'])) {
+            $timeline[] = [
+                'step' => 'dados_atualizados',
+                'label' => 'Dados do indicado atualizados',
+                'date' => $indicacao['updated_at'],
+                'status' => 'completed',
+                'icon' => '👤',
             ];
         }
 
@@ -333,10 +461,20 @@ class Indicacao extends Model
         if (in_array($indicacao['status'], [self::STATUS_VALIDADO, self::STATUS_PREMIO_LIBERADO], true)) {
             $timeline[] = [
                 'step' => 'validacao',
-                'label' => 'Validação',
+                'label' => 'Indicação aprovada',
                 'date' => $indicacao['updated_at'],
                 'status' => 'completed',
                 'icon' => '✅',
+            ];
+        }
+
+        if ((string) ($indicacao['status'] ?? '') === self::STATUS_INVALIDO) {
+            $timeline[] = [
+                'step' => 'reprovacao',
+                'label' => 'Indicação reprovada',
+                'date' => $indicacao['updated_at'],
+                'status' => 'completed',
+                'icon' => '❌',
             ];
         }
 
@@ -344,7 +482,7 @@ class Indicacao extends Model
         if ($indicacao['status'] === self::STATUS_PREMIO_LIBERADO || (int) $indicacao['premio_liberado'] === 1) {
             $timeline[] = [
                 'step' => 'beneficio',
-                'label' => 'Benefício',
+                'label' => 'Cupom liberado',
                 'date' => $indicacao['updated_at'],
                 'status' => 'completed',
                 'icon' => '🎁',
