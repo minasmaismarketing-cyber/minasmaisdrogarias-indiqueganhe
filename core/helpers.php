@@ -118,7 +118,14 @@ function asset(string $path): string
     $segments = explode('/', ltrim($path, '/'));
     $encoded = implode('/', array_map('rawurlencode', $segments));
 
-    return url('assets/' . $encoded);
+    $url = url('assets/' . $encoded);
+    $file = BASE_PATH . '/assets/' . ltrim($path, '/');
+
+    if (is_file($file)) {
+        $url .= '?v=' . filemtime($file);
+    }
+
+    return $url;
 }
 
 function brand_logo_url(): string
