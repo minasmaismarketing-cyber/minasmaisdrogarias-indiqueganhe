@@ -12,10 +12,14 @@ if (empty($statusCard) || !is_array($statusCard)) {
 }
 
 $type = (string) ($statusCard['type'] ?? '');
-$title = (string) ($statusCard['title'] ?? '');
-$body = (string) ($statusCard['body'] ?? '');
-$motivo = (string) ($statusCard['motivo'] ?? '');
 $validacaoId = (int) ($statusCard['validacao_id'] ?? 0);
+$motivo = trim((string) ($statusCard['motivo'] ?? ''));
+
+$title = match ($type) {
+    'aprovado', 'beneficio_pendente' => 'Sua indicação foi aprovada!',
+    'reprovado' => 'Sua indicação não foi aprovada',
+    default => (string) ($statusCard['title'] ?? 'Status da indicação'),
+};
 
 $modifier = match ($type) {
     'aprovado' => 'success',
@@ -25,44 +29,60 @@ $modifier = match ($type) {
 };
 
 $icon = match ($type) {
-    'aprovado' => '🎉',
+    'aprovado' => '✓',
     'beneficio_pendente' => '⏳',
-    'reprovado' => '✕',
-    default => 'ℹ️',
+    'reprovado' => '!',
+    default => 'i',
 };
 
 $ariaLabel = match ($type) {
     'aprovado' => 'Indicação aprovada',
-    'beneficio_pendente' => 'Benefício pendente',
+    'beneficio_pendente' => 'Indicação aprovada, benefício pendente',
     'reprovado' => 'Indicação não aprovada',
     default => 'Status da indicação',
 };
 ?>
 <section
-    class="indicacao-status-card indicacao-status-card--<?= e($modifier) ?>"
+    class="indicacao-status-card indicacao-status-card--<?= e($modifier) ?> indicacao-status-card--standalone"
     id="indicacao-status-card"
     data-status-type="<?= e($type) ?>"
     data-validacao-id="<?= $validacaoId ?>"
     role="status"
     aria-label="<?= e($ariaLabel) ?>"
 >
-    <div class="indicacao-status-card__icon" aria-hidden="true"><?= $icon ?></div>
+    <div class="indicacao-status-card__top">
+        <span class="indicacao-status-card__badge" aria-hidden="true"><?= e($icon) ?></span>
+        <div class="indicacao-status-card__heading">
+            <h2 class="indicacao-status-card__title"><?= e($title) ?></h2>
+            <?php if ($type === 'beneficio_pendente'): ?>
+                <span class="indicacao-status-card__seal">Benefício pendente</span>
+            <?php elseif ($type === 'aprovado'): ?>
+                <span class="indicacao-status-card__seal indicacao-status-card__seal--ok">Aprovado</span>
+            <?php elseif ($type === 'reprovado'): ?>
+                <span class="indicacao-status-card__seal indicacao-status-card__seal--alert">Não aprovada</span>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <div class="indicacao-status-card__content">
-        <h2 class="indicacao-status-card__title"><?= e($title) ?></h2>
-        <?php if ($body !== ''): ?>
-            <p class="indicacao-status-card__body"><?= e($body) ?></p>
-        <?php endif; ?>
-        <?php if ($type === 'reprovado' && $motivo !== ''): ?>
-            <p class="indicacao-status-card__motivo">
-                <span class="indicacao-status-card__motivo-label">Motivo:</span>
-                <?= e($motivo) ?>
-            </p>
-        <?php endif; ?>
         <?php if ($type === 'aprovado'): ?>
+            <p class="indicacao-status-card__body">
+                Seu benefício de <span class="indicacao-status-card__off">10% OFF</span> já está disponível.
+            </p>
             <a href="<?= url('/meus-cupons') ?>" class="btn btn--block btn--primary indicacao-status-card__cta">
                 Ver meu cupom
             </a>
+        <?php elseif ($type === 'beneficio_pendente'): ?>
+            <p class="indicacao-status-card__body">
+                Seu benefício será liberado em breve.
+            </p>
         <?php elseif ($type === 'reprovado'): ?>
+            <?php if ($motivo !== ''): ?>
+                <p class="indicacao-status-card__motivo">
+                    <span class="indicacao-status-card__motivo-label">Motivo:</span>
+                    <?= e($motivo) ?>
+                </p>
+            <?php endif; ?>
             <button type="button" class="btn btn--block btn--outline" id="btn-dismiss-status-card">
                 Entendi
             </button>

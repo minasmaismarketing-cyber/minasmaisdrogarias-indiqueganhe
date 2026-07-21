@@ -25,6 +25,13 @@ class DashboardController extends Controller
         $userId = (int) $user['id'];
         $codigo = (string) $user['codigo_indicador'];
 
+        $stats = ['total' => 0, 'validadas' => 0, 'pendentes' => 0, 'liberadas' => 0];
+        try {
+            $stats = (new Indicacao())->statsByUsuario($userId);
+        } catch (PDOException $e) {
+            Logger::warning('Indicacoes table not found', ['error' => $e->getMessage()]);
+        }
+
         $linkModel = new LinkIndicacao();
         $link = $linkModel->findByUsuario($userId);
 
@@ -41,6 +48,7 @@ class DashboardController extends Controller
             'success' => Session::flash('success'),
             'inviteLink' => $linkUrl,
             'codigo' => $codigo,
+            'stats' => $stats,
             'statusCard' => $statusCard,
         ], 'app');
     }

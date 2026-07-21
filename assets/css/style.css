@@ -5194,13 +5194,43 @@ code {
     margin-left: auto;
 }
 
-/* —— Sprint 4.8: Home status + cupons UX —— */
+/* —— Sprint 4.8 / Hotfix: Home status + cupons UX —— */
 .page-hero--compact {
-    margin-bottom: 1rem;
+    margin-bottom: 0.85rem;
 }
 
 .page-hero--compact .page-hero__subtitle {
     display: none;
+}
+
+.stats-grid--home {
+    margin-bottom: 1.25rem;
+    gap: 0.85rem;
+}
+
+.stats-grid--home .stat-card {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    padding: 1rem 0.75rem;
+}
+
+.stats-grid--home .stat-card__value {
+    color: var(--primary, #d71920);
+    font-size: clamp(1.5rem, 5vw, 1.85rem);
+}
+
+.stats-grid--home .stat-card__label {
+    color: var(--gray-700, #4b5563);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.dash-invite-card {
+    margin-top: 0.25rem;
 }
 
 .dash-invite-copy {
@@ -5221,49 +5251,91 @@ code {
     vertical-align: baseline;
 }
 
-.indicacao-status-card {
-    display: flex;
-    gap: 0.875rem;
-    align-items: flex-start;
-    padding: 1.1rem 1.15rem;
-    margin-bottom: 1rem;
-    border-radius: 14px;
+.indicacao-status-card--standalone {
+    display: block;
+    margin: 0 0 1.35rem;
+    padding: 1.2rem 1.2rem 1.15rem;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
     border: 1px solid transparent;
 }
 
-.indicacao-status-card__icon {
+.indicacao-status-card__top {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    margin-bottom: 0.85rem;
+}
+
+.indicacao-status-card__badge {
     flex-shrink: 0;
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
     display: grid;
     place-items: center;
-    font-size: 1.35rem;
+    border-radius: 999px;
+    font-size: 1.1rem;
+    font-weight: 800;
     line-height: 1;
 }
 
-.indicacao-status-card__content {
+.indicacao-status-card__heading {
     flex: 1;
     min-width: 0;
 }
 
 .indicacao-status-card__title {
-    margin: 0 0 0.35rem;
-    font-size: 1.05rem;
+    margin: 0 0 0.4rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: inherit;
+}
+
+.indicacao-status-card__seal {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
     font-weight: 700;
-    line-height: 1.3;
+    letter-spacing: 0.02em;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.indicacao-status-card__seal--ok {
+    background: rgba(46, 125, 50, 0.12);
+    color: #1b5e20;
+}
+
+.indicacao-status-card__seal--alert {
+    background: rgba(183, 28, 28, 0.1);
+    color: #8e0000;
+}
+
+.indicacao-status-card__content {
+    padding-left: 0;
 }
 
 .indicacao-status-card__body {
-    margin: 0 0 0.75rem;
-    font-size: 0.92rem;
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
     line-height: 1.45;
-    opacity: 0.92;
+    color: inherit;
+    opacity: 0.95;
+}
+
+.indicacao-status-card__off {
+    display: inline-block;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #c62828;
+    letter-spacing: -0.02em;
 }
 
 .indicacao-status-card__motivo {
-    margin: 0 0 0.85rem;
+    margin: 0 0 1rem;
     font-size: 0.92rem;
-    line-height: 1.4;
+    line-height: 1.45;
 }
 
 .indicacao-status-card__motivo-label {
@@ -5271,25 +5343,69 @@ code {
 }
 
 .indicacao-status-card__cta {
-    margin-top: 0.25rem;
+    margin-top: 0.15rem;
+}
+
+.indicacao-status-card__cta:focus-visible,
+#btn-dismiss-status-card:focus-visible,
+#btn-share-native:focus-visible {
+    outline: 2px solid var(--primary, #d71920);
+    outline-offset: 2px;
 }
 
 .indicacao-status-card--success {
-    background: #e8f5e9;
-    border-color: #a5d6a7;
-    color: #1b5e20;
+    background: linear-gradient(180deg, #f7fbf7 0%, #ffffff 55%);
+    border-color: rgba(46, 125, 50, 0.28);
+    color: #1f2a1f;
+}
+
+.indicacao-status-card--success .indicacao-status-card__badge {
+    background: rgba(46, 125, 50, 0.12);
+    color: #2e7d32;
+    border: 1px solid rgba(46, 125, 50, 0.25);
 }
 
 .indicacao-status-card--warning {
-    background: #fff8e1;
-    border-color: #ffe082;
-    color: #6d4c00;
+    background: linear-gradient(180deg, #fffdf5 0%, #ffffff 55%);
+    border-color: rgba(183, 149, 11, 0.35);
+    color: #3d3200;
+}
+
+.indicacao-status-card--warning .indicacao-status-card__badge {
+    background: rgba(245, 200, 66, 0.25);
+    color: #7a5c00;
+    border: 1px solid rgba(183, 149, 11, 0.35);
 }
 
 .indicacao-status-card--danger {
-    background: #ffebee;
-    border-color: #ef9a9a;
+    background: linear-gradient(180deg, #fff8f8 0%, #ffffff 55%);
+    border-color: rgba(183, 28, 28, 0.28);
+    color: #3a1515;
+}
+
+.indicacao-status-card--danger .indicacao-status-card__badge {
+    background: rgba(183, 28, 28, 0.1);
     color: #b71c1c;
+    border: 1px solid rgba(183, 28, 28, 0.25);
+}
+
+@media (min-width: 768px) {
+    .stats-grid--home {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .indicacao-status-card--standalone {
+        padding: 1.05rem 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .dash-invite-off {
+        display: block;
+        margin: 0.35rem 0;
+    }
 }
 
 .coupon-card--focus {
