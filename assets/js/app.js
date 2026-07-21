@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // Native share (mobile) / Copy (desktop)
-    const shareNativeBtn = document.getElementById('btn-share-native');
+    // Native share (mobile) / Copy (desktop) — Home + Meus Cupons
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const shareButtons = document.querySelectorAll('#btn-share-native, [data-share-native]');
 
-    if (shareNativeBtn) {
+    shareButtons.forEach((shareNativeBtn) => {
         shareNativeBtn.addEventListener('click', async () => {
             const shareUrl = window.__DASHBOARD__?.inviteLink || window.__DASHBOARD__?.shareLink;
             if (!shareUrl) return;
@@ -35,8 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 url: shareUrl
             };
 
-            const originalText = shareNativeBtn.textContent;
-            shareNativeBtn.textContent = 'Carregando...';
+            const labelEl = shareNativeBtn.querySelector('.js-share-label');
+            const originalText = (labelEl ? labelEl.textContent : shareNativeBtn.textContent) || '';
+            if (labelEl) {
+                labelEl.textContent = 'Carregando...';
+            } else {
+                shareNativeBtn.textContent = 'Carregando...';
+            }
             shareNativeBtn.disabled = true;
 
             try {
@@ -67,11 +72,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } finally {
-                shareNativeBtn.textContent = originalText;
+                if (labelEl) {
+                    labelEl.textContent = originalText;
+                } else {
+                    shareNativeBtn.textContent = originalText;
+                }
                 shareNativeBtn.disabled = false;
             }
         });
-    }
+    });
 
     document.querySelectorAll('[data-copy]').forEach((btn) => {
         btn.addEventListener('click', async () => {
@@ -127,4 +136,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
     }
 });
-

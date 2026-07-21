@@ -5199,7 +5199,7 @@ code {
 .cupons-stack {
     display: flex;
     flex-direction: column;
-    gap: 1.35rem; /* ~22px */
+    gap: 1.4rem; /* ~22–24px */
     padding-bottom: 0.5rem;
 }
 
@@ -5584,6 +5584,7 @@ code {
 .indicacao-status-card__cta:focus-visible,
 #btn-dismiss-status-card:focus-visible,
 #btn-share-native:focus-visible,
+[data-share-native]:focus-visible,
 .coupon-card__copy:focus-visible,
 .beneficio-amigo-card .btn:focus-visible {
     outline: 2px solid var(--primary, #d71920);
@@ -5649,6 +5650,108 @@ code {
 }
 
 /* Cupons premium */
+.cupons-page-header {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 2.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.cupons-page-header__back {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 12px;
+    color: var(--gray-900, #111827);
+    background: rgba(0, 0, 0, 0.04);
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cupons-page-header__back svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.cupons-page-header__back:hover {
+    background: rgba(0, 0, 0, 0.07);
+}
+
+.cupons-page-header__back:focus-visible {
+    outline: 2px solid var(--primary, #d71920);
+    outline-offset: 2px;
+}
+
+.cupons-page-header__copy {
+    text-align: center;
+    min-width: 0;
+}
+
+.cupons-page-header__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--gray-900, #111827);
+    letter-spacing: -0.02em;
+}
+
+.cupons-page-header__subtitle {
+    margin: 0.2rem 0 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--gray-700, #4b5563);
+}
+
+.cupons-page-header__decor {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--primary, #d71920);
+    opacity: 0.85;
+}
+
+.cupons-page-header__decor svg {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+
+.cupons-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.cupons-section__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+}
+
+.cupons-section__label-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.cupons-section__label--green {
+    color: #1b5e20;
+}
+
+.cupons-section__label--coral {
+    color: #c62828;
+}
+
 .coupons-list {
     display: flex;
     flex-direction: column;
@@ -5663,9 +5766,33 @@ code {
     padding: 0;
     overflow: hidden;
     background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(46, 125, 50, 0.16);
     border-radius: 20px;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+.coupon-card--premium:hover {
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    transform: none;
+}
+
+.coupon-card--premium.coupon-card--utilizado {
+    border-color: rgba(0, 0, 0, 0.08);
+    opacity: 1;
+}
+
+.coupon-card--premium.coupon-card--disponivel,
+.coupon-card--premium.coupon-card--reservado,
+.coupon-card--premium.coupon-card--utilizado,
+.coupon-card--premium.coupon-card--expirado,
+.coupon-card--premium.coupon-card--cancelado {
+    border-left: 1px solid rgba(46, 125, 50, 0.16);
+}
+
+.coupon-card--premium.coupon-card--utilizado,
+.coupon-card--premium.coupon-card--expirado,
+.coupon-card--premium.coupon-card--cancelado {
+    border-left-color: rgba(0, 0, 0, 0.08);
 }
 
 .coupon-card__accent {
@@ -5685,14 +5812,51 @@ code {
     padding: 1.25rem 1.25rem 1.2rem 1.35rem;
 }
 
+.coupon-card__body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.coupon-card__main {
+    flex: 1;
+    min-width: 0;
+}
+
+.coupon-card__art {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-top: 0.15rem;
+    border-radius: 14px;
+    color: #2e7d32;
+    background: rgba(46, 125, 50, 0.08);
+}
+
+.coupon-card__art svg {
+    width: 2.15rem;
+    height: 2.15rem;
+}
+
 .coupon-card__seal {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     margin-bottom: 0.65rem;
-    padding: 0.2rem 0.55rem;
+    padding: 0.22rem 0.6rem;
     border-radius: 999px;
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.02em;
+}
+
+.coupon-card__seal-icon {
+    width: 0.9rem;
+    height: 0.9rem;
+    flex-shrink: 0;
 }
 
 .coupon-card__seal--ok {
@@ -5707,7 +5871,7 @@ code {
 
 .coupon-card--premium .coupon-card__title {
     margin: 0 0 0.35rem;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 800;
     line-height: 1.25;
     color: var(--gray-900, #111827);
@@ -5742,12 +5906,27 @@ code {
 }
 
 .coupon-card__warning {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.4rem;
     margin: 0;
-    font-size: 0.75rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    font-size: 0.72rem;
     line-height: 1.4;
     color: var(--gray-700, #4b5563);
-    opacity: 0.9;
-    text-align: center;
+    text-align: left;
+}
+
+.coupon-card__warning-icon {
+    width: 0.95rem;
+    height: 0.95rem;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+    color: #616161;
 }
 
 .coupon-card__used {
@@ -5797,7 +5976,7 @@ code {
     padding: 0;
     overflow: hidden;
     background: #fff;
-    border: 1px solid rgba(215, 25, 32, 0.1);
+    border: 1px solid rgba(215, 25, 32, 0.12);
     border-radius: 20px;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
 }
@@ -5815,13 +5994,44 @@ code {
     padding: 1.25rem 1.25rem 1.2rem 1.35rem;
 }
 
-.beneficio-amigo-card__seal {
-    display: inline-block;
+.beneficio-amigo-card__body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.05rem;
+}
+
+.beneficio-amigo-card__main {
+    flex: 1;
+    min-width: 0;
+}
+
+.beneficio-amigo-card__art {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-top: 0.15rem;
+    border-radius: 14px;
+    color: var(--primary, #d71920);
+    background: rgba(215, 25, 32, 0.08);
+}
+
+.beneficio-amigo-card__art svg {
+    width: 2.15rem;
+    height: 2.15rem;
+}
+
+.beneficio-amigo-card__off-badge {
+    display: inline-flex;
+    align-items: center;
     margin-bottom: 0.55rem;
-    padding: 0.2rem 0.55rem;
+    padding: 0.22rem 0.6rem;
     border-radius: 999px;
-    font-size: 0.68rem;
-    font-weight: 700;
+    font-size: 0.72rem;
+    font-weight: 800;
     letter-spacing: 0.02em;
     background: rgba(215, 25, 32, 0.1);
     color: #9b1520;
@@ -5836,22 +6046,82 @@ code {
 }
 
 .beneficio-amigo-card__text {
-    margin: 0 0 1.1rem;
+    margin: 0;
     font-size: 0.88rem;
     line-height: 1.45;
     color: var(--gray-700, #4b5563);
+}
+
+.beneficio-amigo-card__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
 }
 
 .beneficio-amigo-card .btn {
     min-height: 48px;
 }
 
+.beneficio-amigo-card__whatsapp,
+.beneficio-amigo-card__share {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.beneficio-amigo-card__wa-icon,
+.beneficio-amigo-card__share-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+}
+
+.beneficio-amigo-card__share {
+    background: #fff;
+    color: var(--gray-900, #111827);
+    border: 1.5px solid rgba(0, 0, 0, 0.12);
+    font-weight: 700;
+}
+
+.beneficio-amigo-card__share:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.beneficio-amigo-card__share:focus-visible {
+    outline: 2px solid var(--primary, #d71920);
+    outline-offset: 2px;
+}
+
 .beneficio-amigo-card__hint,
 .validacao-list-compact__share-hint {
-    margin: 0.65rem 0 0;
+    margin: 0.75rem 0 0;
     font-size: 0.75rem;
     color: var(--gray-700, #4b5563);
     text-align: center;
+}
+
+@media (min-width: 640px) {
+    .cupons-page-header__title {
+        font-size: 1.4rem;
+    }
+
+    .coupon-card__art,
+    .beneficio-amigo-card__art {
+        width: 4.25rem;
+        height: 4.25rem;
+    }
+
+    .coupon-card__art svg,
+    .beneficio-amigo-card__art svg {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .coupon-card__body,
+    .beneficio-amigo-card__body {
+        gap: 1.25rem;
+    }
 }
 
 .validacao-list-compact__share {
@@ -5896,4 +6166,404 @@ code {
     }
 }
 
+/* —— Hotfix UX Premium: Perfil —— */
+.perfil-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding-bottom: 0.75rem;
+}
 
+.perfil-page-header {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.perfil-page-header__icon {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    border-radius: 999px;
+    color: var(--primary, #d71920);
+    background: rgba(215, 25, 32, 0.08);
+}
+
+.perfil-page-header__icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.perfil-page-header__title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--gray-900, #111827);
+}
+
+.perfil-page-header__subtitle {
+    margin: 0.2rem 0 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--gray-700, #4b5563);
+}
+
+.perfil-card {
+    margin: 0;
+    padding: 1.15rem 1.15rem 1.2rem;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+.perfil-card__title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--gray-900, #111827);
+}
+
+.perfil-card__help {
+    margin: 0.25rem 0 0;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--gray-700, #4b5563);
+}
+
+.perfil-card--summary {
+    padding-top: 1.2rem;
+}
+
+.perfil-summary__top {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding-bottom: 0.95rem;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.perfil-summary__logo {
+    width: 3.5rem;
+    height: 3.5rem;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.perfil-summary__name {
+    margin: 0 0 0.2rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--gray-900, #111827);
+}
+
+.perfil-summary__since {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--gray-700, #4b5563);
+}
+
+.perfil-summary__meta {
+    margin: 0;
+}
+
+.perfil-summary__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.perfil-summary__row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.perfil-summary__row dt {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--gray-700, #4b5563);
+}
+
+.perfil-summary__value {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-align: right;
+    color: var(--gray-900, #111827);
+}
+
+.perfil-summary__value--ok {
+    color: #1b5e20;
+}
+
+.perfil-summary__value--danger {
+    color: #b71c1c;
+}
+
+.perfil-fields {
+    list-style: none;
+    margin: 0.85rem 0 1.1rem;
+    padding: 0;
+}
+
+.perfil-fields__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.perfil-fields__item:last-child {
+    border-bottom: 0;
+}
+
+.perfil-fields__icon {
+    display: grid;
+    place-items: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    border-radius: 10px;
+    color: var(--primary, #d71920);
+    background: rgba(215, 25, 32, 0.07);
+}
+
+.perfil-fields__icon svg {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+.perfil-fields__content {
+    min-width: 0;
+    flex: 1;
+}
+
+.perfil-fields__label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--gray-700, #4b5563);
+    margin-bottom: 0.15rem;
+}
+
+.perfil-fields__value {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--gray-900, #111827);
+    word-break: break-word;
+}
+
+.perfil-edit-trigger,
+.perfil-card--support .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 48px;
+}
+
+.perfil-btn-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+}
+
+.perfil-action__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.perfil-action__icon {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    flex-shrink: 0;
+    border-radius: 12px;
+    color: var(--gray-900, #111827);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.perfil-action__icon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.perfil-action__icon--danger {
+    color: #b71c1c;
+    background: rgba(183, 28, 28, 0.08);
+}
+
+.perfil-card--danger {
+    border-color: rgba(183, 28, 28, 0.14);
+}
+
+.perfil-card--support .perfil-card__help {
+    margin-bottom: 1rem;
+}
+
+.perfil-support__hint,
+.perfil-support__note,
+.perfil-support__unavailable {
+    margin: 0.65rem 0 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--gray-700, #4b5563);
+    text-align: center;
+}
+
+.perfil-support__unavailable {
+    padding: 0.75rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.perfil-logout {
+    margin: 0.15rem 0 0;
+}
+
+.perfil-footer {
+    margin: 0.85rem 0 0.25rem;
+    padding: 0.5rem 0 0.25rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #7a7a7a;
+}
+
+.perfil-edit-trigger:focus-visible,
+.perfil-card .btn:focus-visible,
+.perfil-modal__close:focus-visible,
+.perfil-modal__form input:focus-visible {
+    outline: 2px solid var(--primary, #d71920);
+    outline-offset: 2px;
+}
+
+/* Modais do perfil */
+.perfil-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+.perfil-modal.is-open,
+.perfil-modal:not([hidden]) {
+    display: flex;
+}
+
+.perfil-modal[hidden] {
+    display: none !important;
+}
+
+.perfil-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(18, 18, 18, 0.48);
+}
+
+.perfil-modal__panel {
+    position: relative;
+    z-index: 1;
+    width: min(420px, 100%);
+    max-height: min(88dvh, 720px);
+    overflow: auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+    padding: 1.15rem 1.15rem 1.25rem;
+}
+
+.perfil-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.perfil-modal__title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--gray-900, #111827);
+}
+
+.perfil-modal__close {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--gray-900, #111827);
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.perfil-modal__text {
+    margin: 0 0 1rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--gray-700, #4b5563);
+}
+
+.perfil-modal__actions {
+    display: flex;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    margin-top: 0.35rem;
+}
+
+.perfil-modal__actions .btn {
+    min-height: 44px;
+    flex: 1;
+}
+
+@media (min-width: 640px) {
+    .perfil-page-header__title {
+        font-size: 1.45rem;
+    }
+
+    .perfil-modal__panel {
+        padding: 1.35rem 1.4rem 1.4rem;
+    }
+
+    .perfil-modal__actions .btn {
+        flex: 0 1 auto;
+        min-width: 8.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .perfil-modal__overlay,
+    .perfil-modal__panel {
+        animation: none;
+    }
+}

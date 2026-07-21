@@ -1,14 +1,42 @@
 <?php declare(strict_types=1); ?>
+<?php
+$inviteLink = '';
+if (!empty($beneficioShares)) {
+    $inviteUser = Auth::user();
+    if (is_array($inviteUser) && !empty($inviteUser['codigo_indicador'])) {
+        $inviteDetails = (new InviteLinkService())->buildInviteLinkDetails($inviteUser);
+        $inviteLink = (string) ($inviteDetails['url'] ?? '');
+    }
+}
+?>
 <?php require BASE_PATH . '/views/partials/alerts.php'; ?>
 
 <div class="cupons-stack">
-    <section class="page-hero page-hero--compact animate-slide">
-        <h1 class="page-hero__title">Meus Cupons</h1>
-        <p class="page-hero__subtitle page-hero__subtitle--visible">Seus benefícios de indicação.</p>
-    </section>
+    <header class="cupons-page-header animate-slide">
+        <a
+            href="<?= url('/dashboard') ?>"
+            class="cupons-page-header__back"
+            aria-label="Voltar"
+        >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </a>
+        <div class="cupons-page-header__copy">
+            <h1 class="cupons-page-header__title">Meus Cupons</h1>
+            <p class="cupons-page-header__subtitle">Seus benefícios de indicação</p>
+        </div>
+        <span class="cupons-page-header__decor" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 7v14M7.5 11h9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                <path d="M6 11h12v8.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5V11z" stroke="currentColor" stroke-width="1.75"/>
+                <path d="M8.5 11c0-2.2 1.3-4 3.5-4s3.5 1.8 3.5 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            </svg>
+        </span>
+    </header>
 
-    <section class="coupons-list">
-        <?php if ($cupons === []): ?>
+    <?php if ($cupons === []): ?>
+        <section class="coupons-list" aria-label="Seu benefício">
             <div class="mm-card">
                 <div class="mm-empty-state">
                     <span class="mm-empty-state__icon" aria-hidden="true">%</span>
@@ -17,101 +45,192 @@
                     <a href="<?= url('/dashboard') ?>" class="btn btn--block btn--primary">Ir para o painel</a>
                 </div>
             </div>
-        <?php else: ?>
-            <?php foreach ($cupons as $cupom): ?>
-                <?php
-                $status = (string) ($cupom['status'] ?? '');
-                $isDisponivel = $status === Cupom::STATUS_DISPONIVEL;
-                $isUtilizado = $status === Cupom::STATUS_UTILIZADO;
-                $valor = (float) ($cupom['valor'] ?? 0);
-                $isPercent = ($cupom['tipo'] ?? '') === Cupom::TIPO_PERCENTUAL;
-                $offLabel = $isPercent
-                    ? rtrim(rtrim(number_format($valor, 2, ',', ''), '0'), ',') . '% OFF'
-                    : 'R$ ' . number_format($valor, 2, ',', '.');
-                $utilizadoEm = !empty($cupom['utilizado_em'])
-                    ? date('d/m/Y H:i', strtotime((string) $cupom['utilizado_em']))
-                    : null;
-                $codigo = (string) ($cupom['codigo'] ?? '');
-                ?>
-                <article
-                    class="coupon-card coupon-card--premium coupon-card--<?= e(strtolower($status)) ?>"
-                    aria-label="<?= $isUtilizado ? 'Cupom utilizado' : 'Cupom disponível' ?>"
-                >
-                    <div class="coupon-card__accent" aria-hidden="true"></div>
-                    <div class="coupon-card__inner">
-                        <?php if ($isUtilizado): ?>
-                            <span class="coupon-card__seal coupon-card__seal--used">Cupom utilizado</span>
-                        <?php else: ?>
-                            <span class="coupon-card__seal coupon-card__seal--ok">Benefício liberado</span>
-                        <?php endif; ?>
+        </section>
+    <?php else: ?>
+        <section class="cupons-section" aria-labelledby="seu-beneficio-heading">
+            <h2 id="seu-beneficio-heading" class="cupons-section__label cupons-section__label--green">
+                <svg class="cupons-section__label-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Seu benefício
+            </h2>
 
-                        <h2 class="coupon-card__title">Seu cupom exclusivo</h2>
-                        <p class="coupon-card__off" aria-label="<?= e($offLabel) ?>"><?= e($offLabel) ?></p>
-                        <p class="coupon-card__hint-text">Use em qualquer compra no App Minas Mais.</p>
+            <div class="coupons-list">
+                <?php foreach ($cupons as $cupom): ?>
+                    <?php
+                    $status = (string) ($cupom['status'] ?? '');
+                    $isDisponivel = $status === Cupom::STATUS_DISPONIVEL;
+                    $isUtilizado = $status === Cupom::STATUS_UTILIZADO;
+                    $valor = (float) ($cupom['valor'] ?? 0);
+                    $isPercent = ($cupom['tipo'] ?? '') === Cupom::TIPO_PERCENTUAL;
+                    $offLabel = $isPercent
+                        ? rtrim(rtrim(number_format($valor, 2, ',', ''), '0'), ',') . '% OFF'
+                        : 'R$ ' . number_format($valor, 2, ',', '.');
+                    $utilizadoEm = !empty($cupom['utilizado_em'])
+                        ? date('d/m/Y H:i', strtotime((string) $cupom['utilizado_em']))
+                        : null;
+                    $codigo = (string) ($cupom['codigo'] ?? '');
+                    ?>
+                    <article
+                        class="coupon-card coupon-card--premium coupon-card--<?= e(strtolower($status)) ?>"
+                        aria-label="<?= $isUtilizado ? 'Cupom utilizado' : 'Cupom disponível' ?>"
+                    >
+                        <div class="coupon-card__accent" aria-hidden="true"></div>
+                        <div class="coupon-card__inner">
+                            <div class="coupon-card__body">
+                                <div class="coupon-card__main">
+                                    <?php if ($isUtilizado): ?>
+                                        <span class="coupon-card__seal coupon-card__seal--used">
+                                            <svg class="coupon-card__seal-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                                                <path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                            Cupom utilizado
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="coupon-card__seal coupon-card__seal--ok">
+                                            <svg class="coupon-card__seal-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                                                <path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                            Benefício liberado
+                                        </span>
+                                    <?php endif; ?>
 
-                        <?php if ($isDisponivel && $codigo !== ''): ?>
-                            <div class="coupon-card__actions">
-                                <button
-                                    type="button"
-                                    class="btn btn--block btn--primary coupon-card__copy"
-                                    data-copy="<?= e($codigo) ?>"
-                                    data-copy-success="Cupom copiado"
-                                    data-copy-toast="Cupom copiado"
-                                    aria-label="Copiar meu cupom"
-                                >
-                                    Copiar meu cupom
-                                </button>
-                                <p class="coupon-card__warning" role="note">
-                                    Uso único e intransferível. Não compartilhe este código.
-                                </p>
+                                    <h3 class="coupon-card__title">Seu cupom exclusivo</h3>
+                                    <p class="coupon-card__off" aria-label="<?= e($offLabel) ?>"><?= e($offLabel) ?></p>
+                                    <p class="coupon-card__hint-text">Use em qualquer compra no App Minas Mais.</p>
+                                </div>
+
+                                <div class="coupon-card__art" aria-hidden="true">
+                                    <svg viewBox="0 0 64 64" fill="none">
+                                        <rect x="10" y="22" width="44" height="28" rx="6" stroke="currentColor" stroke-width="2.5"/>
+                                        <path d="M10 34h44" stroke="currentColor" stroke-width="2.5"/>
+                                        <circle cx="32" cy="34" r="5" fill="currentColor" opacity="0.15"/>
+                                        <path d="M29 34h6M32 31v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        <path d="M20 22c0-6 5-10 12-10s12 4 12 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
                             </div>
-                        <?php elseif ($isUtilizado): ?>
-                            <div class="coupon-card__used" role="status">
-                                <?php if ($utilizadoEm !== null): ?>
-                                    <p class="coupon-card__used-date">Utilizado em: <?= e($utilizadoEm) ?></p>
-                                <?php endif; ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="coupon-card__status-line" role="status">
-                                <?= Cupom::statusIcon($status) ?>
-                                <?= e(Cupom::statusLabel($status)) ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </article>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </section>
+
+                            <?php if ($isDisponivel && $codigo !== ''): ?>
+                                <div class="coupon-card__actions">
+                                    <button
+                                        type="button"
+                                        class="btn btn--block btn--primary coupon-card__copy"
+                                        data-copy="<?= e($codigo) ?>"
+                                        data-copy-success="Cupom copiado"
+                                        data-copy-toast="Cupom copiado com sucesso!"
+                                        aria-label="Copiar meu cupom"
+                                    >
+                                        Copiar meu cupom
+                                    </button>
+                                    <p class="coupon-card__warning" role="note">
+                                        <svg class="coupon-card__warning-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <path d="M12 3l8 4v5c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V7l8-4z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+                                            <path d="M9.5 12.2l1.8 1.8 3.4-3.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        <span>Uso único e intransferível. Não compartilhe este código.</span>
+                                    </p>
+                                </div>
+                            <?php elseif ($isUtilizado): ?>
+                                <div class="coupon-card__used" role="status">
+                                    <?php if ($utilizadoEm !== null): ?>
+                                        <p class="coupon-card__used-date">Utilizado em: <?= e($utilizadoEm) ?></p>
+                                    <?php endif; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="coupon-card__status-line" role="status">
+                                    <?= Cupom::statusIcon($status) ?>
+                                    <?= e(Cupom::statusLabel($status)) ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </section>
+    <?php endif; ?>
 
     <?php if (!empty($beneficioShares)): ?>
-        <section class="beneficio-amigo-list" aria-label="Avisar amigos indicados">
-            <?php foreach ($beneficioShares as $share): ?>
-                <?php
-                $nomeAmigo = trim((string) ($share['nome'] ?? ''));
-                if ($nomeAmigo === '' || strcasecmp($nomeAmigo, 'Indicado via API') === 0) {
-                    $nomeAmigo = '';
-                }
-                ?>
-                <article class="beneficio-amigo-card">
-                    <div class="beneficio-amigo-card__accent" aria-hidden="true"></div>
-                    <div class="beneficio-amigo-card__inner">
-                        <span class="beneficio-amigo-card__seal">Benefício do amigo</span>
-                        <h2 class="beneficio-amigo-card__title">Seu amigo também ganhou! 🎉</h2>
-                        <p class="beneficio-amigo-card__text">
-                            Avise que o cupom de 5% OFF já está disponível e convide seu amigo a participar do Indique e Ganhe.
-                        </p>
-                        <form method="POST" action="<?= url('/indicacoes/' . (int) $share['indicacao_id'] . '/compartilhar-beneficio') ?>">
-                            <?= csrf_field() ?>
-                            <button type="submit" class="btn btn--block btn--primary">
-                                🎁 Entregar benefício ao amigo
-                            </button>
-                        </form>
-                        <p class="beneficio-amigo-card__hint">
-                            Enviar para o WhatsApp final <?= e((string) $share['phone_tail']) ?>
-                        </p>
-                    </div>
-                </article>
-            <?php endforeach; ?>
+        <section class="cupons-section" aria-labelledby="beneficio-amigo-heading">
+            <h2 id="beneficio-amigo-heading" class="cupons-section__label cupons-section__label--coral">
+                <svg class="cupons-section__label-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 7v14M7.5 11h9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                    <path d="M6 11h12v8.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5V11z" stroke="currentColor" stroke-width="1.75"/>
+                    <path d="M8.5 11c0-2.2 1.3-4 3.5-4s3.5 1.8 3.5 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                </svg>
+                Benefício do amigo
+            </h2>
+
+            <div class="beneficio-amigo-list" aria-label="Avisar amigos indicados">
+                <?php foreach ($beneficioShares as $share): ?>
+                    <article class="beneficio-amigo-card">
+                        <div class="beneficio-amigo-card__accent" aria-hidden="true"></div>
+                        <div class="beneficio-amigo-card__inner">
+                            <div class="beneficio-amigo-card__body">
+                                <div class="beneficio-amigo-card__main">
+                                    <span class="beneficio-amigo-card__off-badge" aria-hidden="true">5% OFF</span>
+                                    <h3 class="beneficio-amigo-card__title">Seu amigo também ganhou! 🎉</h3>
+                                    <p class="beneficio-amigo-card__text">
+                                        Avise que o cupom de 5% OFF já está disponível e convide seu amigo a participar do Indique e Ganhe.
+                                    </p>
+                                </div>
+                                <div class="beneficio-amigo-card__art" aria-hidden="true">
+                                    <svg viewBox="0 0 64 64" fill="none">
+                                        <path d="M32 14l3.2 8.4H44l-6.8 5 2.6 8.6L32 30.8 24.2 36l2.6-8.6L20 22.4h8.8L32 14z" fill="currentColor" opacity="0.18"/>
+                                        <path d="M18 40h28v12a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V40z" stroke="currentColor" stroke-width="2.5"/>
+                                        <path d="M18 40h28l-2.5-8H20.5L18 40z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+                                        <path d="M32 32v24" stroke="currentColor" stroke-width="2.5"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="beneficio-amigo-card__actions">
+                                <form method="POST" action="<?= url('/indicacoes/' . (int) $share['indicacao_id'] . '/compartilhar-beneficio') ?>">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn--block btn--primary beneficio-amigo-card__whatsapp">
+                                        <svg class="beneficio-amigo-card__wa-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path fill="currentColor" d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.14 6.44 2.14 11.9c0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.02zm-7.01 15.24h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.37c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.24-8.23 8.24zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.4-.12-.56.12-.17.25-.64.8-.79.97-.14.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.3.37-.44.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07s.88 2.4 1 2.56c.12.17 1.75 2.67 4.25 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z"/>
+                                        </svg>
+                                        Enviar benefício ao amigo
+                                    </button>
+                                </form>
+
+                                <?php if ($inviteLink !== ''): ?>
+                                    <button
+                                        type="button"
+                                        class="btn btn--block beneficio-amigo-card__share js-share-native"
+                                        data-share-native
+                                        aria-label="Compartilhar link de indicação"
+                                    >
+                                        <svg class="beneficio-amigo-card__share-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <circle cx="18" cy="5" r="2.5" stroke="currentColor" stroke-width="1.75"/>
+                                            <circle cx="6" cy="12" r="2.5" stroke="currentColor" stroke-width="1.75"/>
+                                            <circle cx="18" cy="19" r="2.5" stroke="currentColor" stroke-width="1.75"/>
+                                            <path d="M8.4 10.8l7.2-4.2M8.4 13.2l7.2 4.2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                                        </svg>
+                                        <span class="js-share-label">Compartilhar link de indicação</span>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+
+                            <p class="beneficio-amigo-card__hint">
+                                Enviar para o WhatsApp final <?= e((string) $share['phone_tail']) ?>
+                            </p>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
         </section>
     <?php endif; ?>
 </div>
+
+<?php if ($inviteLink !== ''): ?>
+<script>
+    window.__DASHBOARD__ = window.__DASHBOARD__ || {};
+    window.__DASHBOARD__.inviteLink = <?= json_encode($inviteLink, JSON_UNESCAPED_UNICODE) ?>;
+    window.__DASHBOARD__.shareLink = <?= json_encode($inviteLink, JSON_UNESCAPED_UNICODE) ?>;
+</script>
+<?php endif; ?>

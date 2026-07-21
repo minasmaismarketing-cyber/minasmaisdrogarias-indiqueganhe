@@ -24,6 +24,7 @@ class ProfileController extends Controller
             'title' => 'Perfil — Indique e Ganhe',
             'user' => $user,
             'errors' => Session::flash('errors') ?? [],
+            'old' => Session::flash('old') ?? [],
             'success' => Session::flash('success'),
         ], 'app');
     }
@@ -60,6 +61,10 @@ class ProfileController extends Controller
 
         if ($errors !== []) {
             Session::flash('errors', $errors);
+            Session::flash('old', [
+                'nome' => $nome,
+                'whatsapp' => (string) ($_POST['whatsapp'] ?? ''),
+            ]);
             $this->redirect('/perfil');
         }
 
