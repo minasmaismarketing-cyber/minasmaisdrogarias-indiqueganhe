@@ -6062,35 +6062,30 @@ code {
     min-height: 48px;
 }
 
-.beneficio-amigo-card__whatsapp,
-.beneficio-amigo-card__share {
+.beneficio-amigo-card__whatsapp {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    background: #25d366;
+    color: #fff;
+    border: none;
 }
 
-.beneficio-amigo-card__wa-icon,
-.beneficio-amigo-card__share-icon {
+.beneficio-amigo-card__whatsapp:hover {
+    background: #1ebe57;
+    color: #fff;
+}
+
+.beneficio-amigo-card__whatsapp:focus-visible {
+    outline: 2px solid #128c7e;
+    outline-offset: 2px;
+}
+
+.beneficio-amigo-card__wa-icon {
     width: 1.15rem;
     height: 1.15rem;
     flex-shrink: 0;
-}
-
-.beneficio-amigo-card__share {
-    background: #fff;
-    color: var(--gray-900, #111827);
-    border: 1.5px solid rgba(0, 0, 0, 0.12);
-    font-weight: 700;
-}
-
-.beneficio-amigo-card__share:hover {
-    background: rgba(0, 0, 0, 0.03);
-}
-
-.beneficio-amigo-card__share:focus-visible {
-    outline: 2px solid var(--primary, #d71920);
-    outline-offset: 2px;
 }
 
 .beneficio-amigo-card__hint,
