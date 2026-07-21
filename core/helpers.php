@@ -266,6 +266,84 @@ function format_phone(string $phone): string
     return $phone;
 }
 
+/**
+ * Normaliza telefone brasileiro para wa.me (apenas dígitos com DDI 55).
+ * Não altera o valor persistido — uso exclusivo para montar o link.
+ */
+function normalize_brazilian_whatsapp_number(string $phone): ?string
+{
+    $digits = preg_replace('/\D+/', '', $phone) ?? '';
+    if ($digits === '') {
+        return null;
+    }
+
+    // Remove prefixo 0 de operadora / longa distância repetido
+    while (str_starts_with($digits, '0')) {
+        $digits = substr($digits, 1);
+    }
+
+    if (str_starts_with($digits, '55')) {
+        $national = substr($digits, 2);
+    } else {
+        $national = $digits;
+    }
+
+    // DDD (2) + número 8 ou 9 dígitos
+    if (!preg_match('/^\d{10,11}$/', $national)) {
+        return null;
+    }
+
+    $ddd = (int) substr($national, 0, 2);
+    if ($ddd < 11 || $ddd > 99) {
+        return null;
+    }
+
+    return '55' . $national;
+}
+
+/** Máscara segura para UI: apenas os 2 últimos dígitos (ex.: ••89). */
+function mask_whatsapp_phone_tail(string $phone): string
+{
+    $digits = preg_replace('/\D+/', '', $phone) ?? '';
+    if (strlen($digits) < 2) {
+        return '••';
+    }
+
+    return '••' . substr($digits, -2);
+}
+
+/**
+ * Indicação elegível para avisar o amigo (benefício 5% / WhatsApp).
+ * Combina status de validacao_indicacoes e indicacoes.
+ */
+function is_indicacao_aprovada_para_beneficio(string $validacaoStatus, string $indicacaoStatus = ''): bool
+{
+    $validacaoOk = in_array($validacaoStatus, [
+        ValidacaoIndicacao::STATUS_APROVADO,
+        ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,
+    ], true);
+
+    $indicacaoOk = in_array($indicacaoStatus, [
+        Indicacao::STATUS_VALIDADO,
+        Indicacao::STATUS_PREMIO_LIBERADO,
+    ], true);
+
+    return $validacaoOk || $indicacaoOk;
+}
+
+/** Mensagem oficial do WhatsApp (benefício do indicado MINAS-5). */
+function beneficio_indicado_whatsapp_message(): string
+{
+    return "🎉 Sua indicação na Minas Mais foi aprovada!\n\n"
+        . "Você ganhou 5% OFF na sua primeira compra pelo App Minas Mais.\n\n"
+        . "Use o cupom:\n\n"
+        . "🎁 MINAS-5\n\n"
+        . "E tem mais: agora você também pode ganhar 10% OFF.\n\n"
+        . "Acesse nosso sistema de Indique e Ganhe, faça seu cadastro e compartilhe seu link exclusivo com um novo amigo. Assim que a indicação for aprovada, seu cupom de 10% será liberado.\n\n"
+        . "👉 Participe agora:\n"
+        . "https://indique.minasmaisdrogarias.com.br";
+}
+
 /** Fuso horário oficial da aplicação (tempo real). */
 function app_timezone(): DateTimeZone
 {

@@ -5370,11 +5370,38 @@ code {
     font-size: 0.95rem;
 }
 
-@media (max-width: 480px) {
-    .indicacao-status-card {
-        padding: 1rem;
-    }
+.beneficio-amigo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-top: 1rem;
+}
 
+.beneficio-amigo-card .mm-card__title {
+    margin-bottom: 0.35rem;
+}
+
+.beneficio-amigo-card__nome {
+    margin: 0 0 0.75rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.beneficio-amigo-card__hint,
+.validacao-list-compact__share-hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.78rem;
+    color: var(--gray-700, #4b5563);
+    text-align: center;
+}
+
+.validacao-list-compact__share {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+@media (max-width: 480px) {
     .dash-invite-off {
         display: block;
         margin: 0.35rem 0;

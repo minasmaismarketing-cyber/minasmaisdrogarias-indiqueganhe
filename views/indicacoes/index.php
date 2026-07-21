@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 ?>
+<?php require BASE_PATH . '/views/partials/alerts.php'; ?>
 <section class="page-hero animate-slide">
     <h1 class="page-hero__title">Minhas indicações</h1>
     <p class="page-hero__subtitle">Acompanhe o status de cada indicação validada.</p>
@@ -39,29 +40,50 @@ declare(strict_types=1);
             <h3 class="validacao-historico__title">Suas indicações</h3>
             <ul class="validacao-list-compact">
                 <?php foreach ($historicoValidacoes as $v): ?>
+                    <?php
+                    $vStatus = (string) ($v['status'] ?? '');
+                    $iStatus = (string) ($v['indicacao_status'] ?? '');
+                    $indicacaoId = (int) ($v['indicacao_id'] ?? 0);
+                    $telefoneRaw = (string) ($v['telefone_indicado'] ?? '');
+                    $podeCompartilhar = $indicacaoId > 0
+                        && is_indicacao_aprovada_para_beneficio($vStatus, $iStatus)
+                        && normalize_brazilian_whatsapp_number($telefoneRaw) !== null;
+                    $phoneTail = $podeCompartilhar ? mask_whatsapp_phone_tail($telefoneRaw) : '';
+                    ?>
                     <li class="validacao-list-compact__item">
                         <div class="validacao-list-compact__row">
                             <div class="validacao-list-compact__status">
-                                <span class="validacao-status-badge validacao-status-badge--<?= strtolower($v['status']) ?>">
-                                    <?= e(ValidacaoIndicacao::statusLabel($v['status'])) ?>
+                                <span class="validacao-status-badge validacao-status-badge--<?= strtolower($vStatus) ?>">
+                                    <?= e(ValidacaoIndicacao::statusLabel($vStatus)) ?>
                                 </span>
                             </div>
                             <div class="validacao-list-compact__info">
                                 <?php if (!empty($v['nome_indicado'])): ?>
-                                    <strong><?= e($v['nome_indicado']) ?></strong>
+                                    <strong><?= e((string) $v['nome_indicado']) ?></strong>
                                 <?php else: ?>
                                     <strong>Aguardando cadastro</strong>
                                 <?php endif; ?>
                                 <span class="validacao-list-compact__date">
-                                    <?= e(date('d/m/Y', strtotime($v['created_at']))) ?>
+                                    <?= e(date('d/m/Y', strtotime((string) $v['created_at']))) ?>
                                 </span>
                             </div>
                         </div>
                         <?php if (!empty($v['motivo_bloqueio'])): ?>
                             <p class="validacao-list-compact__motivo">
                                 <span class="validacao-list-compact__motivo-label">Motivo:</span>
-                                <?= e(ValidacaoIndicacao::motivoLabel($v['motivo_bloqueio'])) ?>
+                                <?= e(ValidacaoIndicacao::motivoLabel((string) $v['motivo_bloqueio'])) ?>
                             </p>
+                        <?php endif; ?>
+                        <?php if ($podeCompartilhar): ?>
+                            <div class="validacao-list-compact__share">
+                                <form method="POST" action="<?= url('/indicacoes/' . $indicacaoId . '/compartilhar-beneficio') ?>">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn--block btn--outline btn--sm">
+                                        🎁 Entregar benefício ao amigo
+                                    </button>
+                                </form>
+                                <p class="validacao-list-compact__share-hint">Enviar para o WhatsApp final <?= e($phoneTail) ?></p>
+                            </div>
                         <?php endif; ?>
                     </li>
                 <?php endforeach; ?>

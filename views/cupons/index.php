@@ -79,3 +79,26 @@
         <?php endforeach; ?>
     <?php endif; ?>
 </section>
+
+<?php if (!empty($beneficioShares)): ?>
+    <section class="beneficio-amigo-list" aria-label="Avisar amigos indicados">
+        <?php foreach ($beneficioShares as $share): ?>
+            <article class="mm-card beneficio-amigo-card">
+                <h2 class="mm-card__title">Seu amigo também ganhou! 🎉</h2>
+                <p class="mm-card__subtitle">
+                    Avise que o cupom de 5% OFF já está disponível e convide seu amigo a participar do Indique e Ganhe.
+                </p>
+                <?php if (($share['nome'] ?? '') !== ''): ?>
+                    <p class="beneficio-amigo-card__nome"><?= e((string) $share['nome']) ?></p>
+                <?php endif; ?>
+                <form method="POST" action="<?= url('/indicacoes/' . (int) $share['indicacao_id'] . '/compartilhar-beneficio') ?>">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="btn btn--block btn--primary">
+                        🎁 Entregar benefício ao amigo
+                    </button>
+                </form>
+                <p class="beneficio-amigo-card__hint">Enviar para o WhatsApp final <?= e((string) $share['phone_tail']) ?></p>
+            </article>
+        <?php endforeach; ?>
+    </section>
+<?php endif; ?>

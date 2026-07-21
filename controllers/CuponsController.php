@@ -428,9 +428,34 @@ class CuponsController extends Controller
 
         $cupons = $this->cupomRepository->findByUsuario($user['id']);
 
+        $beneficioShares = [];
+        try {
+            $rows = (new ValidacaoIndicacao())->listByUsuarioIndicador((int) $user['id'], 50, 0);
+            foreach ($rows as $row) {
+                $vStatus = (string) ($row['status'] ?? '');
+                $iStatus = (string) ($row['indicacao_status'] ?? '');
+                if (!is_indicacao_aprovada_para_beneficio($vStatus, $iStatus)) {
+                    continue;
+                }
+                $indicacaoId = (int) ($row['indicacao_id'] ?? 0);
+                $phone = (string) ($row['telefone_indicado'] ?? '');
+                if ($indicacaoId <= 0 || normalize_brazilian_whatsapp_number($phone) === null) {
+                    continue;
+                }
+                $beneficioShares[] = [
+                    'indicacao_id' => $indicacaoId,
+                    'phone_tail' => mask_whatsapp_phone_tail($phone),
+                    'nome' => trim((string) ($row['nome_indicado'] ?? '')),
+                ];
+            }
+        } catch (Throwable $e) {
+            Logger::warning('Falha ao carregar shares de benefício', ['error' => $e->getMessage()]);
+        }
+
         $this->view('cupons.index', [
             'title' => 'Meus Cupons',
             'cupons' => $cupons,
+            'beneficioShares' => $beneficioShares,
         ], 'app');
     }
 }

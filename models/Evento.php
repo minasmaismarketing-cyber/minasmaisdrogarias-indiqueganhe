@@ -25,6 +25,7 @@ class Evento extends Model
     public const EVENTO_CUPOM_EXPIRADO = 'CUPOM_EXPIRADO';
     public const EVENTO_CUPOM_RESERVADO = 'CUPOM_RESERVADO';
     public const EVENTO_CUPOM_UTILIZADO = 'CUPOM_UTILIZADO';
+    public const EVENTO_BENEFICIO_WHATSAPP_OPENED = 'BENEFICIO_WHATSAPP_OPENED';
     public const EVENTO_APPSFLYER_EVENTO_RECEBIDO = 'APPSFLYER_EVENTO_RECEBIDO';
     public const EVENTO_APPSFLYER_EVENTO_PROCESSADO = 'APPSFLYER_EVENTO_PROCESSADO';
     public const EVENTO_APPSFLYER_EVENTO_VALIDADO = 'APPSFLYER_EVENTO_VALIDADO';
@@ -189,6 +190,7 @@ class Evento extends Model
             self::EVENTO_CUPOM_EXPIRADO => 'Cupom Expirado',
             self::EVENTO_CUPOM_RESERVADO => 'Cupom Reservado',
             self::EVENTO_CUPOM_UTILIZADO => 'Cupom Utilizado',
+            self::EVENTO_BENEFICIO_WHATSAPP_OPENED => 'WhatsApp benefício aberto',
             self::EVENTO_APPSFLYER_EVENTO_RECEBIDO => 'AppsFlyer Evento Recebido',
             self::EVENTO_APPSFLYER_EVENTO_PROCESSADO => 'AppsFlyer Evento Processado',
             self::EVENTO_APPSFLYER_EVENTO_VALIDADO => 'AppsFlyer Evento Validado',
@@ -221,11 +223,33 @@ class Evento extends Model
             self::EVENTO_CUPOM_EXPIRADO => '⏰',
             self::EVENTO_CUPOM_RESERVADO => '🔒',
             self::EVENTO_CUPOM_UTILIZADO => '✅',
+            self::EVENTO_BENEFICIO_WHATSAPP_OPENED => '💬',
             self::EVENTO_APPSFLYER_EVENTO_RECEBIDO => '📥',
             self::EVENTO_APPSFLYER_EVENTO_PROCESSADO => '⚙️',
             self::EVENTO_APPSFLYER_EVENTO_VALIDADO => '✅',
             self::EVENTO_APPSFLYER_EVENTO_REJEITADO => '❌',
             default => '📌',
         };
+    }
+
+    /** Proteção contra clique duplo (mesma indicação + usuário nos últimos N segundos). */
+    public function hasRecentBeneficioWhatsappOpen(int $usuarioId, int $indicacaoId, int $withinSeconds = 15): bool
+    {
+        $withinSeconds = max(1, min(60, $withinSeconds));
+        $stmt = $this->db->prepare(
+            'SELECT id FROM eventos
+             WHERE usuario_id = :usuario_id
+               AND evento = :evento
+               AND referencia = :referencia
+               AND created_at >= DATE_SUB(NOW(), INTERVAL ' . $withinSeconds . ' SECOND)
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'usuario_id' => $usuarioId,
+            'evento' => self::EVENTO_BENEFICIO_WHATSAPP_OPENED,
+            'referencia' => (string) $indicacaoId,
+        ]);
+
+        return (bool) $stmt->fetch();
     }
 }

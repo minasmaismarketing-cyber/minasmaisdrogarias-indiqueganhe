@@ -153,6 +153,16 @@ class EventLogger
         ]);
     }
 
+    public function logBeneficioWhatsappOpened(int $usuarioId, int $indicacaoId): void
+    {
+        $this->log($usuarioId, Evento::EVENTO_BENEFICIO_WHATSAPP_OPENED, (string) $indicacaoId, [
+            'indicacao_id' => $indicacaoId,
+            'usuario_indicador_id' => $usuarioId,
+            'canal' => 'whatsapp',
+            'status' => 'opened',
+        ]);
+    }
+
     public function logAppsflyerEventoRecebido(int $eventId, string $eventName): void
     {
         $this->log(null, Evento::EVENTO_APPSFLYER_EVENTO_RECEBIDO, (string) $eventId, [

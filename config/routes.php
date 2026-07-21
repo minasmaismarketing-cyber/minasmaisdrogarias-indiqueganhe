@@ -29,6 +29,7 @@ $router->post('/perfil/senha', 'ProfileController', 'changePassword');
 $router->post('/perfil/excluir', 'ProfileController', 'delete');
 
 $router->get('/indicacoes', 'IndicacoesController', 'index');
+$router->post('/indicacoes/{id}/compartilhar-beneficio', 'IndicacoesController', 'compartilharBeneficio');
 
 $router->get('/meus-premios', 'PremiosController', 'index');
 
