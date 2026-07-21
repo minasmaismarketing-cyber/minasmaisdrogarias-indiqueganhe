@@ -127,6 +127,13 @@
                         <button type="submit" class="btn btn--sm btn--primary">Iniciar</button>
                     </form>
                 <?php endif; ?>
+                <?php if (ValidacaoIndicacao::canReleasePendingBenefit($validacao)): ?>
+                    <form method="POST" action="<?= url('/admin/validacoes/liberar-beneficio') ?>" class="inline-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
+                        <button type="submit" class="btn btn--sm btn--success" title="Indicação aprovada, mas sem cupom disponível.">Liberar cupom</button>
+                    </form>
+                <?php endif; ?>
                 <?php if (ValidacaoIndicacao::canDecide($validacao['status'])): ?>
                     <form method="POST" action="<?= url('/admin/validacoes/aprovar') ?>" class="inline-form">
                         <?= csrf_field() ?>

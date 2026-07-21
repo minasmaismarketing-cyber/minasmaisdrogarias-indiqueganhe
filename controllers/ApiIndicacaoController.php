@@ -53,10 +53,18 @@ class ApiIndicacaoController extends Controller
 
             $codigoIndicador = $this->sanitize($payload['codigoIndicador']);
             $cpfIndicado = Validator::onlyDigits($this->sanitize($payload['cpfIndicado']));
-            $emailIndicado = $this->sanitize($payload['emailIndicado']);
+            $emailIndicado = strtolower(trim(strip_tags((string) $payload['emailIndicado'])));
             $telefoneIndicado = Validator::onlyDigits($this->sanitize($payload['telefoneIndicado']));
             $tipoEvento = strtoupper($this->sanitize($payload['tipoEvento']));
             $plataforma = strtoupper($this->sanitize($payload['plataforma']));
+            $nomeIndicado = isset($payload['nomeIndicado'])
+                ? trim(strip_tags((string) $payload['nomeIndicado']))
+                : null;
+            if ($nomeIndicado === '') {
+                $nomeIndicado = null;
+            }
+
+            $idempotencyKey = $this->readIdempotencyKey();
 
             $validTiposEvento = ['INSTALL', 'REENGAGEMENT', 'UNKNOWN'];
             if (!in_array($tipoEvento, $validTiposEvento, true)) {
@@ -99,7 +107,10 @@ class ApiIndicacaoController extends Controller
                 $cpfIndicado,
                 $emailIndicado,
                 $telefoneIndicado,
-                $tipoEvento
+                $tipoEvento,
+                $nomeIndicado,
+                $idempotencyKey,
+                $plataforma
             );
 
             $statusCode = (int) ($result['status_code'] ?? 200);
@@ -108,7 +119,8 @@ class ApiIndicacaoController extends Controller
             if ($result['success'] ?? false) {
                 $indicador = $this->usuarioModel->findByCodigo($codigoIndicador);
                 if ($indicador !== null) {
-                    $this->eventLogger->logIndicadoCadastrado((int) $indicador['id'], 'Indicado via API');
+                    $nomeEvento = $nomeIndicado ?? 'Indicado via API';
+                    $this->eventLogger->logIndicadoCadastrado((int) $indicador['id'], $nomeEvento);
                     $this->persistAppsFlyerMetadata($payload, (int) $indicador['id'], $telefoneIndicado);
                 }
             }
@@ -119,7 +131,7 @@ class ApiIndicacaoController extends Controller
         } catch (Exception $e) {
             AppsFlyerIntegrationLogger::logError('api_kobe', $e->getMessage(), [
                 'endpoint' => $endpoint,
-                'payload' => $payload,
+                'payload' => $this->maskPayload($payload),
             ]);
 
             $response = [
@@ -132,6 +144,29 @@ class ApiIndicacaoController extends Controller
         }
     }
 
+    private function readIdempotencyKey(): ?string
+    {
+        $key = $_SERVER['HTTP_IDEMPOTENCY_KEY'] ?? '';
+        if ($key === '' && function_exists('getallheaders')) {
+            $headers = getallheaders();
+            if (is_array($headers)) {
+                foreach ($headers as $name => $value) {
+                    if (strtolower((string) $name) === 'idempotency-key') {
+                        $key = (string) $value;
+                        break;
+                    }
+                }
+            }
+        }
+
+        $key = trim($key);
+        if ($key === '') {
+            return null;
+        }
+
+        return substr($key, 0, 64);
+    }
+
     /** @param array<string, mixed> $payload */
     private function persistAppsFlyerMetadata(array $payload, int $indicadorId, string $telefoneIndicado): void
     {
@@ -141,6 +176,12 @@ class ApiIndicacaoController extends Controller
 
         try {
             $indicacao = $this->indicacaoModel->findActiveByReferrerAndPhone($indicadorId, $telefoneIndicado);
+            if ($indicacao === null) {
+                $indicacao = $this->indicacaoModel->findApiProcessedByReferrerAndCpf(
+                    $indicadorId,
+                    Validator::onlyDigits((string) ($payload['cpfIndicado'] ?? ''))
+                );
+            }
             $indicacaoId = $indicacao !== null ? (int) $indicacao['id'] : null;
             $eventData = AppsFlyerEventData::fromApiPayload($payload);
 
@@ -148,7 +189,7 @@ class ApiIndicacaoController extends Controller
         } catch (Throwable $e) {
             AppsFlyerIntegrationLogger::logError('api_kobe', $e->getMessage(), [
                 'indicador_id' => $indicadorId,
-                'payload' => $payload,
+                'payload' => $this->maskPayload($payload),
             ]);
 
             Logger::warning('Failed to persist AppsFlyer metadata from API KOBE', [
@@ -188,6 +229,36 @@ class ApiIndicacaoController extends Controller
         return trim($ip);
     }
 
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function maskPayload(array $payload): array
+    {
+        $masked = $payload;
+        if (isset($masked['cpfIndicado'])) {
+            $digits = Validator::onlyDigits((string) $masked['cpfIndicado']);
+            $masked['cpfIndicado'] = strlen($digits) >= 5
+                ? substr($digits, 0, 3) . '.***.***-' . substr($digits, -2)
+                : '***';
+        }
+        if (isset($masked['telefoneIndicado'])) {
+            $digits = Validator::onlyDigits((string) $masked['telefoneIndicado']);
+            $masked['telefoneIndicado'] = strlen($digits) > 4
+                ? str_repeat('*', max(0, strlen($digits) - 4)) . substr($digits, -4)
+                : '****';
+        }
+        if (isset($masked['emailIndicado']) && is_string($masked['emailIndicado'])) {
+            $email = $masked['emailIndicado'];
+            $at = strpos($email, '@');
+            $masked['emailIndicado'] = $at !== false
+                ? substr($email, 0, 1) . '***' . substr($email, $at)
+                : '***';
+        }
+
+        return $masked;
+    }
+
     private function logApiCall(
         string $endpoint,
         array $payload,
@@ -197,9 +268,10 @@ class ApiIndicacaoController extends Controller
         float $startedAt
     ): void {
         $durationMs = (microtime(true) - $startedAt) * 1000;
+        $safePayload = $this->maskPayload($payload);
 
         AppsFlyerIntegrationLogger::logApiKobe(
-            $payload,
+            $safePayload,
             $response ?? [],
             $statusCode,
             $ip,
@@ -208,7 +280,7 @@ class ApiIndicacaoController extends Controller
 
         $this->apiLogModel->create([
             'endpoint' => $endpoint,
-            'payload' => $payload,
+            'payload' => $safePayload,
             'response' => $response,
             'ip' => $ip,
             'status_code' => $statusCode,

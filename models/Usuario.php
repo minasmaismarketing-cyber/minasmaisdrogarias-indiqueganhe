@@ -110,6 +110,26 @@ class Usuario extends Model
     }
 
     /** @return array<string, mixed>|null */
+    public function findByTelefone(string $telefone): ?array
+    {
+        $digits = preg_replace('/\D/', '', $telefone) ?? '';
+        if ($digits === '') {
+            return null;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT * FROM usuarios
+             WHERE REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(whatsapp, ""), "(", ""), ")", ""), "-", ""), " ", "") = :tel
+                OR REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(telefone, ""), "(", ""), ")", ""), "-", ""), " ", "") = :tel2
+             LIMIT 1'
+        );
+        $stmt->execute(['tel' => $digits, 'tel2' => $digits]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string, mixed>|null */
     public function findByCodigo(string $codigo): ?array
     {
         $stmt = $this->db->prepare('SELECT * FROM usuarios WHERE codigo_indicador = :codigo LIMIT 1');

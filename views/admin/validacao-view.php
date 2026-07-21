@@ -47,14 +47,35 @@ if ($indicadoWhatsapp === '' && $indicacao !== null) {
 if ($indicadoWhatsapp === '' && $indicado !== null) {
     $indicadoWhatsapp = trim((string) ($indicado['whatsapp'] ?? ''));
 }
+$indicadoCpf = trim((string) ($validacao['cpf_indicado'] ?? ''));
+if ($indicadoCpf === '' && $indicacao !== null) {
+    $indicadoCpf = trim((string) ($indicacao['cpf_indicado'] ?? ''));
+}
+if ($indicadoCpf === '' && $indicado !== null) {
+    $indicadoCpf = trim((string) ($indicado['cpf'] ?? ''));
+}
+$indicadoEmail = trim((string) ($validacao['email_indicado'] ?? ''));
+if ($indicadoEmail === '' && $indicacao !== null) {
+    $indicadoEmail = trim((string) ($indicacao['email_indicado'] ?? ''));
+}
+if ($indicadoEmail === '' && $indicado !== null) {
+    $indicadoEmail = trim((string) ($indicado['email'] ?? ''));
+}
+$origem = trim((string) ($validacao['indicacao_origem'] ?? ($indicacao['origem'] ?? '')));
+$tipoEvento = trim((string) ($validacao['tipo_evento'] ?? ($indicacao['tipo_evento'] ?? '')));
+$plataforma = trim((string) ($validacao['plataforma'] ?? ($indicacao['plataforma'] ?? '')));
 ?>
 <?php admin_detail_card('Indicado', [
     ['label' => 'Nome:', 'value' => $indicadoNome !== '' ? $indicadoNome : '—'],
-    ['label' => 'CPF:', 'value' => $indicado !== null ? Usuario::formatCpfDisplay($indicado) : '—'],
+    ['label' => 'CPF:', 'value' => $indicadoCpf !== '' ? format_cpf($indicadoCpf) : '—'],
+    ['label' => 'E-mail:', 'value' => $indicadoEmail !== '' ? $indicadoEmail : '—'],
     [
         'label' => 'WhatsApp:',
         'value' => $indicadoWhatsapp !== '' ? format_phone($indicadoWhatsapp) : '—',
     ],
+    ['label' => 'Origem:', 'value' => $origem !== '' ? $origem : '—'],
+    ['label' => 'tipoEvento:', 'value' => $tipoEvento !== '' ? $tipoEvento : '—'],
+    ['label' => 'Plataforma:', 'value' => $plataforma !== '' ? $plataforma : '—'],
 ]); ?>
 
 <section class="admin-card">
@@ -100,7 +121,9 @@ if ($indicadoWhatsapp === '' && $indicado !== null) {
     ],
     [
         'label' => 'Motivo da rejeição:',
-        'value' => !empty($validacao['motivo']) ? (string) $validacao['motivo'] : '—',
+        'value' => !empty($validacao['motivo'])
+            ? ValidacaoIndicacao::motivoLabel((string) $validacao['motivo'])
+            : '—',
     ],
     ['label' => 'Criado em:', 'value' => date('d/m/Y H:i', strtotime($validacao['created_at']))],
     [
@@ -117,7 +140,11 @@ if ($indicadoWhatsapp === '' && $indicado !== null) {
     </header>
 
     <?php if ($cupom === null): ?>
-        <?php admin_empty_state('Nenhum cupom gerado.'); ?>
+        <?php if (ValidacaoIndicacao::canReleasePendingBenefit($validacao)): ?>
+            <?php admin_empty_state('Indicação aprovada, mas sem cupom disponível.'); ?>
+        <?php else: ?>
+            <?php admin_empty_state('Nenhum cupom gerado.'); ?>
+        <?php endif; ?>
     <?php else: ?>
         <?php admin_info_lines([
             ['label' => 'Código:', 'value' => (string) $cupom['codigo']],
@@ -158,7 +185,19 @@ if ($indicadoWhatsapp === '' && $indicado !== null) {
     <?php endif; ?>
 </section>
 
-<?php if (ValidacaoIndicacao::canStartReview($validacao['status'])): ?>
+<?php if (ValidacaoIndicacao::canReleasePendingBenefit($validacao)): ?>
+    <section class="admin-card">
+        <header class="admin-card__header">
+            <h2 class="admin-card__title">Ações</h2>
+        </header>
+        <p>Indicação aprovada, mas sem cupom disponível. Após importar estoque, libere o benefício.</p>
+        <form method="POST" action="<?= url('/admin/validacoes/liberar-beneficio') ?>" class="form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="id" value="<?= $validacao['id'] ?>">
+            <button type="submit" class="btn btn--block btn--success">Liberar cupom pendente</button>
+        </form>
+    </section>
+<?php elseif (ValidacaoIndicacao::canStartReview($validacao['status'])): ?>
     <section class="admin-card">
         <header class="admin-card__header">
             <h2 class="admin-card__title">Ações</h2>

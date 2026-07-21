@@ -32,13 +32,17 @@ $codigoIndicacao = (string) ($indicacao['codigo_referencia'] ?? $indicacao['codi
 
 <?php admin_detail_card('Indicado', [
     ['label' => 'Nome:', 'value' => (string) ($indicacao['indicado_nome'] ?? 'Aguardando cadastro')],
-    ['label' => 'CPF:', 'value' => Usuario::formatCpfDisplay(['cpf' => $indicacao['indicado_cpf'] ?? ''])],
+    ['label' => 'CPF:', 'value' => !empty($indicacao['indicado_cpf']) ? format_cpf((string) $indicacao['indicado_cpf']) : '—'],
+    ['label' => 'E-mail:', 'value' => !empty($indicacao['indicado_email']) ? (string) $indicacao['indicado_email'] : (!empty($indicacao['email_indicado']) ? (string) $indicacao['email_indicado'] : '—')],
     [
         'label' => 'WhatsApp:',
         'value' => !empty($indicacao['indicado_whatsapp'])
             ? format_phone((string) $indicacao['indicado_whatsapp'])
             : '—',
     ],
+    ['label' => 'Origem:', 'value' => !empty($indicacao['origem']) ? (string) $indicacao['origem'] : '—'],
+    ['label' => 'tipoEvento:', 'value' => !empty($indicacao['tipo_evento']) ? (string) $indicacao['tipo_evento'] : '—'],
+    ['label' => 'Plataforma:', 'value' => !empty($indicacao['plataforma']) ? (string) $indicacao['plataforma'] : '—'],
 ]); ?>
 
 <?php
@@ -58,7 +62,7 @@ $validacaoLines = [
     [
         'label' => 'Motivo da rejeição:',
         'value' => ($validacao !== null && !empty($validacao['motivo_bloqueio']))
-            ? (string) $validacao['motivo_bloqueio']
+            ? ValidacaoIndicacao::motivoLabel((string) $validacao['motivo_bloqueio'])
             : '—',
     ],
 ];

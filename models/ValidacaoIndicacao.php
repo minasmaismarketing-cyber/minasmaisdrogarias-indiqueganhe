@@ -42,6 +42,11 @@ class ValidacaoIndicacao extends Model
                     u.nome AS usuario_nome,
                     i.nome_indicado,
                     i.telefone_indicado,
+                    i.cpf_indicado,
+                    i.email_indicado,
+                    i.origem AS indicacao_origem,
+                    i.tipo_evento,
+                    i.plataforma,
                     CASE
                         WHEN v.status IN (:aprovado, :beneficio) THEN v.updated_at
                         ELSE NULL
@@ -72,6 +77,11 @@ class ValidacaoIndicacao extends Model
                        u.nome AS usuario_nome,
                        i.nome_indicado,
                        i.telefone_indicado,
+                       i.cpf_indicado,
+                       i.email_indicado,
+                       i.origem AS indicacao_origem,
+                       i.tipo_evento,
+                       i.plataforma,
                        i.created_at AS indicacao_created_at
                 FROM validacao_indicacoes v
                 LEFT JOIN usuarios u ON v.usuario_indicador_id = u.id
@@ -153,6 +163,10 @@ class ValidacaoIndicacao extends Model
         return true;
     }
 
+    /**
+     * Aprovação manual (Admin). Requer status EM_ANALISE.
+     * Sem estoque: mantém APROVADO/VALIDADO com motivo BENEFICIO_PENDENTE_SEM_ESTOQUE.
+     */
     public function approve(int $id, ?string $observacao = null, ?string $adminEmail = null): bool
     {
         $validacao = $this->findById($id);
@@ -160,48 +174,137 @@ class ValidacaoIndicacao extends Model
             return false;
         }
 
-        $statusAnterior = (string) $validacao['status'];
+        $result = $this->finalizeApproval(
+            $validacao,
+            $observacao ?? 'Validação aprovada',
+            $adminEmail,
+            false
+        );
+
+        return (bool) ($result['ok'] ?? false);
+    }
+
+    /**
+     * Aprovação automática (API KOBE). Não depende de sessão Admin.
+     * Aceita PENDENTE / AGUARDANDO_* / EM_ANALISE.
+     *
+     * @return array{ok: bool, cupom_assigned: bool, status: string, motivo: ?string}
+     */
+    public function approveAutomatically(int $id, ?string $observacao = null): array
+    {
+        $validacao = $this->findById($id);
+        if ($validacao === null) {
+            return ['ok' => false, 'cupom_assigned' => false, 'status' => '', 'motivo' => null];
+        }
+
+        $status = (string) $validacao['status'];
+        if (in_array($status, [self::STATUS_BENEFICIO_LIBERADO, self::STATUS_APROVADO, self::STATUS_REPROVADO, self::STATUS_CANCELADO], true)) {
+            return [
+                'ok' => true,
+                'cupom_assigned' => $status === self::STATUS_BENEFICIO_LIBERADO,
+                'status' => $status,
+                'motivo' => $validacao['motivo_bloqueio'] ?? $validacao['motivo'] ?? null,
+            ];
+        }
+
+        if (!self::canStartReview($status) && $status !== self::STATUS_EM_ANALISE) {
+            return ['ok' => false, 'cupom_assigned' => false, 'status' => $status, 'motivo' => null];
+        }
+
+        return $this->finalizeApproval(
+            $validacao,
+            $observacao ?? 'Indicação aprovada automaticamente',
+            null,
+            true
+        );
+    }
+
+    /**
+     * Reprovação automática (API). Aceita status pendentes ou EM_ANALISE.
+     */
+    public function rejectAutomatically(int $id, string $motivo): bool
+    {
+        $validacao = $this->findById($id);
+        if ($validacao === null) {
+            return false;
+        }
+
+        $status = (string) $validacao['status'];
+        if ($status === self::STATUS_REPROVADO) {
+            return true;
+        }
+
+        if (!self::canStartReview($status) && $status !== self::STATUS_EM_ANALISE) {
+            return false;
+        }
+
+        $statusAnterior = $status;
+        $this->updateStatus($id, self::STATUS_REPROVADO, $motivo);
+
+        $indicacaoId = (int) ($validacao['indicacao_id'] ?? 0);
+        if ($indicacaoId > 0) {
+            $this->syncIndicacaoStatus($indicacaoId, Indicacao::STATUS_INVALIDO);
+        }
+
+        $this->recordHistory($id, $statusAnterior, self::STATUS_REPROVADO, $motivo, 'API');
+
+        $usuarioId = (int) ($validacao['usuario_indicador_id'] ?? 0);
+        if ($usuarioId > 0) {
+            (new EventLogger())->logValidacaoInvalidada($usuarioId, $id, $motivo);
+        }
+
+        return true;
+    }
+
+    /**
+     * Libera cupom para indicação já aprovada sem estoque.
+     */
+    public function releasePendingBenefit(int $id, ?string $adminEmail = null): bool
+    {
+        $validacao = $this->findById($id);
+        if ($validacao === null || !self::canReleasePendingBenefit($validacao)) {
+            return false;
+        }
+
         $indicacaoId = (int) ($validacao['indicacao_id'] ?? 0);
         $usuarioId = (int) ($validacao['usuario_indicador_id'] ?? 0);
+        if ($indicacaoId <= 0 || $usuarioId <= 0) {
+            return false;
+        }
 
         $db = Database::getConnection();
-        $db->beginTransaction();
+        $ownTransaction = !$db->inTransaction();
+        if ($ownTransaction) {
+            $db->beginTransaction();
+        }
 
         try {
-            // Estoque primeiro: se falhar, a validação permanece em análise
-            if ($indicacaoId > 0 && $usuarioId > 0) {
-                (new CupomService())->assignFromPoolForIndicacao($indicacaoId, $usuarioId, null, $adminEmail);
-            }
+            (new CupomService())->assignFromPoolForIndicacao($indicacaoId, $usuarioId, null, $adminEmail);
 
             $stmt = $db->prepare(
                 'UPDATE validacao_indicacoes
-                 SET status = :status, elegivel = 1, updated_at = NOW()
+                 SET status = :status, elegivel = 1, motivo_bloqueio = NULL, updated_at = NOW()
                  WHERE id = :id'
             );
-            $stmt->execute(['status' => self::STATUS_APROVADO, 'id' => $id]);
+            $stmt->execute(['status' => self::STATUS_BENEFICIO_LIBERADO, 'id' => $id]);
 
-            if ($indicacaoId > 0) {
-                $this->syncIndicacaoStatus($indicacaoId, Indicacao::STATUS_VALIDADO);
-            }
-
+            $this->syncIndicacaoStatus($indicacaoId, Indicacao::STATUS_PREMIO_LIBERADO, true);
             $this->recordHistory(
                 $id,
-                $statusAnterior,
                 self::STATUS_APROVADO,
-                $observacao ?? 'Validação aprovada',
+                self::STATUS_BENEFICIO_LIBERADO,
+                'Cupom liberado após reposição de estoque',
                 $adminEmail
             );
 
-            $db->commit();
+            if ($ownTransaction) {
+                $db->commit();
+            }
         } catch (Throwable $e) {
-            if ($db->inTransaction()) {
+            if ($ownTransaction && $db->inTransaction()) {
                 $db->rollBack();
             }
             throw $e;
-        }
-
-        if ($usuarioId > 0) {
-            (new EventLogger())->logValidacaoAprovada($usuarioId, $id);
         }
 
         return true;
@@ -230,6 +333,121 @@ class ValidacaoIndicacao extends Model
         }
 
         return true;
+    }
+
+    /**
+     * Núcleo compartilhado: Admin + API automática.
+     *
+     * @param array<string, mixed> $validacao
+     * @return array{ok: bool, cupom_assigned: bool, status: string, motivo: ?string}
+     */
+    private function finalizeApproval(
+        array $validacao,
+        string $observacao,
+        ?string $adminEmail,
+        bool $automatic
+    ): array {
+        $id = (int) $validacao['id'];
+        $statusAnterior = (string) $validacao['status'];
+        $indicacaoId = (int) ($validacao['indicacao_id'] ?? 0);
+        $usuarioId = (int) ($validacao['usuario_indicador_id'] ?? 0);
+
+        $db = Database::getConnection();
+        $ownTransaction = !$db->inTransaction();
+        if ($ownTransaction) {
+            $db->beginTransaction();
+        }
+
+        $cupomAssigned = false;
+        $finalStatus = self::STATUS_APROVADO;
+        $motivo = null;
+
+        try {
+            if ($automatic && self::canStartReview($statusAnterior)) {
+                $this->updateStatus($id, self::STATUS_EM_ANALISE);
+                $this->recordHistory(
+                    $id,
+                    $statusAnterior,
+                    self::STATUS_EM_ANALISE,
+                    'Validação automática iniciada',
+                    'API'
+                );
+                $statusAnterior = self::STATUS_EM_ANALISE;
+            }
+
+            if ($indicacaoId > 0 && $usuarioId > 0) {
+                try {
+                    (new CupomService())->assignFromPoolForIndicacao($indicacaoId, $usuarioId, null, $adminEmail);
+                    $cupomAssigned = true;
+                    $finalStatus = self::STATUS_BENEFICIO_LIBERADO;
+                } catch (RuntimeException $e) {
+                    if (!str_contains($e->getMessage(), 'Não há cupons disponíveis')) {
+                        throw $e;
+                    }
+                    $motivo = 'BENEFICIO_PENDENTE_SEM_ESTOQUE';
+                    Logger::warning('Indicação aprovada sem cupom disponível', [
+                        'validacao_id' => $id,
+                        'indicacao_id' => $indicacaoId,
+                        'automatic' => $automatic,
+                    ]);
+                }
+            }
+
+            $sql = 'UPDATE validacao_indicacoes
+                    SET status = :status, elegivel = 1, updated_at = NOW()';
+            $params = ['status' => $finalStatus, 'id' => $id];
+            if ($motivo !== null) {
+                $sql .= ', motivo_bloqueio = :motivo';
+                $params['motivo'] = $motivo;
+            }
+            $sql .= ' WHERE id = :id';
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+
+            if ($indicacaoId > 0) {
+                $this->syncIndicacaoStatus(
+                    $indicacaoId,
+                    $cupomAssigned ? Indicacao::STATUS_PREMIO_LIBERADO : Indicacao::STATUS_VALIDADO,
+                    $cupomAssigned
+                );
+            }
+
+            $historyNote = $observacao;
+            if ($motivo === 'BENEFICIO_PENDENTE_SEM_ESTOQUE') {
+                $historyNote = ($automatic ? 'Indicação aprovada automaticamente' : 'Validação aprovada')
+                    . '. Indicação aprovada, mas sem cupom disponível.';
+            } elseif ($cupomAssigned) {
+                $historyNote = ($automatic ? 'Indicação aprovada automaticamente. Cupom liberado.' : ($observacao . '. Cupom liberado.'));
+            }
+
+            $this->recordHistory(
+                $id,
+                $statusAnterior,
+                $finalStatus,
+                $historyNote,
+                $automatic ? 'API' : $adminEmail
+            );
+
+            if ($ownTransaction) {
+                $db->commit();
+            }
+        } catch (Throwable $e) {
+            if ($ownTransaction && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+
+        if ($usuarioId > 0) {
+            (new EventLogger())->logValidacaoAprovada($usuarioId, $id);
+        }
+
+        return [
+            'ok' => true,
+            'cupom_assigned' => $cupomAssigned,
+            'status' => $finalStatus,
+            'motivo' => $motivo,
+        ];
     }
 
     public function cancel(int $id, ?string $motivo = null, ?string $adminEmail = null): bool
@@ -273,6 +491,15 @@ class ValidacaoIndicacao extends Model
         return self::canStartReview($status) || $status === self::STATUS_EM_ANALISE;
     }
 
+    /** @param array<string, mixed> $validacao */
+    public static function canReleasePendingBenefit(array $validacao): bool
+    {
+        $status = (string) ($validacao['status'] ?? '');
+        $motivo = (string) ($validacao['motivo_bloqueio'] ?? $validacao['motivo'] ?? '');
+
+        return $status === self::STATUS_APROVADO && $motivo === 'BENEFICIO_PENDENTE_SEM_ESTOQUE';
+    }
+
     /** @return array{type: string, values: list<string>} */
     private function resolveStatusFilter(string $status): array
     {
@@ -287,12 +514,18 @@ class ValidacaoIndicacao extends Model
         return ['type' => 'eq', 'values' => [$status]];
     }
 
-    private function syncIndicacaoStatus(int $indicacaoId, string $status): void
+    private function syncIndicacaoStatus(int $indicacaoId, string $status, bool $premioLiberado = false): void
     {
         $stmt = $this->db->prepare(
-            'UPDATE indicacoes SET status = :status, updated_at = NOW() WHERE id = :id'
+            'UPDATE indicacoes
+             SET status = :status, premio_liberado = :premio, updated_at = NOW()
+             WHERE id = :id'
         );
-        $stmt->execute(['status' => $status, 'id' => $indicacaoId]);
+        $stmt->execute([
+            'status' => $status,
+            'premio' => $premioLiberado ? 1 : 0,
+            'id' => $indicacaoId,
+        ]);
     }
 
     private function recordHistory(
@@ -309,6 +542,16 @@ class ValidacaoIndicacao extends Model
             'descricao' => $descricao,
             'usuario_admin' => $adminEmail,
         ]);
+    }
+
+    /** Timeline da API sem depender de sessão Admin. */
+    public function recordApiHistory(
+        int $validacaoId,
+        string $statusAnterior,
+        string $statusNovo,
+        string $descricao
+    ): void {
+        $this->recordHistory($validacaoId, $statusAnterior, $statusNovo, $descricao, 'API');
     }
 
     public function updateStatus(int $id, string $status, ?string $motivo = null): void
@@ -362,9 +605,14 @@ class ValidacaoIndicacao extends Model
     public static function motivoLabel(string $motivo): string
     {
         return match ($motivo) {
-            'CPF_EXISTENTE' => 'CPF já existente',
-            'AUTO_INDICACAO' => 'Auto indicação',
-            'JA_PARTICIPOU' => 'Já participou',
+            'CPF_EXISTENTE', 'CPF_JA_CADASTRADO' => 'CPF já cadastrado',
+            'EMAIL_JA_CADASTRADO' => 'E-mail já cadastrado',
+            'TELEFONE_JA_CADASTRADO' => 'Telefone já cadastrado',
+            'USUARIO_JA_CADASTRADO' => 'Usuário já cadastrado',
+            'CPF_JA_PARTICIPOU', 'JA_PARTICIPOU' => 'CPF já participou',
+            'AUTOINDICACAO', 'AUTO_INDICACAO' => 'Autoindicação',
+            'APP_JA_EXISTENTE' => 'App já existente (reengagement)',
+            'BENEFICIO_PENDENTE_SEM_ESTOQUE' => 'Indicação aprovada, mas sem cupom disponível.',
             'INVALIDO' => 'Inválido',
             default => $motivo,
         };

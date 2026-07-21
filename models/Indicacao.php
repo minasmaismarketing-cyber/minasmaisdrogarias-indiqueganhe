@@ -170,6 +170,96 @@ class Indicacao extends Model
         return (bool) $stmt->fetch();
     }
 
+    public function cpfAlreadyParticipated(string $cpf): bool
+    {
+        $cpf = preg_replace('/\D/', '', $cpf) ?? '';
+        if ($cpf === '') {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT id FROM indicacoes
+             WHERE cpf_indicado = :cpf
+               AND status IN (:cadastro_pendente, :validado, :premio_liberado)
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'cpf' => $cpf,
+            'cadastro_pendente' => self::STATUS_CADASTRO_PENDENTE,
+            'validado' => self::STATUS_VALIDADO,
+            'premio_liberado' => self::STATUS_PREMIO_LIBERADO,
+        ]);
+
+        return (bool) $stmt->fetch();
+    }
+
+    public function emailAlreadyParticipated(string $email): bool
+    {
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT id FROM indicacoes
+             WHERE LOWER(email_indicado) = :email
+               AND status IN (:cadastro_pendente, :validado, :premio_liberado)
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'email' => $email,
+            'cadastro_pendente' => self::STATUS_CADASTRO_PENDENTE,
+            'validado' => self::STATUS_VALIDADO,
+            'premio_liberado' => self::STATUS_PREMIO_LIBERADO,
+        ]);
+
+        return (bool) $stmt->fetch();
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findApiProcessedByReferrerAndCpf(int $referrerId, string $cpf): ?array
+    {
+        $cpf = preg_replace('/\D/', '', $cpf) ?? '';
+        if ($cpf === '') {
+            return null;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT i.*
+             FROM indicacoes i
+             WHERE i.usuario_id = :usuario_id
+               AND i.cpf_indicado = :cpf
+               AND i.origem = :origem
+             ORDER BY i.id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'usuario_id' => $referrerId,
+            'cpf' => $cpf,
+            'origem' => 'API',
+        ]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByIdempotencyKey(string $key): ?array
+    {
+        $key = trim($key);
+        if ($key === '') {
+            return null;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT * FROM indicacoes WHERE idempotency_key = :key LIMIT 1'
+        );
+        $stmt->execute(['key' => $key]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     public static function statusLabel(string $status): string
     {
         return match ($status) {
@@ -451,7 +541,8 @@ class Indicacao extends Model
                        u_ind.cpf AS indicador_cpf,
                        u_ind.whatsapp AS indicador_whatsapp,
                        u_indicado.nome AS indicado_usuario_nome,
-                       u_indicado.cpf AS indicado_cpf,
+                       COALESCE(NULLIF(i.cpf_indicado, \'\'), u_indicado.cpf) AS indicado_cpf,
+                       COALESCE(NULLIF(i.email_indicado, \'\'), u_indicado.email) AS indicado_email,
                        u_indicado.whatsapp AS indicado_usuario_whatsapp,
                        v.id AS validacao_id,
                        v.status AS validacao_status,
@@ -525,8 +616,12 @@ class Indicacao extends Model
 
         $cpf = preg_replace('/\D/', '', (string) ($filters['cpf'] ?? '')) ?? '';
         if ($cpf !== '') {
-            $sql .= ' AND REPLACE(REPLACE(REPLACE(u_indicado.cpf, ".", ""), "-", ""), " ", "") LIKE :cpf';
+            $sql .= ' AND (
+                REPLACE(REPLACE(REPLACE(COALESCE(i.cpf_indicado, ""), ".", ""), "-", ""), " ", "") LIKE :cpf
+                OR REPLACE(REPLACE(REPLACE(COALESCE(u_indicado.cpf, ""), ".", ""), "-", ""), " ", "") LIKE :cpf_usuario
+            )';
             $params['cpf'] = '%' . $cpf . '%';
+            $params['cpf_usuario'] = '%' . $cpf . '%';
         }
 
         $whatsapp = preg_replace('/\D/', '', (string) ($filters['whatsapp'] ?? '')) ?? '';

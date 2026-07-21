@@ -133,6 +133,7 @@ Ainda aceitos (prioridade menor):
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
+| `nomeIndicado` | string | Nome real do indicado (opcional). Prioridade: payload → usuário local (CPF/e-mail/telefone) → `Indicado via API` |
 | `appsflyerId` | string | ID do dispositivo AppsFlyer |
 | `deepLinkValue` | string | Valor do deep link (`indique`) |
 | `deepLinkSub1` | string | Código do indicador (`ref`) |
@@ -140,6 +141,12 @@ Ainda aceitos (prioridade menor):
 | `deepLinkSub3` | string | Nome da campanha |
 | `deepLinkSub4` | string | Discriminador (`indique_ganhe`) |
 | `deepLinkSub5` | string | Ambiente (`homolog`) |
+
+### Header opcional
+
+| Header | Descrição |
+|--------|-----------|
+| `Idempotency-Key` | Recomendado. Evita duplicar indicação/cupom em reenvios. |
 
 Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` (campo `raw_payload` + campos normalizados). A indicação é criada independentemente desses campos.
 
@@ -151,9 +158,9 @@ Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` 
 
 | Valor | Comportamento |
 |-------|---------------|
-| `INSTALL` | Cadastro aceito → status `AGUARDANDO_VALIDACAO` |
-| `REENGAGEMENT` | Rejeitado → `INVALIDADO` / motivo `APP_JA_EXISTENTE` |
-| `UNKNOWN` | Aceito → status `EM_ANALISE` |
+| `INSTALL` | Validação **automática**. Elegível → aprova + cupom 10% ao indicador (`BENEFICIO_LIBERADO`). Sem estoque → `BENEFICIO_PENDENTE`. |
+| `REENGAGEMENT` | Reprovado automaticamente → `INVALIDADO` / motivo `APP_JA_EXISTENTE` (HTTP 400) |
+| `UNKNOWN` | Aceito → status `EM_ANALISE` (análise manual; sem cupom automático) |
 
 **plataforma**
 
@@ -163,15 +170,39 @@ Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` 
 
 ---
 
-## Exemplo de resposta — sucesso (INSTALL)
+## Exemplo de resposta — sucesso (INSTALL com cupom)
 
 **HTTP 200**
 
 ```json
 {
   "success": true,
-  "status": "AGUARDANDO_VALIDACAO",
-  "message": "Cadastro recebido com sucesso."
+  "status": "BENEFICIO_LIBERADO",
+  "message": "Indicação aprovada e benefício liberado."
+}
+```
+
+## Exemplo de resposta — sucesso (INSTALL sem estoque)
+
+**HTTP 200**
+
+```json
+{
+  "success": true,
+  "status": "BENEFICIO_PENDENTE",
+  "message": "Indicação aprovada. O benefício será liberado em breve."
+}
+```
+
+## Exemplo de resposta — reenvio idempotente
+
+**HTTP 200**
+
+```json
+{
+  "success": true,
+  "status": "BENEFICIO_LIBERADO",
+  "message": "Cadastro já processado anteriormente."
 }
 ```
 
@@ -255,14 +286,22 @@ Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` 
 4. App lê deepLinkValue + deepLinkSub1–5 (+ appsflyerId)
 5. Usuário conclui cadastro no app KOBE
 6. App envia POST /api/indicacao/confirmar-cadastro (Bearer KOBE_API_TOKEN)
-7. Backend:
+   — opcional: header Idempotency-Key e campo nomeIndicado
+7. Backend (automático):
    a. Valida payload e campanha ativa
-   b. ReferralService::registerApiIndication() cria a indicação
-   c. Metadados AppsFlyer (se enviados) → AppsFlyerService::processApiEvent()
-   d. Registro em api_logs + uploads/logs/appsflyer/api_kobe.log (homologação)
-8. Admin valida indicação manualmente
-9. Após aprovação → cupom liberado ao indicado
+   b. Persiste dados do indicado (nome/CPF/e-mail/telefone)
+   c. Decide resultado: aprovar / reprovar / EM_ANALISE (UNKNOWN)
+   d. INSTALL elegível → aprova + atribui cupom 10% ao INDICADOR
+   e. Sem estoque → BENEFICIO_PENDENTE (não reprova)
+   f. Metadados AppsFlyer (se enviados) → AppsFlyerService::processApiEvent()
+   g. Logs mascarados em api_logs + uploads/logs/appsflyer/api_kobe.log
+8. Dashboard do indicador atualiza (validadas / liberadas / Meus Cupons)
+9. Admin permanece para auditoria e exceções (UNKNOWN, sem estoque, fraude)
 ```
+
+**Nota:** não existe evento “app aberto” neste endpoint. Para atualizar status no momento da abertura do app, a KOBE precisaria enviar um evento adicional.
+
+**Rate limit:** pendência — não implementado de forma frágil nesta sprint (ver `docs/API_CONTRACT_KOBE.md`).
 
 ---
 
@@ -272,6 +311,7 @@ Quando presentes, os metadados AppsFlyer são persistidos em `appsflyer_events` 
 curl -X POST "https://seu-dominio.com/api/indicacao/confirmar-cadastro" \
   -H "Authorization: Bearer SEU_KOBE_API_TOKEN" \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: kobe-confirm-MMN6GAXJ-12345678901" \
   -d '{
     "codigoIndicador": "MMN6GAXJ",
     "cpfIndicado": "12345678901",
@@ -279,6 +319,7 @@ curl -X POST "https://seu-dominio.com/api/indicacao/confirmar-cadastro" \
     "telefoneIndicado": "5511999999999",
     "tipoEvento": "INSTALL",
     "plataforma": "ANDROID",
+    "nomeIndicado": "Maria Silva",
     "appsflyerId": "af-test-device-id",
     "deepLinkValue": "indique",
     "deepLinkSub1": "MMN6GAXJ",
@@ -315,5 +356,8 @@ Payload legado (ainda aceito):
 2. O `codigoIndicador` deve corresponder a um indicador cadastrado.
 3. CPF, e-mail e telefone não podem estar duplicados no programa.
 4. Metadados AppsFlyer são **opcionais** — o cadastro funciona sem eles.
-5. Configurar `KOBE_API_TOKEN` no `.env` do servidor (não versionar o valor real).
-6. Logs de homologação: `uploads/logs/appsflyer/api_kobe.log`.
+5. `nomeIndicado` e `Idempotency-Key` são **opcionais**, mas recomendados.
+6. Configurar `KOBE_API_TOKEN` no `.env` do servidor (não versionar o valor real).
+7. Logs de homologação: `uploads/logs/appsflyer/api_kobe.log` (CPF/e-mail/telefone mascarados).
+8. Executar `database/migration_sprint_4_6_automacao_indicacoes.sql` na Hostinger antes do deploy.
+9. Cupom de 10% é destinado ao **indicador**, nunca gerado fictício.

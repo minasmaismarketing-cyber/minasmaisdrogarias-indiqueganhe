@@ -52,6 +52,7 @@ $router->get('/admin/validacoes', 'ValidacaoController', 'adminIndex');
 $router->get('/admin/validacoes/{id}', 'ValidacaoController', 'show');
 $router->post('/admin/validacoes/iniciar', 'ValidacaoController', 'start');
 $router->post('/admin/validacoes/aprovar', 'ValidacaoController', 'approve');
+$router->post('/admin/validacoes/liberar-beneficio', 'ValidacaoController', 'liberarBeneficio');
 $router->post('/admin/validacoes/rejeitar', 'ValidacaoController', 'reject');
 $router->post('/admin/validacoes/cancelar', 'ValidacaoController', 'cancel');
 

@@ -142,7 +142,12 @@ class ValidacaoController extends Controller
 
         try {
             if ($this->validacaoModel->approve($id, $observacao, $adminEmail)) {
-                Session::flash('success', 'Validação aprovada com sucesso. Cupom 10% liberado ao indicador.');
+                $validacao = $this->validacaoModel->findById($id);
+                if ($validacao !== null && ValidacaoIndicacao::canReleasePendingBenefit($validacao)) {
+                    Session::flash('success', 'Validação aprovada. Indicação aprovada, mas sem cupom disponível.');
+                } else {
+                    Session::flash('success', 'Validação aprovada com sucesso. Cupom 10% liberado ao indicador.');
+                }
             } else {
                 Session::flash('error', 'Erro ao aprovar validação.');
             }
@@ -156,6 +161,42 @@ class ValidacaoController extends Controller
         }
 
         $this->redirect('/admin/validacoes');
+    }
+
+    public function liberarBeneficio(): void
+    {
+        Auth::requireAdmin();
+
+        if (!Csrf::validateRequest()) {
+            Session::flash('error', 'Token de segurança inválido.');
+            $this->redirect('/admin/validacoes');
+        }
+
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id === 0) {
+            Session::flash('error', 'ID inválido.');
+            $this->redirect('/admin/validacoes');
+        }
+
+        $user = Auth::user();
+        $adminEmail = $user !== null ? $user['email'] : null;
+
+        try {
+            if ($this->validacaoModel->releasePendingBenefit($id, $adminEmail)) {
+                Session::flash('success', 'Cupom liberado com sucesso ao indicador.');
+            } else {
+                Session::flash('error', 'Não foi possível liberar o benefício pendente.');
+            }
+        } catch (Throwable $e) {
+            $message = $e->getMessage();
+            if (str_contains($message, 'Não há cupons disponíveis')) {
+                Session::flash('error', 'Ainda não há cupons disponíveis para esta campanha.');
+            } else {
+                Session::flash('error', 'Erro ao liberar benefício: ' . $message);
+            }
+        }
+
+        $this->redirect('/admin/validacoes/' . $id);
     }
 
     public function reject(): void
