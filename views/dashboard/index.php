@@ -13,6 +13,8 @@ $stats = $stats ?? ['total' => 0, 'validadas' => 0, 'pendentes' => 0, 'liberadas
         <h1 class="page-hero__title">Meu painel</h1>
     </section>
 
+    <?php require BASE_PATH . '/views/partials/indicacao-status-card.php'; ?>
+
     <section class="stats-grid stats-grid--home" aria-label="Resumo das indicações">
         <article class="stat-card">
             <span class="stat-card__value"><?= (int) $stats['total'] ?></span>
@@ -31,8 +33,6 @@ $stats = $stats ?? ['total' => 0, 'validadas' => 0, 'pendentes' => 0, 'liberadas
             <span class="stat-card__label">Liberadas</span>
         </article>
     </section>
-
-    <?php require BASE_PATH . '/views/partials/indicacao-status-card.php'; ?>
 
     <section class="mm-card dash-invite-card" id="meu-codigo">
         <div class="mm-card__header mm-card__header--stack">
