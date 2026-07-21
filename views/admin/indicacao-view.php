@@ -86,7 +86,7 @@ admin_detail_card('Validação', $validacaoLines);
         <?php admin_empty_state('Nenhum cupom gerado.'); ?>
     <?php else: ?>
         <?php admin_info_lines([
-            ['label' => 'Código:', 'value' => (string) $cupom['codigo']],
+            ['label' => 'Código:', 'value' => mask_cupom_codigo((string) ($cupom['codigo'] ?? ''))],
             [
                 'label' => 'Status:',
                 'value' => Cupom::statusIcon((string) $cupom['status']) . ' ' . Cupom::statusLabel((string) $cupom['status']),

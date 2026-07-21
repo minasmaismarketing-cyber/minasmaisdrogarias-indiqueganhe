@@ -4,13 +4,16 @@
 # Uploads (mantém a pasta, ignora arquivos enviados)
 uploads/*
 !uploads/.gitkeep
+!uploads/.htaccess
 !uploads/logs/
 uploads/logs/*
 !uploads/logs/.gitkeep
+!uploads/logs/.htaccess
 
 # Importações temporárias de cupons (não versionar)
 storage/cupom_imports/*
 !storage/cupom_imports/.gitkeep
+!storage/cupom_imports/.htaccess
 
 # Sistema
 .DS_Store

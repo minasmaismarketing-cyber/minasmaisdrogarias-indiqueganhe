@@ -240,7 +240,7 @@ final class IndicacaoDiagnosticoService
                 'cupons',
                 $cupom !== null ? 'Cupom vinculado à indicação.' : 'Nenhum cupom gerado.',
                 array_filter([
-                    ['label' => 'Código', 'value' => (string) ($cupom['codigo'] ?? '—')],
+                    ['label' => 'Código', 'value' => mask_cupom_codigo((string) ($cupom['codigo'] ?? ''))],
                     ['label' => 'Campanha', 'value' => $campanhaNome !== '' ? $campanhaNome : '—'],
                     $cupom !== null && (string) ($cupom['status'] ?? '') === Cupom::STATUS_UTILIZADO
                         ? ['label' => 'Utilização', 'value' => $this->formatDateTime($cupom['updated_at'] ?? null)]
@@ -269,7 +269,7 @@ final class IndicacaoDiagnosticoService
                 'origem' => (string) ($indicacao['origem'] ?? '—'),
                 'appsflyer_id' => (string) ($appsFlyerEvent['appsflyer_id'] ?? '—'),
                 'codigo_indicacao' => (string) ($indicacao['codigo_referencia'] ?? $codigoIndicador ?: '—'),
-                'codigo_cupom' => (string) ($cupom['codigo'] ?? '—'),
+                'codigo_cupom' => $cupom !== null ? mask_cupom_codigo((string) ($cupom['codigo'] ?? '')) : '—',
             ],
             'steps' => $steps,
             'technical_logs' => [

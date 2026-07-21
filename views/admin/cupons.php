@@ -29,8 +29,17 @@ $isEstoqueDisponivel = static function (array $cupom): bool {
     <form method="GET" action="<?= url('/admin/cupons') ?>" class="form admin-filter-panel__form">
         <div class="form-row">
             <div class="form-group">
-                <label for="codigo">Código</label>
-                <input type="text" id="codigo" name="codigo" value="<?= e($filters['codigo']) ?>">
+                <label for="sufixo">Código (últimos 4)</label>
+                <input
+                    type="text"
+                    id="sufixo"
+                    name="sufixo"
+                    value="<?= e($filters['sufixo']) ?>"
+                    maxlength="4"
+                    autocomplete="off"
+                    inputmode="text"
+                    placeholder="ABCD"
+                >
             </div>
             <div class="form-group">
                 <label for="indicador">Indicador</label>
@@ -131,7 +140,7 @@ $isEstoqueDisponivel = static function (array $cupom): bool {
     $status = (string) $cupom['status'];
     $estoque = $isEstoqueDisponivel($cupom);
     $detailId = 'admin-acc-cupom-' . (int) $cupom['id'];
-    $codigo = (string) $cupom['codigo'];
+    $codigo = mask_cupom_codigo((string) ($cupom['codigo'] ?? ''));
     $campanha = (string) ($cupom['campanha_nome'] ?? '—');
     $indicador = (string) ($cupom['usuario_nome'] ?? '—');
     $indicacaoId = !empty($cupom['indicacao_id']) ? (string) (int) $cupom['indicacao_id'] : '—';

@@ -120,36 +120,35 @@ class EventLogger
 
     public function logCupomCriado(int $usuarioId, int $cupomId, string $codigo): void
     {
-        $this->log($usuarioId, Evento::EVENTO_CUPOM_CRIADO, (string) $cupomId, [
-            'codigo' => $codigo,
-        ]);
+        $this->logCupomEvent($usuarioId, Evento::EVENTO_CUPOM_CRIADO, $cupomId, $codigo);
     }
 
     public function logCupomCancelado(int $usuarioId, int $cupomId, string $codigo): void
     {
-        $this->log($usuarioId, Evento::EVENTO_CUPOM_CANCELADO, (string) $cupomId, [
-            'codigo' => $codigo,
-        ]);
+        $this->logCupomEvent($usuarioId, Evento::EVENTO_CUPOM_CANCELADO, $cupomId, $codigo);
     }
 
     public function logCupomExpirado(int $usuarioId, int $cupomId, string $codigo): void
     {
-        $this->log($usuarioId, Evento::EVENTO_CUPOM_EXPIRADO, (string) $cupomId, [
-            'codigo' => $codigo,
-        ]);
+        $this->logCupomEvent($usuarioId, Evento::EVENTO_CUPOM_EXPIRADO, $cupomId, $codigo);
     }
 
     public function logCupomReservado(int $usuarioId, int $cupomId, string $codigo): void
     {
-        $this->log($usuarioId, Evento::EVENTO_CUPOM_RESERVADO, (string) $cupomId, [
-            'codigo' => $codigo,
-        ]);
+        $this->logCupomEvent($usuarioId, Evento::EVENTO_CUPOM_RESERVADO, $cupomId, $codigo);
     }
 
     public function logCupomUtilizado(int $usuarioId, int $cupomId, string $codigo): void
     {
-        $this->log($usuarioId, Evento::EVENTO_CUPOM_UTILIZADO, (string) $cupomId, [
-            'codigo' => $codigo,
+        $this->logCupomEvent($usuarioId, Evento::EVENTO_CUPOM_UTILIZADO, $cupomId, $codigo);
+    }
+
+    /** Registra apenas cupom_id e os últimos 4 caracteres do código. */
+    private function logCupomEvent(int $usuarioId, string $evento, int $cupomId, string $codigo): void
+    {
+        $this->log($usuarioId, $evento, (string) $cupomId, [
+            'cupom_id' => $cupomId,
+            'codigo_sufixo' => cupom_codigo_sufixo($codigo),
         ]);
     }
 

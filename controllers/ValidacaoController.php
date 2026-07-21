@@ -379,7 +379,7 @@ class ValidacaoController extends Controller
                 'date' => (string) $cupom['created_at'],
                 'label' => 'Geração do cupom',
                 'icon' => '🎟️',
-                'description' => (string) ($cupom['codigo'] ?? ''),
+                'description' => mask_cupom_codigo((string) ($cupom['codigo'] ?? '')),
                 'admin' => null,
             ];
         }

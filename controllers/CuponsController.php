@@ -25,8 +25,15 @@ class CuponsController extends Controller
         $limit = 20;
         $offset = ($page - 1) * $limit;
 
+        // Não aceitar código completo via query string (?codigo=).
+        // Busca apenas pelos últimos 4 caracteres (?sufixo=).
+        $sufixo = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) ($_GET['sufixo'] ?? '')) ?? '');
+        if (strlen($sufixo) > 4) {
+            $sufixo = substr($sufixo, -4);
+        }
+
         $filters = [
-            'codigo' => trim((string) ($_GET['codigo'] ?? '')),
+            'sufixo' => $sufixo,
             'indicador' => trim((string) ($_GET['indicador'] ?? '')),
             'campanha_id' => (string) ($_GET['campanha_id'] ?? ''),
             'status' => (string) ($_GET['status'] ?? ''),
@@ -156,7 +163,6 @@ class CuponsController extends Controller
 
         try {
             $result = $this->cupomService->confirmCsvImport($campanhaId, $codigos, $adminEmail);
-            $this->clearPendingImport();
 
             $imported = (int) $result['imported'];
             $skipped = (int) $result['skipped'];
@@ -175,8 +181,10 @@ class CuponsController extends Controller
                     )
                 );
             }
+            $this->clearPendingImport();
             $this->redirect('/admin/cupons');
         } catch (Throwable $e) {
+            $this->clearPendingImport();
             Logger::error('Cupom import confirm failed', [
                 'endpoint' => '/admin/cupons/importar/confirmar',
                 'campanha_id' => $campanhaId,

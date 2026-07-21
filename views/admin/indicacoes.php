@@ -78,7 +78,7 @@ $buildPageUrl = static function (int $page) use ($filters): string {
     $indicadoNome = (string) ($indicacao['indicado_nome'] ?? 'Aguardando cadastro');
     $whatsapp = !empty($indicacao['indicado_whatsapp']) ? format_phone((string) $indicacao['indicado_whatsapp']) : '—';
     $codigo = (string) ($indicacao['codigo_referencia'] ?? $indicacao['codigo_indicador'] ?? '—');
-    $cupom = !empty($indicacao['cupom_codigo']) ? (string) $indicacao['cupom_codigo'] : '—';
+    $cupom = !empty($indicacao['cupom_codigo']) ? mask_cupom_codigo((string) $indicacao['cupom_codigo']) : '—';
     $data = date('d/m/Y H:i', strtotime($indicacao['created_at']));
     ?>
     <tr

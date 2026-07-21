@@ -420,9 +420,15 @@ class Cupom extends Model
      */
     private function applyListFilters(string &$sql, array &$params, array $filters): void
     {
-        if (!empty($filters['codigo'])) {
-            $sql .= ' AND c.codigo LIKE :codigo';
-            $params['codigo'] = '%' . $filters['codigo'] . '%';
+        if (!empty($filters['sufixo'])) {
+            $sufixo = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $filters['sufixo']) ?? '');
+            if (strlen($sufixo) > 4) {
+                $sufixo = substr($sufixo, -4);
+            }
+            if ($sufixo !== '') {
+                $sql .= ' AND RIGHT(c.codigo, 4) = :sufixo';
+                $params['sufixo'] = $sufixo;
+            }
         }
 
         if (!empty($filters['indicador'])) {

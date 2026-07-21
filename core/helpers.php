@@ -319,6 +319,28 @@ function mask_whatsapp_phone_tail(string $phone): string
     return '••' . substr($digits, -2);
 }
 
+/** Últimos 4 caracteres do código de cupom (para logs/filtros). */
+function cupom_codigo_sufixo(string $codigo): string
+{
+    $codigo = trim($codigo);
+    if ($codigo === '') {
+        return '';
+    }
+
+    return substr($codigo, -4);
+}
+
+/** Máscara administrativa de cupom: ••••ABCD */
+function mask_cupom_codigo(?string $codigo): string
+{
+    $codigo = trim((string) $codigo);
+    if ($codigo === '') {
+        return '••••';
+    }
+
+    return '••••' . cupom_codigo_sufixo($codigo);
+}
+
 /**
  * Indicação elegível para avisar o amigo (benefício 5% / WhatsApp).
  * Combina status de validacao_indicacoes e indicacoes.

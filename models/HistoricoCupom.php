@@ -32,7 +32,7 @@ class HistoricoCupom extends Model
 
     public function findAll(array $filters = []): array
     {
-        $sql = 'SELECT h.*, c.codigo, u.nome as usuario_nome
+        $sql = 'SELECT h.*, RIGHT(c.codigo, 4) AS codigo_sufixo, u.nome as usuario_nome
                 FROM historico_cupons h
                 LEFT JOIN cupons c ON h.cupom_id = c.id
                 LEFT JOIN usuarios u ON c.usuario_id = u.id

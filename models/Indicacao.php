@@ -632,7 +632,7 @@ class Indicacao extends Model
                 'date' => (string) $cupom['created_at'],
                 'label' => 'Cupom gerado',
                 'icon' => Cupom::statusIcon((string) $cupom['status']),
-                'description' => (string) $cupom['codigo'],
+                'description' => mask_cupom_codigo((string) ($cupom['codigo'] ?? '')),
                 'admin' => null,
             ];
         }

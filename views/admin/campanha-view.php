@@ -76,7 +76,7 @@ if ($regulamento === '') {
                     <?php foreach ($recentCupons as $cupom): ?>
                         <tr>
                             <td class="admin-table__td admin-table__td--primary">
-                                <a href="<?= url('/admin/cupons/' . $cupom['id']) ?>"><?= e((string) $cupom['codigo']) ?></a>
+                                <a href="<?= url('/admin/cupons/' . $cupom['id']) ?>"><?= e(mask_cupom_codigo((string) ($cupom['codigo'] ?? ''))) ?></a>
                             </td>
                             <td class="admin-table__td"><?= e((string) ($cupom['usuario_nome'] ?? '—')) ?></td>
                             <td class="admin-table__td">

@@ -10,7 +10,7 @@ $indicacaoStatus = (string) ($cupom['indicacao_status'] ?? '');
 ?>
 
 <?php admin_detail_card('Dados do Cupom', [
-    ['label' => 'Código:', 'value' => (string) $cupom['codigo'], 'highlight' => true],
+    ['label' => 'Código:', 'value' => mask_cupom_codigo((string) ($cupom['codigo'] ?? '')), 'highlight' => true],
     [
         'label' => 'Status:',
         'value' => $statusBadge,
