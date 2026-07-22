@@ -40,9 +40,18 @@ class Database
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
 
+        self::applySessionCharsetCollation(self::$connection);
         self::applySessionTimezone(self::$connection);
 
         return self::$connection;
+    }
+
+    /**
+     * Alinha charset/collation da sessão aos binds PDO (evita mix utf8mb4_general_ci × unicode_ci).
+     */
+    public static function applySessionCharsetCollation(PDO $pdo): void
+    {
+        $pdo->exec('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
     }
 
     /**
@@ -110,6 +119,7 @@ class Database
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            self::applySessionCharsetCollation(self::$connection);
             self::applySessionTimezone(self::$connection);
             self::$connection->query('SELECT 1');
             $result['status'] = 'Connection OK';
