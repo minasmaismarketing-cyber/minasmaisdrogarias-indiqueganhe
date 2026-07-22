@@ -73,7 +73,7 @@ class Indicacao extends Model
         ]);
 
         $stmt = $this->db->prepare(
-            'SELECT
+            "SELECT
                 COUNT(*) AS total,
                 SUM(CASE WHEN admin_status IN (:m_aprovado, :m_beneficio) THEN 1 ELSE 0 END) AS validadas,
                 SUM(CASE WHEN admin_status IN (
@@ -95,11 +95,17 @@ class Indicacao extends Model
              FROM (
                 SELECT
                     i.id,
-                    ' . self::ADMIN_EFFECTIVE_STATUS_SQL . ' AS admin_status
+                    " . self::ADMIN_EFFECTIVE_STATUS_SQL . " AS admin_status
                 FROM indicacoes i
                 LEFT JOIN validacao_indicacoes v ON v.indicacao_id = i.id
                 WHERE i.usuario_id = :usuario_id
-             ) scoped'
+                  AND (
+                      NULLIF(TRIM(COALESCE(i.cpf_indicado, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(i.email_indicado, '')), '') IS NOT NULL
+                      OR NULLIF(TRIM(COALESCE(i.telefone_indicado, '')), '') IS NOT NULL
+                      OR v.id IS NOT NULL
+                  )
+             ) scoped"
         );
 
         $params['m_aprovado_lib'] = ValidacaoIndicacao::STATUS_APROVADO;
@@ -546,6 +552,75 @@ class Indicacao extends Model
         return $row !== false && !empty($row['status_message_dismissed_at']);
     }
 
+    /**
+     * Marca benefício do amigo como visualizado (selo Novo / card do dashboard).
+     */
+    public function markFriendBenefitSeen(int $indicacaoId, int $usuarioId): bool
+    {
+        if (!$this->hasFriendBenefitSeenColumn()) {
+            return true; // no-op até a migration; não quebra o fluxo
+        }
+
+        $stmt = $this->db->prepare(
+            'UPDATE indicacoes
+             SET friend_benefit_seen_at = COALESCE(friend_benefit_seen_at, NOW()),
+                 updated_at = NOW()
+             WHERE id = :id
+               AND usuario_id = :usuario_id'
+        );
+        $stmt->execute([
+            'id' => $indicacaoId,
+            'usuario_id' => $usuarioId,
+        ]);
+
+        return $stmt->rowCount() > 0 || $this->isFriendBenefitSeenForUser($indicacaoId, $usuarioId);
+    }
+
+    public function isFriendBenefitSeenForUser(int $indicacaoId, int $usuarioId): bool
+    {
+        if (!$this->hasFriendBenefitSeenColumn()) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT friend_benefit_seen_at
+             FROM indicacoes
+             WHERE id = :id AND usuario_id = :usuario_id
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'id' => $indicacaoId,
+            'usuario_id' => $usuarioId,
+        ]);
+        $row = $stmt->fetch();
+
+        return $row !== false && !empty($row['friend_benefit_seen_at']);
+    }
+
+    /**
+     * Registra início do fluxo de WhatsApp do benefício 5% (não confirma envio).
+     */
+    public function markFriendBenefitShared(int $indicacaoId, int $usuarioId): bool
+    {
+        if (!$this->hasFriendBenefitSharedColumn()) {
+            return true; // no-op até a migration
+        }
+
+        $stmt = $this->db->prepare(
+            'UPDATE indicacoes
+             SET friend_benefit_shared_at = NOW(),
+                 updated_at = NOW()
+             WHERE id = :id
+               AND usuario_id = :usuario_id'
+        );
+        $stmt->execute([
+            'id' => $indicacaoId,
+            'usuario_id' => $usuarioId,
+        ]);
+
+        return $stmt->rowCount() > 0;
+    }
+
     private function hasStatusMessageDismissedColumn(): bool
     {
         static $cached = null;
@@ -555,6 +630,40 @@ class Indicacao extends Model
 
         try {
             $stmt = $this->db->query("SHOW COLUMNS FROM indicacoes LIKE 'status_message_dismissed_at'");
+            $cached = $stmt !== false && (bool) $stmt->fetch();
+        } catch (Throwable) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+
+    private function hasFriendBenefitSeenColumn(): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM indicacoes LIKE 'friend_benefit_seen_at'");
+            $cached = $stmt !== false && (bool) $stmt->fetch();
+        } catch (Throwable) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+
+    private function hasFriendBenefitSharedColumn(): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM indicacoes LIKE 'friend_benefit_shared_at'");
             $cached = $stmt !== false && (bool) $stmt->fetch();
         } catch (Throwable) {
             $cached = false;

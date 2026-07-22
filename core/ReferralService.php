@@ -74,13 +74,25 @@ class ReferralService
         Session::remove(self::SESSION_REF);
     }
 
-    public function logShare(int $userId, string $codigo): int
+    /**
+     * Registra acionamento do compartilhamento (atividade), sem criar indicação
+     * nem atribuir benefício. Não afirma que o WhatsApp concluiu o envio.
+     *
+     * @return array{logged: bool, duplicate: bool}
+     */
+    public function logShare(int $userId, string $codigo): array
     {
         $codigo = strtoupper(trim($codigo));
-        $id = $this->recordShare($userId, $codigo);
-        Logger::info('Referral share logged', ['user_id' => $userId, 'codigo' => $codigo, 'indicacao_id' => $id]);
+        $eventoModel = new Evento();
 
-        return $id;
+        if ($eventoModel->hasRecentLinkShare($userId, $codigo, 3)) {
+            return ['logged' => false, 'duplicate' => true];
+        }
+
+        (new EventLogger())->logLinkCompartilhado($userId, $codigo);
+        Logger::info('Referral share initiated', ['user_id' => $userId, 'codigo' => $codigo]);
+
+        return ['logged' => true, 'duplicate' => false];
     }
 
     public function handleLinkAccess(string $codigo): array
@@ -429,9 +441,11 @@ class ReferralService
                 'status_code' => 200,
             ];
         } else {
-            $message = $approvalMotivo === 'BENEFICIO_JA_LIBERADO'
-                ? 'Indicação processada. Benefício já havia sido liberado anteriormente.'
-                : 'Indicação aprovada e benefício liberado.';
+            if ($approvalMotivo === 'BENEFICIO_JA_LIBERADO') {
+                $message = 'Indicação aprovada. Amigo elegível ao cupom de 5%. Benefício do indicador já concedido anteriormente.';
+            } else {
+                $message = 'Indicação aprovada e benefício liberado.';
+            }
             $response = [
                 'success' => true,
                 'status' => self::API_STATUS_BENEFICIO_LIBERADO,
@@ -470,18 +484,20 @@ class ReferralService
             }
         }
 
+        // Mesma pessoa (CPF/telefone/e-mail) → atualiza o registro existente (qualquer status).
+        // Pessoa diferente → nunca reutiliza só por codigoIndicador.
         $byCpf = $this->indicacaoModel->findByReferrerAndCpf($referrerId, $cpfIndicado);
-        if ($byCpf !== null && $this->isOpenOrReusableIndicacao($byCpf)) {
+        if ($byCpf !== null) {
             return ['indicacao_id' => (int) $byCpf['id'], 'strategy' => 'codigo_cpf'];
         }
 
         $byPhone = $this->indicacaoModel->findActiveByReferrerAndPhone($referrerId, $telefoneIndicado);
-        if ($byPhone !== null && $this->isOpenOrReusableIndicacao($byPhone)) {
+        if ($byPhone !== null) {
             return ['indicacao_id' => (int) $byPhone['id'], 'strategy' => 'codigo_telefone'];
         }
 
         $byEmail = $this->indicacaoModel->findByReferrerAndEmail($referrerId, $emailIndicado);
-        if ($byEmail !== null && $this->isOpenOrReusableIndicacao($byEmail)) {
+        if ($byEmail !== null) {
             return ['indicacao_id' => (int) $byEmail['id'], 'strategy' => 'codigo_email'];
         }
 

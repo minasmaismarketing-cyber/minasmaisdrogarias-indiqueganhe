@@ -55,13 +55,13 @@ class DashboardController extends Controller
             'stats' => $stats,
             'statusCard' => $statusCard,
             'showRetryCta' => $showRetryCta,
+            'csrfToken' => Csrf::token(),
         ], 'app');
     }
 
     /**
-     * Último resultado definitivo da indicação (para card da Home).
-     * Pendente / em análise → null (não exibe card).
-     * Reprovações com "Entendi" dispensadas são ignoradas.
+     * Card da Home: prioriza aprovação mais recente ainda não visualizada,
+     * depois reprovação não dispensada.
      *
      * @return array<string, mixed>|null
      */
@@ -73,33 +73,26 @@ class DashboardController extends Controller
             return null;
         }
 
+        $cupomRepo = new CupomRepository();
+        $reprovadoCard = null;
+
         foreach ($rows as $row) {
             $status = (string) ($row['status'] ?? '');
             $motivoCode = (string) ($row['motivo_bloqueio'] ?? '');
             $id = (int) ($row['id'] ?? 0);
             $indicacaoId = (int) ($row['indicacao_id'] ?? 0);
             $dismissed = !empty($row['status_message_dismissed_at']);
+            $friendSeen = !empty($row['friend_benefit_seen_at']);
             $identifier = indicacao_display_identifier($row, (string) ($row['indicacao_created_at'] ?? $row['created_at'] ?? ''));
 
-            if ($status === ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO) {
-                if ($dismissed) {
-                    continue;
-                }
+            $isApproved = in_array($status, [
+                ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,
+                ValidacaoIndicacao::STATUS_APROVADO,
+            ], true);
 
-                return [
-                    'type' => 'aprovado',
-                    'title' => 'A indicação do ' . $this->identifierAsPossessive($identifier) . ' foi aprovada!',
-                    'body' => 'Seu cupom exclusivo de 10% OFF já está disponível.',
-                    'identifier' => $identifier,
-                    'validacao_id' => $id,
-                    'indicacao_id' => $indicacaoId,
-                ];
-            }
-
-            if ($status === ValidacaoIndicacao::STATUS_APROVADO) {
-                if ($dismissed) {
-                    continue;
-                }
+            if ($isApproved && !$friendSeen && !$dismissed) {
+                $hasCupomForThis = $indicacaoId > 0 && $cupomRepo->cupomExisteParaIndicacao($indicacaoId);
+                $isAdditional = $motivoCode === 'BENEFICIO_JA_LIBERADO' || !$hasCupomForThis;
 
                 if ($motivoCode === 'BENEFICIO_PENDENTE_SEM_ESTOQUE') {
                     return [
@@ -112,6 +105,19 @@ class DashboardController extends Controller
                     ];
                 }
 
+                if ($isAdditional) {
+                    return [
+                        'type' => 'amigo_aprovado',
+                        'title' => 'Mais um amigo foi aprovado! 🎉',
+                        'body' => 'Essa indicação foi concluída com sucesso. Seu amigo já pode receber o cupom de 5% OFF para usar na primeira compra.',
+                        'identifier' => $identifier,
+                        'validacao_id' => $id,
+                        'indicacao_id' => $indicacaoId,
+                        'cta_url' => url('/meus-cupons?destaque=' . $indicacaoId),
+                        'cta_label' => 'Ver benefício do amigo',
+                    ];
+                }
+
                 return [
                     'type' => 'aprovado',
                     'title' => 'A indicação do ' . $this->identifierAsPossessive($identifier) . ' foi aprovada!',
@@ -119,15 +125,13 @@ class DashboardController extends Controller
                     'identifier' => $identifier,
                     'validacao_id' => $id,
                     'indicacao_id' => $indicacaoId,
+                    'cta_url' => url('/meus-cupons?destaque=' . $indicacaoId),
+                    'cta_label' => 'Ver meus cupons',
                 ];
             }
 
-            if ($status === ValidacaoIndicacao::STATUS_REPROVADO) {
-                if ($dismissed) {
-                    continue;
-                }
-
-                return [
+            if ($status === ValidacaoIndicacao::STATUS_REPROVADO && !$dismissed && $reprovadoCard === null) {
+                $reprovadoCard = [
                     'type' => 'reprovado',
                     'title' => 'Não foi possível validar esta indicação',
                     'body' => 'Não foi possível validar a indicação do ' . $this->identifierAsPossessive($identifier) . '.',
@@ -137,19 +141,9 @@ class DashboardController extends Controller
                     'indicacao_id' => $indicacaoId,
                 ];
             }
-
-            if (in_array($status, [
-                ValidacaoIndicacao::STATUS_PENDENTE,
-                ValidacaoIndicacao::STATUS_AGUARDANDO_CADASTRO,
-                ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO,
-                ValidacaoIndicacao::STATUS_EM_ANALISE,
-            ], true)) {
-                // Pendente não gera card hero; lista na página de indicações.
-                continue;
-            }
         }
 
-        return null;
+        return $reprovadoCard;
     }
 
     private function identifierAsPossessive(string $identifier): string
@@ -216,7 +210,10 @@ class DashboardController extends Controller
             $this->redirect('/dashboard');
         }
 
-        $ok = (new Indicacao())->dismissStatusMessage($indicacaoId, $userId);
+        $indicacaoModel = new Indicacao();
+        $ok = $indicacaoModel->dismissStatusMessage($indicacaoId, $userId);
+        $indicacaoModel->markFriendBenefitSeen($indicacaoId, $userId);
+
         if (!$ok) {
             Logger::warning('Falha ao dispensar card de indicação', [
                 'usuario_id' => $userId,
@@ -234,7 +231,12 @@ class DashboardController extends Controller
     {
         AuthMiddleware::requireAuth();
 
+        $wantsJson = $this->wantsJsonResponse();
+
         if (!Csrf::validateRequest()) {
+            if ($wantsJson) {
+                $this->json(['success' => false, 'message' => 'Token de segurança inválido.'], 403);
+            }
             Session::flash('error', 'Token de segurança inválido.');
             $this->redirect('/dashboard');
         }
@@ -242,18 +244,39 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         if ($user === null) {
+            if ($wantsJson) {
+                $this->json(['success' => false, 'message' => 'Não autenticado.'], 401);
+            }
             $this->redirect('/login');
         }
 
         $referral = new ReferralService();
         $inviteLinkService = new InviteLinkService();
         $codigo = (string) $user['codigo_indicador'];
-        $referral->logShare((int) $user['id'], $codigo);
+        $result = $referral->logShare((int) $user['id'], $codigo);
+        $link = $inviteLinkService->getInviteLink($user);
 
-        $this->eventLogger->logLinkCompartilhado((int) $user['id'], $codigo);
+        if ($wantsJson) {
+            $this->json([
+                'success' => true,
+                'logged' => (bool) ($result['logged'] ?? false),
+                'duplicate' => (bool) ($result['duplicate'] ?? false),
+                'message' => 'Compartilhamento iniciado',
+                'inviteLink' => $link,
+            ]);
+        }
 
-        Session::flash('success', 'Link de indicação registrado!');
-        Session::flash('share_link', $inviteLinkService->getInviteLink($user));
+        Session::flash('success', 'Compartilhamento iniciado. Aguardando o cadastro do amigo.');
+        Session::flash('share_link', $link);
         $this->redirect('/dashboard');
+    }
+
+    private function wantsJsonResponse(): bool
+    {
+        $accept = (string) ($_SERVER['HTTP_ACCEPT'] ?? '');
+        $requestedWith = (string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '');
+
+        return str_contains($accept, 'application/json')
+            || strcasecmp($requestedWith, 'XMLHttpRequest') === 0;
     }
 }

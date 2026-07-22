@@ -80,6 +80,8 @@ $showRetryCta = !empty($showRetryCta);
 <script>
     window.__DASHBOARD__ = {
         inviteLink: <?= json_encode($inviteLink, JSON_UNESCAPED_UNICODE) ?>,
-        shareLink: <?= json_encode($shareLink, JSON_UNESCAPED_UNICODE) ?>
+        shareLink: <?= json_encode($shareLink, JSON_UNESCAPED_UNICODE) ?>,
+        shareUrl: <?= json_encode(url('/dashboard/compartilhar'), JSON_UNESCAPED_UNICODE) ?>,
+        csrfToken: <?= json_encode($csrfToken ?? Csrf::token(), JSON_UNESCAPED_UNICODE) ?>
     };
 </script>

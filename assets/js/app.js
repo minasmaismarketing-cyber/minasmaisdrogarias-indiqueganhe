@@ -24,6 +24,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const shareButtons = document.querySelectorAll('#btn-share-native, [data-share-native]');
 
+    async function logShareIntent() {
+        const endpoint = window.__DASHBOARD__?.shareUrl;
+        const csrf = window.__DASHBOARD__?.csrfToken;
+        if (!endpoint || !csrf) {
+            return;
+        }
+        try {
+            const body = new URLSearchParams();
+            body.set('_csrf_token', csrf);
+            await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: body.toString(),
+                credentials: 'same-origin',
+            });
+        } catch (err) {
+            // Registro falhou, mas o compartilhamento do link ainda pode seguir.
+        }
+    }
+
     shareButtons.forEach((shareNativeBtn) => {
         shareNativeBtn.addEventListener('click', async () => {
             const shareUrl = window.__DASHBOARD__?.inviteLink || window.__DASHBOARD__?.shareLink;
@@ -45,10 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
             shareNativeBtn.disabled = true;
 
             try {
+                await logShareIntent();
+
                 if (navigator.share && isMobile) {
                     try {
                         await navigator.share(shareData);
-                        showToast('Compartilhado com sucesso!', 'success');
+                        showToast('Compartilhamento iniciado', 'success');
                     } catch (err) {
                         if (err.name !== 'AbortError') {
                             console.error('Share failed:', err);
@@ -58,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     try {
                         await navigator.clipboard.writeText(shareUrl);
-                        showToast('Link copiado!', 'success');
+                        showToast('Compartilhamento iniciado — link copiado', 'success');
                     } catch (err) {
                         console.error('Copy failed:', err);
                         AppUI.modal({

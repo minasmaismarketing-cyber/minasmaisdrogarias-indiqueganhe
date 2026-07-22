@@ -15,16 +15,25 @@ $type = (string) ($statusCard['type'] ?? '');
 $validacaoId = (int) ($statusCard['validacao_id'] ?? 0);
 $indicacaoId = (int) ($statusCard['indicacao_id'] ?? 0);
 $identifier = trim((string) ($statusCard['identifier'] ?? ''));
+$title = trim((string) ($statusCard['title'] ?? ''));
+$body = trim((string) ($statusCard['body'] ?? ''));
 $motivo = trim((string) ($statusCard['motivo'] ?? ''));
+$ctaUrl = trim((string) ($statusCard['cta_url'] ?? ''));
+$ctaLabel = trim((string) ($statusCard['cta_label'] ?? ''));
+
 if ($motivo === '') {
     $motivo = 'Não foi possível validar esta indicação.';
 }
+if ($ctaUrl === '') {
+    $ctaUrl = url('/meus-cupons' . ($indicacaoId > 0 ? '?destaque=' . $indicacaoId : ''));
+}
 
 $isCelebration = $type === 'aprovado' || $type === 'beneficio_pendente';
+$isAmigo = $type === 'amigo_aprovado';
 $isPendingBenefit = $type === 'beneficio_pendente';
 
 $modifier = match ($type) {
-    'aprovado' => 'success',
+    'aprovado', 'amigo_aprovado' => 'success',
     'beneficio_pendente' => 'warning',
     'reprovado' => 'danger',
     default => 'info',
@@ -32,6 +41,7 @@ $modifier = match ($type) {
 
 $ariaLabel = match ($type) {
     'aprovado' => 'Indicação aprovada, benefício liberado',
+    'amigo_aprovado' => 'Mais um amigo aprovado',
     'beneficio_pendente' => 'Indicação aprovada, benefício pendente',
     'reprovado' => 'Indicação não aprovada',
     default => 'Status da indicação',
@@ -115,13 +125,40 @@ $ariaLabel = match ($type) {
         </div>
 
         <?php if (!$isPendingBenefit): ?>
-            <a href="<?= url('/meus-cupons') ?>" class="btn btn--block btn--primary indicacao-status-card__cta">
-                <span>Ver meu cupom</span>
+            <a href="<?= e($ctaUrl) ?>" class="btn btn--block btn--primary indicacao-status-card__cta">
+                <span><?= e($ctaLabel !== '' ? $ctaLabel : 'Ver meu cupom') ?></span>
                 <svg class="indicacao-status-card__cta-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </a>
         <?php endif; ?>
+    </div>
+</section>
+<?php elseif ($isAmigo): ?>
+<section
+    class="indicacao-status-card indicacao-status-card--premium indicacao-status-card--success indicacao-status-card--amigo indicacao-status-card--standalone"
+    id="indicacao-status-card"
+    data-status-type="<?= e($type) ?>"
+    data-validacao-id="<?= $validacaoId ?>"
+    data-indicacao-id="<?= $indicacaoId ?>"
+    role="status"
+    aria-label="<?= e($ariaLabel) ?>"
+>
+    <div class="indicacao-status-card__glow" aria-hidden="true"></div>
+    <div class="indicacao-status-card__inner indicacao-status-card__inner--premium">
+        <div class="indicacao-status-card__seal-row">
+            <span class="indicacao-status-card__seal indicacao-status-card__seal--ok">Novo amigo</span>
+        </div>
+        <div class="indicacao-status-card__heading" style="margin-bottom:0.75rem;">
+            <h2 class="indicacao-status-card__title"><?= e($title !== '' ? $title : 'Mais um amigo foi aprovado! 🎉') ?></h2>
+        </div>
+        <?php if ($identifier !== ''): ?>
+            <p class="indicacao-status-card__identifier"><?= e($identifier) ?></p>
+        <?php endif; ?>
+        <p class="indicacao-status-card__motivo"><?= e($body) ?></p>
+        <a href="<?= e($ctaUrl) ?>" class="btn btn--block btn--primary indicacao-status-card__cta">
+            <span><?= e($ctaLabel !== '' ? $ctaLabel : 'Ver benefício do amigo') ?></span>
+        </a>
     </div>
 </section>
 <?php else: ?>

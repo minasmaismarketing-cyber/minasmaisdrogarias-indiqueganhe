@@ -434,11 +434,16 @@ class CuponsController extends Controller
             $this->redirect('/login');
         }
 
-        $cupons = $this->cupomRepository->findByUsuario($user['id']);
+        $userId = (int) $user['id'];
+        $cupons = $this->cupomRepository->findByUsuario($userId);
+        $destaqueId = (int) ($_GET['destaque'] ?? 0);
 
         $beneficioShares = [];
+        $indicacaoModel = new Indicacao();
         try {
-            $rows = (new ValidacaoIndicacao())->listByUsuarioIndicador((int) $user['id'], 50, 0);
+            $rows = (new ValidacaoIndicacao())->listByUsuarioIndicador($userId, 50, 0);
+            $unseenIds = [];
+
             foreach ($rows as $row) {
                 $vStatus = (string) ($row['status'] ?? '');
                 $iStatus = (string) ($row['indicacao_status'] ?? '');
@@ -446,15 +451,50 @@ class CuponsController extends Controller
                     continue;
                 }
                 $indicacaoId = (int) ($row['indicacao_id'] ?? 0);
-                $phone = (string) ($row['telefone_indicado'] ?? '');
-                if ($indicacaoId <= 0 || normalize_brazilian_whatsapp_number($phone) === null) {
+                if ($indicacaoId <= 0) {
                     continue;
                 }
+
+                $phone = (string) ($row['telefone_indicado'] ?? '');
+                $phoneOk = normalize_brazilian_whatsapp_number($phone) !== null;
+                $isUnseen = empty($row['friend_benefit_seen_at']);
+                if ($isUnseen) {
+                    $unseenIds[] = $indicacaoId;
+                }
+
                 $beneficioShares[] = [
                     'indicacao_id' => $indicacaoId,
-                    'phone_tail' => mask_whatsapp_phone_tail($phone),
-                    'nome' => trim((string) ($row['nome_indicado'] ?? '')),
+                    'identifier' => indicacao_display_identifier(
+                        $row,
+                        (string) ($row['indicacao_created_at'] ?? $row['created_at'] ?? '')
+                    ),
+                    'phone_tail' => $phoneOk ? mask_phone_for_display($phone) : '',
+                    'phone_ok' => $phoneOk,
+                    'is_novo' => false,
+                    'is_destaque' => false,
+                    'shared_at' => $row['friend_benefit_shared_at'] ?? null,
+                    'created_at' => (string) ($row['indicacao_created_at'] ?? $row['created_at'] ?? ''),
                 ];
+            }
+
+            $novoId = 0;
+            if ($destaqueId > 0 && in_array($destaqueId, $unseenIds, true)) {
+                $novoId = $destaqueId;
+            } elseif ($unseenIds !== []) {
+                $novoId = $unseenIds[0];
+            }
+
+            foreach ($beneficioShares as &$share) {
+                $share['is_novo'] = $novoId > 0 && (int) $share['indicacao_id'] === $novoId;
+                $share['is_destaque'] = $destaqueId > 0 && (int) $share['indicacao_id'] === $destaqueId;
+            }
+            unset($share);
+
+            // Marca visualização após calcular o selo Novo desta resposta.
+            if ($destaqueId > 0) {
+                $indicacaoModel->markFriendBenefitSeen($destaqueId, $userId);
+            } elseif ($novoId > 0) {
+                $indicacaoModel->markFriendBenefitSeen($novoId, $userId);
             }
         } catch (Throwable $e) {
             Logger::warning('Falha ao carregar shares de benefício', ['error' => $e->getMessage()]);
@@ -464,6 +504,7 @@ class CuponsController extends Controller
             'title' => 'Meus Cupons',
             'cupons' => $cupons,
             'beneficioShares' => $beneficioShares,
+            'destaqueId' => $destaqueId,
         ], 'app');
     }
 }

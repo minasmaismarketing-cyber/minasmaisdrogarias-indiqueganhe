@@ -151,20 +151,42 @@
                     <path d="M6 11h12v8.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19.5V11z" stroke="currentColor" stroke-width="1.75"/>
                     <path d="M8.5 11c0-2.2 1.3-4 3.5-4s3.5 1.8 3.5 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
                 </svg>
-                Benefício do amigo
+                Benefícios dos amigos
             </h2>
 
-            <div class="beneficio-amigo-list" aria-label="Avisar amigos indicados">
+            <div class="beneficio-amigo-list" aria-label="Benefícios de 5% dos amigos indicados">
                 <?php foreach ($beneficioShares as $share): ?>
-                    <article class="beneficio-amigo-card">
+                    <?php
+                    $shareId = (int) ($share['indicacao_id'] ?? 0);
+                    $isNovo = !empty($share['is_novo']);
+                    $isDestaque = !empty($share['is_destaque']) || $isNovo;
+                    $phoneOk = !empty($share['phone_ok']);
+                    $identifier = (string) ($share['identifier'] ?? 'Indicação aprovada');
+                    $phoneTail = (string) ($share['phone_tail'] ?? '');
+                    $sharedAt = $share['shared_at'] ?? null;
+                    $sharedLabel = '';
+                    if (!empty($sharedAt) && strtotime((string) $sharedAt) !== false) {
+                        $sharedLabel = 'Compartilhamento iniciado em ' . date('d/m/Y', strtotime((string) $sharedAt));
+                    }
+                    $cardId = 'beneficio-amigo-' . $shareId;
+                    ?>
+                    <article
+                        id="<?= e($cardId) ?>"
+                        class="beneficio-amigo-card<?= $isDestaque ? ' beneficio-amigo-card--novo' : '' ?>"
+                        <?= $isDestaque ? 'data-highlight="1"' : '' ?>
+                    >
                         <div class="beneficio-amigo-card__accent" aria-hidden="true"></div>
                         <div class="beneficio-amigo-card__inner">
                             <div class="beneficio-amigo-card__body">
                                 <div class="beneficio-amigo-card__main">
+                                    <?php if ($isNovo): ?>
+                                        <span class="beneficio-amigo-card__novo-seal">Novo</span>
+                                    <?php endif; ?>
                                     <span class="beneficio-amigo-card__off-badge" aria-hidden="true">5% OFF</span>
-                                    <h3 class="beneficio-amigo-card__title">Seu amigo também ganhou! 🎉</h3>
+                                    <h3 class="beneficio-amigo-card__title"><?= e($identifier) ?></h3>
                                     <p class="beneficio-amigo-card__text">
-                                        Avise que o cupom de 5% OFF já está disponível e convide seu amigo a participar do Indique e Ganhe.
+                                        Indicação aprovada. Seu amigo ganhou 5% OFF na primeira compra
+                                        (válido por 30 dias após a liberação).
                                     </p>
                                 </div>
                                 <div class="beneficio-amigo-card__art" aria-hidden="true">
@@ -178,20 +200,31 @@
                             </div>
 
                             <div class="beneficio-amigo-card__actions">
-                                <form method="POST" action="<?= url('/indicacoes/' . (int) $share['indicacao_id'] . '/compartilhar-beneficio') ?>">
-                                    <?= csrf_field() ?>
-                                    <button type="submit" class="btn btn--block beneficio-amigo-card__whatsapp">
-                                        <svg class="beneficio-amigo-card__wa-icon" viewBox="0 0 24 24" aria-hidden="true">
-                                            <path fill="currentColor" d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.14 6.44 2.14 11.9c0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.02zm-7.01 15.24h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.37c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.24-8.23 8.24zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.4-.12-.56.12-.17.25-.64.8-.79.97-.14.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.3.37-.44.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07s.88 2.4 1 2.56c.12.17 1.75 2.67 4.25 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z"/>
-                                        </svg>
-                                        Enviar benefício ao amigo
+                                <?php if ($phoneOk): ?>
+                                    <form method="POST" action="<?= url('/indicacoes/' . $shareId . '/compartilhar-beneficio') ?>">
+                                        <?= csrf_field() ?>
+                                        <button type="submit" class="btn btn--block beneficio-amigo-card__whatsapp">
+                                            <svg class="beneficio-amigo-card__wa-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path fill="currentColor" d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2C6.58 2 2.14 6.44 2.14 11.9c0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38c1.45.79 3.08 1.21 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.02zm-7.01 15.24h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.14.82.84-3.06-.2-.31a8.2 8.2 0 0 1-1.26-4.37c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.24-8.23 8.24zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.4-.12-.56.12-.17.25-.64.8-.79.97-.14.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.3.37-.44.12-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07s.88 2.4 1 2.56c.12.17 1.75 2.67 4.25 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29z"/>
+                                            </svg>
+                                            Avisar meu amigo pelo WhatsApp
+                                        </button>
+                                    </form>
+                                    <?php if ($sharedLabel !== ''): ?>
+                                        <p class="beneficio-amigo-card__shared"><?= e($sharedLabel) ?></p>
+                                    <?php endif; ?>
+                                    <?php if ($phoneTail !== ''): ?>
+                                        <p class="beneficio-amigo-card__hint">
+                                            WhatsApp final <?= e($phoneTail) ?>
+                                        </p>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <button type="button" class="btn btn--block btn--outline" disabled>
+                                        Avisar meu amigo pelo WhatsApp
                                     </button>
-                                </form>
+                                    <p class="beneficio-amigo-card__hint">Telefone indisponível para envio.</p>
+                                <?php endif; ?>
                             </div>
-
-                            <p class="beneficio-amigo-card__hint">
-                                Enviar para o WhatsApp final <?= e((string) $share['phone_tail']) ?>
-                            </p>
                         </div>
                     </article>
                 <?php endforeach; ?>
@@ -199,3 +232,14 @@
         </section>
     <?php endif; ?>
 </div>
+
+<?php if (!empty($destaqueId)): ?>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('beneficio-amigo-<?= (int) $destaqueId ?>');
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+</script>
+<?php endif; ?>

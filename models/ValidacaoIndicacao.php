@@ -428,7 +428,7 @@ class ValidacaoIndicacao extends Model
                 $historyNote = ($automatic ? 'Indicação aprovada automaticamente' : 'Validação aprovada')
                     . '. Indicação aprovada, mas sem cupom disponível.';
             } elseif ($motivo === 'BENEFICIO_JA_LIBERADO') {
-                $historyNote = 'Benefício já liberado anteriormente para este indicador. Novo cupom não foi atribuído.';
+                $historyNote = 'Indicação aprovada. Amigo elegível ao cupom de 5%. Benefício do indicador já concedido anteriormente.';
             } elseif ($cupomAssigned) {
                 $historyNote = ($automatic ? 'Indicação aprovada automaticamente. Cupom liberado.' : ($observacao . '. Cupom liberado.'));
             }
@@ -668,6 +668,12 @@ class ValidacaoIndicacao extends Model
         $dismissSelect = $this->indicacaoHasDismissColumn()
             ? 'i.status_message_dismissed_at'
             : 'NULL AS status_message_dismissed_at';
+        $seenSelect = $this->indicacaoHasFriendBenefitSeenColumn()
+            ? 'i.friend_benefit_seen_at'
+            : 'NULL AS friend_benefit_seen_at';
+        $sharedSelect = $this->indicacaoHasFriendBenefitSharedColumn()
+            ? 'i.friend_benefit_shared_at'
+            : 'NULL AS friend_benefit_shared_at';
 
         $stmt = $this->db->prepare(
             "SELECT v.*,
@@ -677,7 +683,9 @@ class ValidacaoIndicacao extends Model
                     i.cpf_indicado,
                     i.status AS indicacao_status,
                     i.created_at AS indicacao_created_at,
-                    {$dismissSelect}
+                    {$dismissSelect},
+                    {$seenSelect},
+                    {$sharedSelect}
              FROM validacao_indicacoes v
              LEFT JOIN indicacoes i ON v.indicacao_id = i.id
              WHERE v.usuario_indicador_id = :usuario_id
@@ -700,6 +708,40 @@ class ValidacaoIndicacao extends Model
 
         try {
             $stmt = $this->db->query("SHOW COLUMNS FROM indicacoes LIKE 'status_message_dismissed_at'");
+            $cached = $stmt !== false && (bool) $stmt->fetch();
+        } catch (Throwable) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+
+    private function indicacaoHasFriendBenefitSeenColumn(): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM indicacoes LIKE 'friend_benefit_seen_at'");
+            $cached = $stmt !== false && (bool) $stmt->fetch();
+        } catch (Throwable) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+
+    private function indicacaoHasFriendBenefitSharedColumn(): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM indicacoes LIKE 'friend_benefit_shared_at'");
             $cached = $stmt !== false && (bool) $stmt->fetch();
         } catch (Throwable) {
             $cached = false;

@@ -172,7 +172,7 @@ class Evento extends Model
             self::EVENTO_LOGIN => 'Login',
             self::EVENTO_CADASTRO => 'Cadastro',
             self::EVENTO_LINK_GERADO => 'Link Gerado',
-            self::EVENTO_LINK_COMPARTILHADO => 'Link Compartilhado',
+            self::EVENTO_LINK_COMPARTILHADO => 'Compartilhamento iniciado',
             self::EVENTO_LINK_CLICADO => 'Link Clicado',
             self::EVENTO_CONVITE_ABERTO => 'Convite Aberto',
             self::EVENTO_PERFIL_EDITADO => 'Perfil Editado',
@@ -251,5 +251,50 @@ class Evento extends Model
         ]);
 
         return (bool) $stmt->fetch();
+    }
+
+    /** Rate limit de compartilhamento do link (evita duplo clique). */
+    public function hasRecentLinkShare(int $usuarioId, string $codigo, int $withinSeconds = 3): bool
+    {
+        $withinSeconds = max(1, min(30, $withinSeconds));
+        $codigo = strtoupper(trim($codigo));
+        $stmt = $this->db->prepare(
+            'SELECT id FROM eventos
+             WHERE usuario_id = :usuario_id
+               AND evento = :evento
+               AND referencia = :referencia
+               AND created_at >= DATE_SUB(NOW(), INTERVAL ' . $withinSeconds . ' SECOND)
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'usuario_id' => $usuarioId,
+            'evento' => self::EVENTO_LINK_COMPARTILHADO,
+            'referencia' => $codigo,
+        ]);
+
+        return (bool) $stmt->fetch();
+    }
+
+    /**
+     * Compartilhamentos iniciados pelo indicador (para histórico).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function listLinkSharesByUsuario(int $usuarioId, int $limit = 50, int $offset = 0): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM eventos
+             WHERE usuario_id = :usuario_id
+               AND evento = :evento
+             ORDER BY created_at DESC, id DESC
+             LIMIT :limit OFFSET :offset'
+        );
+        $stmt->bindValue('usuario_id', $usuarioId, PDO::PARAM_INT);
+        $stmt->bindValue('evento', self::EVENTO_LINK_COMPARTILHADO);
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
     }
 }

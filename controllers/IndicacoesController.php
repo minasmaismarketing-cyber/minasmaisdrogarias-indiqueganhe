@@ -22,15 +22,51 @@ class IndicacoesController extends Controller
         $historicoValidacoes = [];
         $validacaoStats = ['total' => 0, 'aprovados' => 0, 'reprovados' => 0, 'beneficios_liberados' => 0];
         $total = 0;
+        $timeline = [];
 
         try {
             $validacaoModel = new ValidacaoIndicacao();
             $validacaoStats = $validacaoModel->statsUsuarioIndicador($userId);
             $total = $validacaoModel->countByUsuarioIndicador($userId);
             $historicoValidacoes = $validacaoModel->listByUsuarioIndicador($userId, $limit, $offset);
+
+            foreach ($historicoValidacoes as $v) {
+                $createdAt = (string) ($v['indicacao_created_at'] ?? $v['created_at'] ?? '');
+                $timeline[] = [
+                    'kind' => 'indicacao',
+                    'sort_at' => $createdAt,
+                    'row' => $v,
+                ];
+            }
         } catch (Throwable $e) {
             Logger::warning('Falha ao carregar validacao_indicacoes', ['error' => $e->getMessage()]);
         }
+
+        // Compartilhamentos entram na 1ª página do histórico (atividades, não pessoas).
+        if ($page === 1) {
+            try {
+                $shares = (new Evento())->listLinkSharesByUsuario($userId, 30, 0);
+                foreach ($shares as $share) {
+                    $timeline[] = [
+                        'kind' => 'compartilhamento',
+                        'sort_at' => (string) ($share['created_at'] ?? ''),
+                        'row' => $share,
+                    ];
+                }
+            } catch (Throwable $e) {
+                Logger::warning('Falha ao carregar compartilhamentos', ['error' => $e->getMessage()]);
+            }
+        }
+
+        usort($timeline, static function (array $a, array $b): int {
+            $ta = strtotime((string) ($a['sort_at'] ?? '')) ?: 0;
+            $tb = strtotime((string) ($b['sort_at'] ?? '')) ?: 0;
+            if ($ta === $tb) {
+                return 0;
+            }
+
+            return $tb <=> $ta;
+        });
 
         $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
 
@@ -38,6 +74,7 @@ class IndicacoesController extends Controller
             'title' => 'Minhas Indicações',
             'user' => $user,
             'historicoValidacoes' => $historicoValidacoes,
+            'timeline' => $timeline,
             'validacaoStats' => $validacaoStats,
             'currentPage' => $page,
             'totalPages' => $totalPages,
@@ -103,9 +140,9 @@ class IndicacoesController extends Controller
             Logger::warning('Telefone inválido para compartilhar benefício', [
                 'usuario_id' => $userId,
                 'indicacao_id' => $indicacaoId,
-                'telefone' => mask_whatsapp_phone_tail($telefoneRaw),
+                'telefone' => mask_phone_for_display($telefoneRaw),
             ]);
-            Session::flash('error', 'Não foi possível abrir o WhatsApp porque o telefone informado não é válido.');
+            Session::flash('error', 'Telefone indisponível para envio.');
             $this->redirect($backPath);
         }
 
@@ -114,6 +151,9 @@ class IndicacoesController extends Controller
         if (!$alreadyRecent) {
             (new EventLogger())->logBeneficioWhatsappOpened($userId, $indicacaoId);
         }
+
+        $indicacaoModel->markFriendBenefitShared($indicacaoId, $userId);
+        $indicacaoModel->markFriendBenefitSeen($indicacaoId, $userId);
 
         $message = beneficio_indicado_whatsapp_message();
         $url = 'https://wa.me/' . $whatsapp . '?text=' . rawurlencode($message);
