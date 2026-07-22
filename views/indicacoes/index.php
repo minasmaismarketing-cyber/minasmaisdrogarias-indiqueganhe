@@ -62,7 +62,7 @@ declare(strict_types=1);
                         $vStatus === ValidacaoIndicacao::STATUS_REPROVADO => indicacao_friendly_reject_reason($motivoCode),
                         $vStatus === ValidacaoIndicacao::STATUS_EM_ANALISE,
                         $vStatus === ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO => 'Aguardando validação',
-                        default => 'Aguardando o cadastro do amigo',
+                        default => 'Link compartilhado — aguardando retorno da validação.',
                     };
                     $badgeLabel = match (true) {
                         $vStatus === ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,

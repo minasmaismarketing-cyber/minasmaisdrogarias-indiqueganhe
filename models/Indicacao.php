@@ -99,12 +99,6 @@ class Indicacao extends Model
                 FROM indicacoes i
                 LEFT JOIN validacao_indicacoes v ON v.indicacao_id = i.id
                 WHERE i.usuario_id = :usuario_id
-                  AND (
-                      NULLIF(TRIM(COALESCE(i.cpf_indicado, '')), '') IS NOT NULL
-                      OR NULLIF(TRIM(COALESCE(i.email_indicado, '')), '') IS NOT NULL
-                      OR NULLIF(TRIM(COALESCE(i.telefone_indicado, '')), '') IS NOT NULL
-                      OR v.id IS NOT NULL
-                  )
              ) scoped"
         );
 
@@ -245,6 +239,7 @@ class Indicacao extends Model
 
     /**
      * Única indicação aberta do indicador (AGUARDANDO / LINK_ACESSADO / CADASTRO_PENDENTE).
+     * Preferência: mais recente (uso em link access / rate-limit).
      *
      * @return array<string, mixed>|null
      */
@@ -256,6 +251,36 @@ class Indicacao extends Model
              WHERE i.usuario_id = :usuario_id
                AND i.status IN (:aguardando, :link, :cadastro)
              ORDER BY i.id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'usuario_id' => $usuarioId,
+            'aguardando' => self::STATUS_AGUARDANDO,
+            'link' => self::STATUS_LINK_ACESSADO,
+            'cadastro' => self::STATUS_CADASTRO_PENDENTE,
+        ]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /**
+     * Shell pendente vazio mais antigo (FIFO para retorno KOBE).
+     * Sem CPF, e-mail nem telefone — ainda não vinculado a uma pessoa.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findOldestEmptyPendingShell(int $usuarioId): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT i.*
+             FROM indicacoes i
+             WHERE i.usuario_id = :usuario_id
+               AND i.status IN (:aguardando, :link, :cadastro)
+               AND (i.cpf_indicado IS NULL OR TRIM(i.cpf_indicado) = \'\')
+               AND (i.email_indicado IS NULL OR TRIM(i.email_indicado) = \'\')
+               AND (i.telefone_indicado IS NULL OR TRIM(i.telefone_indicado) = \'\')
+             ORDER BY i.id ASC
              LIMIT 1'
         );
         $stmt->execute([

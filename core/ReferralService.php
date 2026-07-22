@@ -77,7 +77,7 @@ class ReferralService
     /**
      * Registra acionamento do compartilhamento.
      * - Evento LINK_COMPARTILHADO: auditoria interna (não exibido no histórico).
-     * - Garante uma indicação "aguardando" para evoluir com o retorno da KOBE.
+     * - Cria sempre um novo registro em indicacoes (um shell por clique válido).
      *
      * @return array{logged: bool, duplicate: bool, indicacao_id: int|null}
      */
@@ -86,6 +86,7 @@ class ReferralService
         $codigo = strtoupper(trim($codigo));
         $eventoModel = new Evento();
 
+        // Janela curta anti duplo-clique; cliques intencionais após ~3s geram novo shell.
         if ($eventoModel->hasRecentLinkShare($userId, $codigo, 3)) {
             $open = $this->indicacaoModel->findOpenByReferrer($userId);
 
@@ -485,6 +486,7 @@ class ReferralService
         string $telefoneIndicado,
         ?string $idempotencyKey
     ): array {
+        // 1) Idempotência / mesma pessoa já vinculada.
         if ($idempotencyKey !== null) {
             $byKey = $this->indicacaoModel->findByIdempotencyKey($idempotencyKey);
             if ($byKey !== null && (int) $byKey['usuario_id'] === $referrerId) {
@@ -492,23 +494,9 @@ class ReferralService
             }
         }
 
-        // Mesma pessoa (CPF/telefone/e-mail) → atualiza o registro existente (qualquer status).
-        // Pessoa diferente → nunca reutiliza só por codigoIndicador.
         $byCpf = $this->indicacaoModel->findByReferrerAndCpf($referrerId, $cpfIndicado);
         if ($byCpf !== null) {
             return ['indicacao_id' => (int) $byCpf['id'], 'strategy' => 'codigo_cpf'];
-        }
-
-        // Telefone pode ser compartilhado entre pessoas diferentes: só reutiliza
-        // se CPF/e-mail da indicação aberta estiverem vazios ou coincidirem.
-        $byPhone = $this->indicacaoModel->findActiveByReferrerAndPhone($referrerId, $telefoneIndicado);
-        if ($byPhone !== null && $this->openIndicacaoCompatibleWithPayload(
-            $byPhone,
-            $cpfIndicado,
-            $emailIndicado,
-            $telefoneIndicado
-        )) {
-            return ['indicacao_id' => (int) $byPhone['id'], 'strategy' => 'codigo_telefone'];
         }
 
         $byEmail = $this->indicacaoModel->findByReferrerAndEmail($referrerId, $emailIndicado);
@@ -516,16 +504,30 @@ class ReferralService
             return ['indicacao_id' => (int) $byEmail['id'], 'strategy' => 'codigo_email'];
         }
 
-        $open = $this->indicacaoModel->findOpenByReferrer($referrerId);
-        if ($open !== null && $this->openIndicacaoCompatibleWithPayload(
-            $open,
+        // Telefone não identifica pessoa sozinho (pode ser compartilhado).
+        // Só reutiliza se o registro já tiver CPF/e-mail compatíveis com o payload.
+        $byPhone = $this->indicacaoModel->findActiveByReferrerAndPhone($referrerId, $telefoneIndicado);
+        if ($byPhone !== null && $this->openIndicacaoCompatibleWithPayload(
+            $byPhone,
             $cpfIndicado,
             $emailIndicado,
             $telefoneIndicado
         )) {
-            return ['indicacao_id' => (int) $open['id'], 'strategy' => 'indicacao_aberta'];
+            $existingCpf = Validator::onlyDigits((string) ($byPhone['cpf_indicado'] ?? ''));
+            $existingEmail = strtolower(trim((string) ($byPhone['email_indicado'] ?? '')));
+            if ($existingCpf !== '' || $existingEmail !== '') {
+                return ['indicacao_id' => (int) $byPhone['id'], 'strategy' => 'codigo_telefone'];
+            }
         }
 
+        // 2) Shell pendente vazio mais antigo (FIFO dos compartilhamentos).
+        // Sem referência individual da KOBE: preenche na ordem cronológica.
+        $emptyShell = $this->indicacaoModel->findOldestEmptyPendingShell($referrerId);
+        if ($emptyShell !== null) {
+            return ['indicacao_id' => (int) $emptyShell['id'], 'strategy' => 'shell_pendente_fifo'];
+        }
+
+        // 3) Sem shell → cria indicação a partir do retorno.
         $db = Database::getConnection();
         $codigoReferencia = $this->generateCodigoReferencia();
         $stmt = $db->prepare(
@@ -547,9 +549,9 @@ class ReferralService
     }
 
     /**
-     * Indicação aberta só pode receber o payload KOBE se estiver vazia
-     * (share/clique) ou se CPF/e-mail coincidirem.
-     * Telefone sozinho NÃO identifica a pessoa (pode ser compartilhado).
+     * Indicação só recebe o payload se estiver vazia (shell) ou se CPF/e-mail
+     * coincidirem com a mesma pessoa. Telefone sozinho não decide.
+     * Nunca sobrescreve CPF/e-mail de outra pessoa.
      *
      * @param array<string, mixed> $open
      */
@@ -559,14 +561,15 @@ class ReferralService
         string $emailIndicado,
         string $telefoneIndicado
     ): bool {
-        unset($telefoneIndicado); // telefone não decide compatibilidade de pessoa
+        unset($telefoneIndicado);
 
         $existingCpf = Validator::onlyDigits((string) ($open['cpf_indicado'] ?? ''));
         $existingEmail = strtolower(trim((string) ($open['email_indicado'] ?? '')));
+        $existingPhone = Validator::onlyDigits((string) ($open['telefone_indicado'] ?? ''));
         $emailIndicado = strtolower(trim($emailIndicado));
 
-        // Shell sem identidade cadastral (ex.: só compartilhamento) pode receber o payload.
-        if ($existingCpf === '' && $existingEmail === '') {
+        // Shell totalmente vazio (compartilhamento sem retorno).
+        if ($existingCpf === '' && $existingEmail === '' && $existingPhone === '') {
             return true;
         }
 
@@ -938,13 +941,12 @@ class ReferralService
         return substr($digits, 0, 3) . '.***.***-' . substr($digits, -2);
     }
 
+    /**
+     * Cria sempre um novo shell de indicação por compartilhamento válido.
+     * Não reutiliza shell pendente anterior.
+     */
     private function recordShare(int $usuarioId, string $codigo): int
     {
-        $open = $this->indicacaoModel->findOpenByReferrer($usuarioId);
-        if ($open !== null) {
-            return (int) $open['id'];
-        }
-
         $db = Database::getConnection();
         $codigoReferencia = $this->generateCodigoReferencia();
         $stmt = $db->prepare(
