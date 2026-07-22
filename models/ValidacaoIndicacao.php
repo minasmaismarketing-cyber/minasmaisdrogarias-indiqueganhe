@@ -618,19 +618,20 @@ class ValidacaoIndicacao extends Model
     public static function motivoLabel(string $motivo): string
     {
         return match ($motivo) {
-            'CPF_EXISTENTE', 'CPF_JA_CADASTRADO' => 'CPF já cadastrado',
-            'EMAIL_JA_CADASTRADO' => 'E-mail já cadastrado',
-            'TELEFONE_JA_CADASTRADO' => 'Telefone já cadastrado',
-            'USUARIO_JA_CADASTRADO' => 'Usuário já cadastrado',
-            'CPF_JA_PARTICIPOU', 'JA_PARTICIPOU' => 'CPF já participou',
-            'AUTOINDICACAO', 'AUTO_INDICACAO' => 'Autoindicação',
-            'APP_JA_EXISTENTE' => 'App já existente (reengagement)',
+            'CPF_EXISTENTE', 'CPF_JA_CADASTRADO' => 'Este CPF já possui cadastro.',
+            'EMAIL_JA_CADASTRADO' => 'Este e-mail já possui cadastro.',
+            'TELEFONE_JA_CADASTRADO' => 'Este telefone já possui cadastro.',
+            'USUARIO_JA_CADASTRADO' => 'Este CPF já possui cadastro.',
+            'CPF_JA_PARTICIPOU', 'JA_PARTICIPOU' => 'Este CPF já participou da campanha.',
+            'AUTOINDICACAO', 'AUTO_INDICACAO' => 'Não é permitido indicar a si mesmo.',
+            'APP_JA_EXISTENTE' => 'Não foi possível validar esta indicação.',
+            'CADASTRO_INCOMPLETO' => 'O cadastro no aplicativo não foi concluído.',
+            'DADOS_INVALIDOS' => 'Não foi possível validar os dados informados.',
             'BENEFICIO_PENDENTE_SEM_ESTOQUE' => 'Indicação aprovada, mas sem cupom disponível.',
-            'BENEFICIO_JA_LIBERADO' => 'Benefício já liberado anteriormente',
-            'CAMPANHA_INATIVA' => 'Campanha inativa',
-            'CAMPANHA_EXPIRADA' => 'Campanha expirada',
-            'INVALIDO' => 'Inválido',
-            default => $motivo,
+            'BENEFICIO_JA_LIBERADO' => 'Benefício já liberado anteriormente.',
+            'CAMPANHA_INATIVA', 'CAMPANHA_EXPIRADA', 'CAMPANHA_ENCERRADA' => 'A campanha já foi encerrada.',
+            'INVALIDO' => 'Não foi possível validar esta indicação.',
+            default => indicacao_friendly_reject_reason($motivo),
         };
     }
 
@@ -664,19 +665,47 @@ class ValidacaoIndicacao extends Model
     /** @return array<int, array<string, mixed>> */
     public function listByUsuarioIndicador(int $usuarioId, int $limit = 50, int $offset = 0): array
     {
+        $dismissSelect = $this->indicacaoHasDismissColumn()
+            ? 'i.status_message_dismissed_at'
+            : 'NULL AS status_message_dismissed_at';
+
         $stmt = $this->db->prepare(
-            'SELECT v.*, i.nome_indicado, i.telefone_indicado, i.status as indicacao_status
+            "SELECT v.*,
+                    i.nome_indicado,
+                    i.telefone_indicado,
+                    i.email_indicado,
+                    i.cpf_indicado,
+                    i.status AS indicacao_status,
+                    i.created_at AS indicacao_created_at,
+                    {$dismissSelect}
              FROM validacao_indicacoes v
              LEFT JOIN indicacoes i ON v.indicacao_id = i.id
              WHERE v.usuario_indicador_id = :usuario_id
-             ORDER BY v.created_at DESC
-             LIMIT :limit OFFSET :offset'
+             ORDER BY COALESCE(i.created_at, v.created_at) DESC, v.id DESC
+             LIMIT :limit OFFSET :offset"
         );
         $stmt->bindValue('usuario_id', $usuarioId, PDO::PARAM_INT);
         $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    private function indicacaoHasDismissColumn(): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM indicacoes LIKE 'status_message_dismissed_at'");
+            $cached = $stmt !== false && (bool) $stmt->fetch();
+        } catch (Throwable) {
+            $cached = false;
+        }
+
+        return $cached;
     }
 
     public static function statusLabel(string $status): string

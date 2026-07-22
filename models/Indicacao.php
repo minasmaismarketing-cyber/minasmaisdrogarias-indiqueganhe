@@ -501,6 +501,68 @@ class Indicacao extends Model
         return $row ?: null;
     }
 
+    /**
+     * Persiste ciência do card de status ("Entendi") na indicação do usuário.
+     */
+    public function dismissStatusMessage(int $indicacaoId, int $usuarioId): bool
+    {
+        if (!$this->hasStatusMessageDismissedColumn()) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            'UPDATE indicacoes
+             SET status_message_dismissed_at = NOW(), updated_at = NOW()
+             WHERE id = :id
+               AND usuario_id = :usuario_id
+               AND status_message_dismissed_at IS NULL'
+        );
+        $stmt->execute([
+            'id' => $indicacaoId,
+            'usuario_id' => $usuarioId,
+        ]);
+
+        return $stmt->rowCount() > 0 || $this->isStatusMessageDismissedForUser($indicacaoId, $usuarioId);
+    }
+
+    public function isStatusMessageDismissedForUser(int $indicacaoId, int $usuarioId): bool
+    {
+        if (!$this->hasStatusMessageDismissedColumn()) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT status_message_dismissed_at
+             FROM indicacoes
+             WHERE id = :id AND usuario_id = :usuario_id
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'id' => $indicacaoId,
+            'usuario_id' => $usuarioId,
+        ]);
+        $row = $stmt->fetch();
+
+        return $row !== false && !empty($row['status_message_dismissed_at']);
+    }
+
+    private function hasStatusMessageDismissedColumn(): bool
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM indicacoes LIKE 'status_message_dismissed_at'");
+            $cached = $stmt !== false && (bool) $stmt->fetch();
+        } catch (Throwable) {
+            $cached = false;
+        }
+
+        return $cached;
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function listAll(int $limit = 100): array
     {

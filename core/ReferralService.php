@@ -309,7 +309,8 @@ class ReferralService
             );
         }
 
-        // CPF é o identificador principal. REENGAGEMENT NÃO reprova automaticamente.
+        // CPF é o identificador principal. INSTALL e REENGAGEMENT são eventos válidos:
+        // não reprovar por app já instalado, reinstalação, dispositivo ou IP.
         if ($this->indicacaoModel->cpfAlreadyParticipated($cpfIndicado, $indicacaoId)) {
             return $this->rejectLocatedIndication(
                 $validacaoId,
@@ -389,7 +390,8 @@ class ReferralService
             return $this->storeAndReturnIdempotent($idempotencyKey, $response);
         }
 
-        // INSTALL e REENGAGEMENT elegíveis: aprovação automática + cupom (um por indicador)
+        // INSTALL e REENGAGEMENT: validação cadastral + aprovação automática se elegível.
+        // Existência atual/anterior do app no aparelho NÃO invalida a indicação.
         $db = Database::getConnection();
         $ownTx = !$db->inTransaction();
         if ($ownTx) {
@@ -484,7 +486,12 @@ class ReferralService
         }
 
         $open = $this->indicacaoModel->findOpenByReferrer($referrerId);
-        if ($open !== null) {
+        if ($open !== null && $this->openIndicacaoCompatibleWithPayload(
+            $open,
+            $cpfIndicado,
+            $emailIndicado,
+            $telefoneIndicado
+        )) {
             return ['indicacao_id' => (int) $open['id'], 'strategy' => 'indicacao_aberta'];
         }
 
@@ -506,6 +513,40 @@ class ReferralService
         $this->ensureValidacaoForIndicacao($newId, $referrerId, null);
 
         return ['indicacao_id' => $newId, 'strategy' => 'nova_indicacao'];
+    }
+
+    /**
+     * Indicação aberta só pode receber o payload KOBE se estiver vazia
+     * (share/clique) ou se os dados cadastrais coincidirem.
+     * Evita sobrescrever um retorno anterior com outro indicado.
+     *
+     * @param array<string, mixed> $open
+     */
+    private function openIndicacaoCompatibleWithPayload(
+        array $open,
+        string $cpfIndicado,
+        string $emailIndicado,
+        string $telefoneIndicado
+    ): bool {
+        $existingCpf = Validator::onlyDigits((string) ($open['cpf_indicado'] ?? ''));
+        $existingEmail = strtolower(trim((string) ($open['email_indicado'] ?? '')));
+        $existingPhone = Validator::onlyDigits((string) ($open['telefone_indicado'] ?? ''));
+
+        if ($existingCpf === '' && $existingEmail === '' && $existingPhone === '') {
+            return true;
+        }
+
+        if ($existingCpf !== '' && $existingCpf === $cpfIndicado) {
+            return true;
+        }
+        if ($existingEmail !== '' && $existingEmail === strtolower(trim($emailIndicado))) {
+            return true;
+        }
+        if ($existingPhone !== '' && $existingPhone === $telefoneIndicado) {
+            return true;
+        }
+
+        return false;
     }
 
     /** @param array<string, mixed> $indicacao */

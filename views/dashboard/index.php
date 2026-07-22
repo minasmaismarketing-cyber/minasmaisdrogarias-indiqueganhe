@@ -5,6 +5,7 @@ declare(strict_types=1);
 $userFirstName = explode(' ', trim((string) $user['nome']))[0] ?? '';
 $shareLink = Session::flash('share_link') ?? $inviteLink;
 $stats = $stats ?? ['total' => 0, 'validadas' => 0, 'pendentes' => 0, 'liberadas' => 0];
+$showRetryCta = !empty($showRetryCta);
 ?>
 
 <div class="home-stack">
@@ -14,6 +15,30 @@ $stats = $stats ?? ['total' => 0, 'validadas' => 0, 'pendentes' => 0, 'liberadas
     </section>
 
     <?php require BASE_PATH . '/views/partials/indicacao-status-card.php'; ?>
+
+    <?php if ($showRetryCta): ?>
+        <section
+            class="indicacao-status-card indicacao-status-card--info indicacao-status-card--standalone"
+            id="indicacao-retry-cta"
+            role="region"
+            aria-label="Tentar nova indicação"
+        >
+            <div class="indicacao-status-card__inner">
+                <div class="indicacao-status-card__heading">
+                    <h2 class="indicacao-status-card__title">Que tal tentar novamente?</h2>
+                </div>
+                <div class="indicacao-status-card__content">
+                    <p class="indicacao-status-card__motivo">
+                        Compartilhe seu link com outra pessoa. Quando a indicação for aprovada, seu
+                        benefício será liberado.
+                    </p>
+                    <button type="button" class="btn btn--block btn--primary" id="btn-retry-share" data-share-native>
+                        Fazer nova indicação
+                    </button>
+                </div>
+            </div>
+        </section>
+    <?php endif; ?>
 
     <section class="stats-grid stats-grid--home" aria-label="Resumo das indicações">
         <article class="stat-card">

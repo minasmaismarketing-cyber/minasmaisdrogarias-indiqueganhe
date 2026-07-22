@@ -319,6 +319,125 @@ function mask_whatsapp_phone_tail(string $phone): string
     return '••' . substr($digits, -2);
 }
 
+/**
+ * Telefone mascarado para exibição (ex.: ••5296).
+ * Nunca retorna o valor completo.
+ */
+function mask_phone_for_display(?string $phone): string
+{
+    $digits = preg_replace('/\D+/', '', (string) $phone) ?? '';
+    if ($digits === '') {
+        return '••••';
+    }
+    if (strlen($digits) <= 4) {
+        return '••' . $digits;
+    }
+
+    return '••' . substr($digits, -4);
+}
+
+/**
+ * E-mail mascarado para exibição (ex.: d***@gmail.com).
+ * Nunca retorna o valor completo.
+ */
+function mask_email_for_display(?string $email): string
+{
+    $email = strtolower(trim((string) $email));
+    if ($email === '' || !str_contains($email, '@')) {
+        return '***@***';
+    }
+
+    [$local, $domain] = explode('@', $email, 2);
+    $local = trim($local);
+    $domain = trim($domain);
+    if ($local === '' || $domain === '') {
+        return '***@***';
+    }
+
+    $first = substr($local, 0, 1);
+
+    return $first . '***@' . $domain;
+}
+
+/**
+ * CPF mascarado para exibição (ex.: ***.***.***-78).
+ * Nunca retorna o valor completo.
+ */
+function mask_cpf_for_display(?string $cpf): string
+{
+    $digits = preg_replace('/\D+/', '', (string) $cpf) ?? '';
+    if ($digits === '') {
+        return '***.***.***-**';
+    }
+    $tail = substr($digits, -2);
+    if (strlen($tail) < 2) {
+        $tail = str_pad($tail, 2, '*', STR_PAD_LEFT);
+    }
+
+    return '***.***.***-' . $tail;
+}
+
+/**
+ * Identificador amigável da indicação (telefone → e-mail → CPF → data).
+ *
+ * @param array<string, mixed> $indicacao
+ */
+function indicacao_display_identifier(array $indicacao, ?string $fallbackDate = null): string
+{
+    $telefone = trim((string) ($indicacao['telefone_indicado'] ?? ''));
+    if ($telefone !== '') {
+        return 'Telefone final ' . mask_phone_for_display($telefone);
+    }
+
+    $email = trim((string) ($indicacao['email_indicado'] ?? ''));
+    if ($email !== '') {
+        return 'E-mail ' . mask_email_for_display($email);
+    }
+
+    $cpfDigits = preg_replace('/\D+/', '', (string) ($indicacao['cpf_indicado'] ?? '')) ?? '';
+    if ($cpfDigits !== '') {
+        $tail = substr($cpfDigits, -2);
+        if (strlen($tail) < 2) {
+            $tail = str_pad($tail, 2, '*', STR_PAD_LEFT);
+        }
+
+        return 'CPF final ••' . $tail;
+    }
+
+    $rawDate = $fallbackDate
+        ?? (string) ($indicacao['created_at'] ?? $indicacao['indicacao_created_at'] ?? '');
+    if ($rawDate !== '') {
+        $ts = strtotime($rawDate);
+        if ($ts !== false) {
+            return 'Indicação de ' . date('d/m/Y', $ts) . ' às ' . date('H:i', $ts);
+        }
+    }
+
+    return 'Indicação registrada';
+}
+
+/** Mensagem amigável de reprovação (códigos internos → texto ao usuário). */
+function indicacao_friendly_reject_reason(?string $motivo): string
+{
+    $motivo = trim((string) $motivo);
+
+    return match ($motivo) {
+        'TELEFONE_JA_CADASTRADO' => 'Este telefone já possui cadastro.',
+        'CPF_JA_CADASTRADO', 'CPF_EXISTENTE', 'USUARIO_JA_CADASTRADO' => 'Este CPF já possui cadastro.',
+        'CPF_JA_PARTICIPOU', 'JA_PARTICIPOU' => 'Este CPF já participou da campanha.',
+        'EMAIL_JA_CADASTRADO' => 'Este e-mail já possui cadastro.',
+        'CADASTRO_INCOMPLETO' => 'O cadastro no aplicativo não foi concluído.',
+        'DADOS_INVALIDOS' => 'Não foi possível validar os dados informados.',
+        'CAMPANHA_ENCERRADA', 'CAMPANHA_INATIVA', 'CAMPANHA_EXPIRADA' => 'A campanha já foi encerrada.',
+        'AUTOINDICACAO', 'AUTO_INDICACAO' => 'Não é permitido indicar a si mesmo.',
+        'APP_JA_EXISTENTE' => 'Não foi possível validar esta indicação.',
+        '' => 'Não foi possível validar esta indicação.',
+        default => (preg_match('/^[A-Z0-9_]+$/', $motivo) === 1)
+            ? 'Não foi possível validar esta indicação.'
+            : $motivo,
+    };
+}
+
 /** Últimos 4 caracteres do código de cupom (para logs/filtros). */
 function cupom_codigo_sufixo(string $codigo): string
 {

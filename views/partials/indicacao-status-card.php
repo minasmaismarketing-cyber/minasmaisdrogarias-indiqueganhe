@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * Card de status da última indicação definitiva (parcial da Home).
  *
- * @var array{type: string, title: string, body: string, motivo?: string, validacao_id: int}|null $statusCard
+ * @var array<string, mixed>|null $statusCard
  */
 if (empty($statusCard) || !is_array($statusCard)) {
     return;
@@ -13,25 +13,12 @@ if (empty($statusCard) || !is_array($statusCard)) {
 
 $type = (string) ($statusCard['type'] ?? '');
 $validacaoId = (int) ($statusCard['validacao_id'] ?? 0);
-$motivoRaw = trim((string) ($statusCard['motivo'] ?? ''));
-
-$motivo = match ($motivoRaw) {
-    'CPF_JA_PARTICIPOU', 'JA_PARTICIPOU', 'CPF já participou', 'CPF já utilizado anteriormente.' =>
-        'Este CPF já participou da campanha.',
-    'CPF_JA_CADASTRADO', 'CPF_EXISTENTE', 'USUARIO_JA_CADASTRADO', 'CPF já cadastrado', 'Usuário já participou da campanha.' =>
-        'Este CPF já possui cadastro.',
-    'EMAIL_JA_CADASTRADO', 'E-mail já cadastrado', 'E-mail já utilizado nesta campanha.' =>
-        'Este e-mail já possui cadastro.',
-    'TELEFONE_JA_CADASTRADO', 'Telefone já cadastrado', 'Telefone já utilizado nesta campanha.' =>
-        'Este telefone já possui cadastro.',
-    'AUTOINDICACAO', 'AUTO_INDICACAO', 'Não é permitido indicar a si mesmo.' =>
-        'Não é permitido indicar a si mesmo.',
-    'CAMPANHA_INATIVA', 'CAMPANHA_EXPIRADA', 'Campanha inativa no momento da indicação.', 'Campanha expirada no momento da indicação.' =>
-        'A campanha está encerrada.',
-    default => ($motivoRaw !== '' && !preg_match('/^[A-Z0-9_]+$/', $motivoRaw))
-        ? $motivoRaw
-        : ($motivoRaw !== '' ? ValidacaoIndicacao::motivoLabel($motivoRaw) : 'Não foi possível validar esta indicação.'),
-};
+$indicacaoId = (int) ($statusCard['indicacao_id'] ?? 0);
+$identifier = trim((string) ($statusCard['identifier'] ?? ''));
+$motivo = trim((string) ($statusCard['motivo'] ?? ''));
+if ($motivo === '') {
+    $motivo = 'Não foi possível validar esta indicação.';
+}
 
 $isCelebration = $type === 'aprovado' || $type === 'beneficio_pendente';
 $isPendingBenefit = $type === 'beneficio_pendente';
@@ -56,6 +43,7 @@ $ariaLabel = match ($type) {
     id="indicacao-status-card"
     data-status-type="<?= e($type) ?>"
     data-validacao-id="<?= $validacaoId ?>"
+    data-indicacao-id="<?= $indicacaoId ?>"
     role="status"
     aria-label="<?= e($ariaLabel) ?>"
 >
@@ -86,12 +74,13 @@ $ariaLabel = match ($type) {
         <div class="indicacao-status-card__hero">
             <div class="indicacao-status-card__copy">
                 <p class="indicacao-status-card__headline">Deu certo!</p>
+                <?php if ($identifier !== ''): ?>
+                    <p class="indicacao-status-card__subline"><?= e($identifier) ?></p>
+                <?php endif; ?>
                 <?php if ($isPendingBenefit): ?>
-                    <p class="indicacao-status-card__subline">Seu benefício será</p>
-                    <p class="indicacao-status-card__highlight">liberado em breve</p>
+                    <p class="indicacao-status-card__highlight">Benefício em breve</p>
                 <?php else: ?>
-                    <p class="indicacao-status-card__subline">Seu benefício foi</p>
-                    <p class="indicacao-status-card__highlight">liberado</p>
+                    <p class="indicacao-status-card__highlight">Benefício liberado</p>
                 <?php endif; ?>
             </div>
 
@@ -141,6 +130,7 @@ $ariaLabel = match ($type) {
     id="indicacao-status-card"
     data-status-type="<?= e($type) ?>"
     data-validacao-id="<?= $validacaoId ?>"
+    data-indicacao-id="<?= $indicacaoId ?>"
     role="status"
     aria-label="<?= e($ariaLabel) ?>"
 >
@@ -156,10 +146,23 @@ $ariaLabel = match ($type) {
         </div>
 
         <div class="indicacao-status-card__content">
+            <?php if ($identifier !== ''): ?>
+                <p class="indicacao-status-card__identifier"><?= e($identifier) ?></p>
+            <?php endif; ?>
             <p class="indicacao-status-card__motivo"><?= e($motivo) ?></p>
-            <button type="button" class="btn btn--block btn--outline" id="btn-dismiss-status-card">
-                Entendi
-            </button>
+            <form
+                method="POST"
+                action="<?= url('/dashboard/status-card/dispensar') ?>"
+                class="indicacao-status-card__dismiss-form"
+                id="form-dismiss-status-card"
+            >
+                <?= csrf_field() ?>
+                <input type="hidden" name="indicacao_id" value="<?= $indicacaoId ?>">
+                <input type="hidden" name="validacao_id" value="<?= $validacaoId ?>">
+                <button type="submit" class="btn btn--block btn--outline" id="btn-dismiss-status-card">
+                    Entendi
+                </button>
+            </form>
         </div>
     </div>
 </section>

@@ -41,6 +41,10 @@ class DashboardController extends Controller
 
         $linkUrl = $inviteLinkService->getInviteLink($user);
         $statusCard = $this->resolveStatusCard($userId);
+        $showRetryCta = $statusCard === null && (
+            Session::flash('show_retry_cta') === '1'
+            || $this->hasDismissedReprovacao($userId)
+        );
 
         $this->view('dashboard.index', [
             'title' => 'Meu painel',
@@ -50,19 +54,21 @@ class DashboardController extends Controller
             'codigo' => $codigo,
             'stats' => $stats,
             'statusCard' => $statusCard,
+            'showRetryCta' => $showRetryCta,
         ], 'app');
     }
 
     /**
      * Último resultado definitivo da indicação (para card da Home).
      * Pendente / em análise → null (não exibe card).
+     * Reprovações com "Entendi" dispensadas são ignoradas.
      *
-     * @return array{type: string, title: string, body: string, motivo?: string, validacao_id: int}|null
+     * @return array<string, mixed>|null
      */
     private function resolveStatusCard(int $usuarioId): ?array
     {
         try {
-            $rows = (new ValidacaoIndicacao())->listByUsuarioIndicador($usuarioId, 30, 0);
+            $rows = (new ValidacaoIndicacao())->listByUsuarioIndicador($usuarioId, 50, 0);
         } catch (Throwable) {
             return null;
         }
@@ -71,70 +77,157 @@ class DashboardController extends Controller
             $status = (string) ($row['status'] ?? '');
             $motivoCode = (string) ($row['motivo_bloqueio'] ?? '');
             $id = (int) ($row['id'] ?? 0);
+            $indicacaoId = (int) ($row['indicacao_id'] ?? 0);
+            $dismissed = !empty($row['status_message_dismissed_at']);
+            $identifier = indicacao_display_identifier($row, (string) ($row['indicacao_created_at'] ?? $row['created_at'] ?? ''));
 
             if ($status === ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO) {
+                if ($dismissed) {
+                    continue;
+                }
+
                 return [
                     'type' => 'aprovado',
-                    'title' => 'Sua indicação foi aprovada!',
+                    'title' => 'A indicação do ' . $this->identifierAsPossessive($identifier) . ' foi aprovada!',
                     'body' => 'Seu cupom exclusivo de 10% OFF já está disponível.',
+                    'identifier' => $identifier,
                     'validacao_id' => $id,
+                    'indicacao_id' => $indicacaoId,
                 ];
             }
 
             if ($status === ValidacaoIndicacao::STATUS_APROVADO) {
+                if ($dismissed) {
+                    continue;
+                }
+
                 if ($motivoCode === 'BENEFICIO_PENDENTE_SEM_ESTOQUE') {
                     return [
                         'type' => 'beneficio_pendente',
-                        'title' => 'Sua indicação foi aprovada.',
+                        'title' => 'A indicação do ' . $this->identifierAsPossessive($identifier) . ' foi aprovada.',
                         'body' => 'Estamos preparando seu benefício. Seu cupom será liberado em breve.',
+                        'identifier' => $identifier,
                         'validacao_id' => $id,
-                    ];
-                }
-
-                if ($motivoCode === 'BENEFICIO_JA_LIBERADO') {
-                    return [
-                        'type' => 'aprovado',
-                        'title' => 'Sua indicação foi aprovada!',
-                        'body' => 'Seu benefício já havia sido liberado anteriormente. Confira em Meus Cupons.',
-                        'validacao_id' => $id,
+                        'indicacao_id' => $indicacaoId,
                     ];
                 }
 
                 return [
                     'type' => 'aprovado',
-                    'title' => 'Sua indicação foi aprovada!',
+                    'title' => 'A indicação do ' . $this->identifierAsPossessive($identifier) . ' foi aprovada!',
                     'body' => 'Seu cupom exclusivo de 10% OFF já está disponível.',
+                    'identifier' => $identifier,
                     'validacao_id' => $id,
+                    'indicacao_id' => $indicacaoId,
                 ];
             }
 
             if ($status === ValidacaoIndicacao::STATUS_REPROVADO) {
+                if ($dismissed) {
+                    continue;
+                }
+
                 return [
                     'type' => 'reprovado',
-                    'title' => 'Sua indicação não foi aprovada.',
-                    'body' => '',
-                    'motivo' => $this->friendlyMotivo($motivoCode),
+                    'title' => 'Não foi possível validar esta indicação',
+                    'body' => 'Não foi possível validar a indicação do ' . $this->identifierAsPossessive($identifier) . '.',
+                    'identifier' => $identifier,
+                    'motivo' => indicacao_friendly_reject_reason($motivoCode),
                     'validacao_id' => $id,
+                    'indicacao_id' => $indicacaoId,
                 ];
+            }
+
+            if (in_array($status, [
+                ValidacaoIndicacao::STATUS_PENDENTE,
+                ValidacaoIndicacao::STATUS_AGUARDANDO_CADASTRO,
+                ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO,
+                ValidacaoIndicacao::STATUS_EM_ANALISE,
+            ], true)) {
+                // Pendente não gera card hero; lista na página de indicações.
+                continue;
             }
         }
 
         return null;
     }
 
-    private function friendlyMotivo(string $motivo): string
+    private function identifierAsPossessive(string $identifier): string
     {
-        return match ($motivo) {
-            'CPF_JA_PARTICIPOU', 'JA_PARTICIPOU' => 'CPF já utilizado anteriormente.',
-            'CPF_JA_CADASTRADO', 'CPF_EXISTENTE', 'USUARIO_JA_CADASTRADO' => 'Usuário já participou da campanha.',
-            'EMAIL_JA_CADASTRADO' => 'E-mail já utilizado nesta campanha.',
-            'TELEFONE_JA_CADASTRADO' => 'Telefone já utilizado nesta campanha.',
-            'AUTOINDICACAO', 'AUTO_INDICACAO' => 'Não é permitido indicar a si mesmo.',
-            'CAMPANHA_INATIVA' => 'Campanha inativa no momento da indicação.',
-            'CAMPANHA_EXPIRADA' => 'Campanha expirada no momento da indicação.',
-            '' => 'Motivo não informado.',
-            default => ValidacaoIndicacao::motivoLabel($motivo),
-        };
+        if (str_starts_with($identifier, 'Telefone final ')) {
+            return 'telefone final ' . substr($identifier, strlen('Telefone final '));
+        }
+        if (str_starts_with($identifier, 'E-mail ')) {
+            return 'e-mail ' . substr($identifier, strlen('E-mail '));
+        }
+        if (str_starts_with($identifier, 'CPF final ')) {
+            return 'CPF final ' . substr($identifier, strlen('CPF final '));
+        }
+
+        return mb_strtolower($identifier);
+    }
+
+    private function hasDismissedReprovacao(int $usuarioId): bool
+    {
+        try {
+            $rows = (new ValidacaoIndicacao())->listByUsuarioIndicador($usuarioId, 20, 0);
+        } catch (Throwable) {
+            return false;
+        }
+
+        foreach ($rows as $row) {
+            if ((string) ($row['status'] ?? '') === ValidacaoIndicacao::STATUS_REPROVADO
+                && !empty($row['status_message_dismissed_at'])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function dismissStatusCard(): void
+    {
+        AuthMiddleware::requireAuth();
+
+        if (!Csrf::validateRequest()) {
+            Session::flash('error', 'Token de segurança inválido.');
+            $this->redirect('/dashboard');
+        }
+
+        $user = Auth::user();
+        if ($user === null) {
+            $this->redirect('/login');
+        }
+
+        $userId = (int) $user['id'];
+        $indicacaoId = (int) ($_POST['indicacao_id'] ?? 0);
+        $validacaoId = (int) ($_POST['validacao_id'] ?? 0);
+
+        if ($indicacaoId <= 0 && $validacaoId > 0) {
+            $validacao = (new ValidacaoIndicacao())->findById($validacaoId);
+            if ($validacao !== null && (int) ($validacao['usuario_indicador_id'] ?? 0) === $userId) {
+                $indicacaoId = (int) ($validacao['indicacao_id'] ?? 0);
+            }
+        }
+
+        if ($indicacaoId <= 0) {
+            Session::flash('error', 'Não foi possível atualizar este aviso.');
+            $this->redirect('/dashboard');
+        }
+
+        $ok = (new Indicacao())->dismissStatusMessage($indicacaoId, $userId);
+        if (!$ok) {
+            Logger::warning('Falha ao dispensar card de indicação', [
+                'usuario_id' => $userId,
+                'indicacao_id' => $indicacaoId,
+            ]);
+            Session::flash('error', 'Não foi possível atualizar este aviso. Execute a migration do campo de ciência se ainda não foi aplicada.');
+            $this->redirect('/dashboard');
+        }
+
+        Session::flash('show_retry_cta', '1');
+        $this->redirect('/dashboard');
     }
 
     public function share(): void

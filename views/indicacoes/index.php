@@ -5,13 +5,13 @@ declare(strict_types=1);
 <?php require BASE_PATH . '/views/partials/alerts.php'; ?>
 <section class="page-hero animate-slide">
     <h1 class="page-hero__title">Minhas indicações</h1>
-    <p class="page-hero__subtitle">Acompanhe o status de cada indicação validada.</p>
+    <p class="page-hero__subtitle">Acompanhe o status de cada indicação vinculada ao seu código.</p>
 </section>
 
 <section class="mm-card">
     <div class="mm-card__header mm-card__header--stack">
         <h2 class="mm-card__title">Histórico de Participação</h2>
-        <p class="mm-card__subtitle">Indicações registradas e validadas pelo programa.</p>
+        <p class="mm-card__subtitle">Todas as indicações recebidas para o seu código, da mais recente para a mais antiga.</p>
     </div>
 
     <?php if (($validacaoStats['total'] ?? 0) > 0): ?>
@@ -45,41 +45,46 @@ declare(strict_types=1);
                     $iStatus = (string) ($v['indicacao_status'] ?? '');
                     $indicacaoId = (int) ($v['indicacao_id'] ?? 0);
                     $telefoneRaw = (string) ($v['telefone_indicado'] ?? '');
+                    $identifier = indicacao_display_identifier($v, (string) ($v['indicacao_created_at'] ?? $v['created_at'] ?? ''));
+                    $createdAt = (string) ($v['indicacao_created_at'] ?? $v['created_at'] ?? '');
+                    $dateLabel = $createdAt !== '' && strtotime($createdAt) !== false
+                        ? date('d/m/Y', strtotime($createdAt)) . ' às ' . date('H:i', strtotime($createdAt))
+                        : '';
+                    $motivoCode = (string) ($v['motivo_bloqueio'] ?? '');
+                    $statusSummary = match (true) {
+                        $vStatus === ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,
+                        $vStatus === ValidacaoIndicacao::STATUS_APROVADO => 'Indicação aprovada',
+                        $vStatus === ValidacaoIndicacao::STATUS_REPROVADO => 'Não aprovada — ' . indicacao_friendly_reject_reason($motivoCode),
+                        default => 'Aguardando validação',
+                    };
                     $podeCompartilhar = $indicacaoId > 0
                         && is_indicacao_aprovada_para_beneficio($vStatus, $iStatus)
                         && normalize_brazilian_whatsapp_number($telefoneRaw) !== null;
-                    $phoneTail = $podeCompartilhar ? mask_whatsapp_phone_tail($telefoneRaw) : '';
+                    $phoneTail = $podeCompartilhar ? mask_phone_for_display($telefoneRaw) : '';
                     ?>
                     <li class="validacao-list-compact__item">
                         <div class="validacao-list-compact__row">
                             <div class="validacao-list-compact__status">
-                                <span class="validacao-status-badge validacao-status-badge--<?= strtolower($vStatus) ?>">
+                                <span class="validacao-status-badge validacao-status-badge--<?= e(strtolower($vStatus)) ?>">
                                     <?= e(ValidacaoIndicacao::statusLabel($vStatus)) ?>
                                 </span>
                             </div>
                             <div class="validacao-list-compact__info">
-                                <?php if (!empty($v['nome_indicado'])): ?>
-                                    <strong><?= e((string) $v['nome_indicado']) ?></strong>
-                                <?php else: ?>
-                                    <strong>Aguardando cadastro</strong>
+                                <strong><?= e($identifier) ?></strong>
+                                <?php if ($dateLabel !== ''): ?>
+                                    <span class="validacao-list-compact__date"><?= e($dateLabel) ?></span>
                                 <?php endif; ?>
-                                <span class="validacao-list-compact__date">
-                                    <?= e(date('d/m/Y', strtotime((string) $v['created_at']))) ?>
-                                </span>
                             </div>
                         </div>
-                        <?php if (!empty($v['motivo_bloqueio'])): ?>
-                            <p class="validacao-list-compact__motivo">
-                                <span class="validacao-list-compact__motivo-label">Motivo:</span>
-                                <?= e(ValidacaoIndicacao::motivoLabel((string) $v['motivo_bloqueio'])) ?>
-                            </p>
-                        <?php endif; ?>
+                        <p class="validacao-list-compact__motivo">
+                            <?= e($statusSummary) ?>
+                        </p>
                         <?php if ($podeCompartilhar): ?>
                             <div class="validacao-list-compact__share">
                                 <form method="POST" action="<?= url('/indicacoes/' . $indicacaoId . '/compartilhar-beneficio') ?>">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn--block btn--outline btn--sm">
-                                        🎁 Entregar benefício ao amigo
+                                        Entregar benefício ao amigo
                                     </button>
                                 </form>
                                 <p class="validacao-list-compact__share-hint">Enviar para o WhatsApp final <?= e($phoneTail) ?></p>

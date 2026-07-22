@@ -25,6 +25,7 @@ $router->post('/convite/participar', 'ConviteController', 'participar');
 
 $router->get('/dashboard', 'DashboardController', 'index');
 $router->post('/dashboard/compartilhar', 'DashboardController', 'share');
+$router->post('/dashboard/status-card/dispensar', 'DashboardController', 'dismissStatusCard');
 
 $router->get('/perfil', 'ProfileController', 'index');
 $router->post('/perfil', 'ProfileController', 'update');
