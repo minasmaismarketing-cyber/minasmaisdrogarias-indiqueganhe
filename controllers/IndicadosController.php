@@ -81,7 +81,6 @@ class IndicadosController extends Controller
 
         $errors = [];
         $usuarioModel = new Usuario();
-        $indicacaoModel = new Indicacao();
 
         if ($nome === '') {
             $errors['nome'] = 'Informe seu nome completo.';
@@ -115,7 +114,7 @@ class IndicadosController extends Controller
             $errors['email'] = 'Este email já está cadastrado.';
         }
 
-        if ($usuarioModel->telefoneExists($whatsapp) || $indicacaoModel->phoneAlreadyIndicated($whatsapp)) {
+        if ($usuarioModel->telefoneExists($whatsapp)) {
             $errors['whatsapp'] = 'Este WhatsApp já está cadastrado.';
         }
 

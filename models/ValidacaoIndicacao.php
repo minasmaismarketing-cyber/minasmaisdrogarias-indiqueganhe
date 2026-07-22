@@ -620,7 +620,7 @@ class ValidacaoIndicacao extends Model
         return match ($motivo) {
             'CPF_EXISTENTE', 'CPF_JA_CADASTRADO' => 'Este CPF já possui cadastro.',
             'EMAIL_JA_CADASTRADO' => 'Este e-mail já possui cadastro.',
-            'TELEFONE_JA_CADASTRADO' => 'Este telefone já possui cadastro.',
+            'TELEFONE_JA_CADASTRADO' => 'Não foi possível validar esta indicação.',
             'USUARIO_JA_CADASTRADO' => 'Este CPF já possui cadastro.',
             'CPF_JA_PARTICIPOU', 'JA_PARTICIPOU' => 'Este CPF já participou da campanha.',
             'AUTOINDICACAO', 'AUTO_INDICACAO' => 'Não é permitido indicar a si mesmo.',

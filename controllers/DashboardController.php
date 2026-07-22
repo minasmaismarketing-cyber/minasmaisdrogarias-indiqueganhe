@@ -133,8 +133,8 @@ class DashboardController extends Controller
             if ($status === ValidacaoIndicacao::STATUS_REPROVADO && !$dismissed && $reprovadoCard === null) {
                 $reprovadoCard = [
                     'type' => 'reprovado',
-                    'title' => 'Não foi possível validar esta indicação',
-                    'body' => 'Não foi possível validar a indicação do ' . $this->identifierAsPossessive($identifier) . '.',
+                    'title' => 'Uma indicação não foi aprovada',
+                    'body' => 'Não foi possível validar esta indicação.',
                     'identifier' => $identifier,
                     'motivo' => indicacao_friendly_reject_reason($motivoCode),
                     'validacao_id' => $id,

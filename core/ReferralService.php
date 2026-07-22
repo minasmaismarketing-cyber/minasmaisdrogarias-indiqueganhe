@@ -75,10 +75,11 @@ class ReferralService
     }
 
     /**
-     * Registra acionamento do compartilhamento (atividade), sem criar indicação
-     * nem atribuir benefício. Não afirma que o WhatsApp concluiu o envio.
+     * Registra acionamento do compartilhamento.
+     * - Evento LINK_COMPARTILHADO: auditoria interna (não exibido no histórico).
+     * - Garante uma indicação "aguardando" para evoluir com o retorno da KOBE.
      *
-     * @return array{logged: bool, duplicate: bool}
+     * @return array{logged: bool, duplicate: bool, indicacao_id: int|null}
      */
     public function logShare(int $userId, string $codigo): array
     {
@@ -86,13 +87,24 @@ class ReferralService
         $eventoModel = new Evento();
 
         if ($eventoModel->hasRecentLinkShare($userId, $codigo, 3)) {
-            return ['logged' => false, 'duplicate' => true];
+            $open = $this->indicacaoModel->findOpenByReferrer($userId);
+
+            return [
+                'logged' => false,
+                'duplicate' => true,
+                'indicacao_id' => $open !== null ? (int) $open['id'] : null,
+            ];
         }
 
         (new EventLogger())->logLinkCompartilhado($userId, $codigo);
-        Logger::info('Referral share initiated', ['user_id' => $userId, 'codigo' => $codigo]);
+        $indicacaoId = $this->recordShare($userId, $codigo);
+        Logger::info('Referral share initiated', [
+            'user_id' => $userId,
+            'codigo' => $codigo,
+            'indicacao_id' => $indicacaoId,
+        ]);
 
-        return ['logged' => true, 'duplicate' => false];
+        return ['logged' => true, 'duplicate' => false, 'indicacao_id' => $indicacaoId];
     }
 
     public function handleLinkAccess(string $codigo): array
@@ -157,13 +169,7 @@ class ReferralService
             return false;
         }
 
-        if ($this->indicacaoModel->phoneAlreadyIndicated($telefone)) {
-            return false;
-        }
-
-        if ($this->indicacaoModel->findActiveByReferrerAndPhone((int) $referrer['id'], $telefone) !== null) {
-            return false;
-        }
+        // Telefone repetido não bloqueia vínculo WEB (mesma regra da API KOBE).
 
         $this->completeIndicacaoRegistration(
             (int) $referrer['id'],
@@ -322,7 +328,7 @@ class ReferralService
         }
 
         // CPF é o identificador principal. INSTALL e REENGAGEMENT são eventos válidos:
-        // não reprovar por app já instalado, reinstalação, dispositivo ou IP.
+        // não reprovar por app já instalado, reinstalação, dispositivo, IP ou telefone duplicado.
         if ($this->indicacaoModel->cpfAlreadyParticipated($cpfIndicado, $indicacaoId)) {
             return $this->rejectLocatedIndication(
                 $validacaoId,
@@ -334,26 +340,36 @@ class ReferralService
             );
         }
 
+        // Reprova apenas por CPF/e-mail já cadastrados. Telefone repetido NÃO invalida.
         if ($matchedUser !== null || $this->usuarioModel->cpfExists($cpfIndicado)) {
-            $motivo = 'CPF_JA_CADASTRADO';
-            $message = 'CPF já cadastrado';
-            if ($matchedUser !== null && Validator::onlyDigits((string) ($matchedUser['cpf'] ?? '')) !== $cpfIndicado) {
-                if (strtolower((string) ($matchedUser['email'] ?? '')) === $emailIndicado) {
-                    $motivo = 'EMAIL_JA_CADASTRADO';
-                    $message = 'E-mail já cadastrado';
-                } else {
-                    $motivo = 'TELEFONE_JA_CADASTRADO';
-                    $message = 'Telefone já cadastrado';
-                }
+            $matchedCpf = $matchedUser !== null
+                ? Validator::onlyDigits((string) ($matchedUser['cpf'] ?? ''))
+                : '';
+            $matchedEmail = $matchedUser !== null
+                ? strtolower(trim((string) ($matchedUser['email'] ?? '')))
+                : '';
+
+            if ($matchedCpf === $cpfIndicado || $this->usuarioModel->cpfExists($cpfIndicado)) {
+                return $this->rejectLocatedIndication(
+                    $validacaoId,
+                    $idempotencyKey,
+                    'CPF_JA_CADASTRADO',
+                    'CPF já cadastrado',
+                    $cpfIndicado
+                );
             }
 
-            return $this->rejectLocatedIndication(
-                $validacaoId,
-                $idempotencyKey,
-                $motivo,
-                $message,
-                $cpfIndicado
-            );
+            if ($matchedEmail !== '' && $matchedEmail === $emailIndicado) {
+                return $this->rejectLocatedIndication(
+                    $validacaoId,
+                    $idempotencyKey,
+                    'EMAIL_JA_CADASTRADO',
+                    'E-mail já cadastrado',
+                    $cpfIndicado
+                );
+            }
+
+            // Match apenas por telefone (usuário existente com outro CPF/e-mail): segue elegível.
         }
 
         if ($this->usuarioModel->emailExists($emailIndicado)
@@ -368,15 +384,7 @@ class ReferralService
             );
         }
 
-        if ($this->indicacaoModel->phoneAlreadyIndicated($telefoneIndicado, $indicacaoId)) {
-            return $this->rejectLocatedIndication(
-                $validacaoId,
-                $idempotencyKey,
-                'TELEFONE_JA_CADASTRADO',
-                'Telefone já cadastrado',
-                $cpfIndicado
-            );
-        }
+        // Telefone duplicado deliberadamente NÃO reprova (identificação/contato/auditoria apenas).
 
         if ($tipoEvento === 'UNKNOWN') {
             $this->validacaoModel->updateStatus($validacaoId, ValidacaoIndicacao::STATUS_EM_ANALISE);
@@ -491,8 +499,15 @@ class ReferralService
             return ['indicacao_id' => (int) $byCpf['id'], 'strategy' => 'codigo_cpf'];
         }
 
+        // Telefone pode ser compartilhado entre pessoas diferentes: só reutiliza
+        // se CPF/e-mail da indicação aberta estiverem vazios ou coincidirem.
         $byPhone = $this->indicacaoModel->findActiveByReferrerAndPhone($referrerId, $telefoneIndicado);
-        if ($byPhone !== null) {
+        if ($byPhone !== null && $this->openIndicacaoCompatibleWithPayload(
+            $byPhone,
+            $cpfIndicado,
+            $emailIndicado,
+            $telefoneIndicado
+        )) {
             return ['indicacao_id' => (int) $byPhone['id'], 'strategy' => 'codigo_telefone'];
         }
 
@@ -533,8 +548,8 @@ class ReferralService
 
     /**
      * Indicação aberta só pode receber o payload KOBE se estiver vazia
-     * (share/clique) ou se os dados cadastrais coincidirem.
-     * Evita sobrescrever um retorno anterior com outro indicado.
+     * (share/clique) ou se CPF/e-mail coincidirem.
+     * Telefone sozinho NÃO identifica a pessoa (pode ser compartilhado).
      *
      * @param array<string, mixed> $open
      */
@@ -544,21 +559,28 @@ class ReferralService
         string $emailIndicado,
         string $telefoneIndicado
     ): bool {
+        unset($telefoneIndicado); // telefone não decide compatibilidade de pessoa
+
         $existingCpf = Validator::onlyDigits((string) ($open['cpf_indicado'] ?? ''));
         $existingEmail = strtolower(trim((string) ($open['email_indicado'] ?? '')));
-        $existingPhone = Validator::onlyDigits((string) ($open['telefone_indicado'] ?? ''));
+        $emailIndicado = strtolower(trim($emailIndicado));
 
-        if ($existingCpf === '' && $existingEmail === '' && $existingPhone === '') {
+        // Shell sem identidade cadastral (ex.: só compartilhamento) pode receber o payload.
+        if ($existingCpf === '' && $existingEmail === '') {
             return true;
+        }
+
+        if ($existingCpf !== '' && $existingCpf !== $cpfIndicado) {
+            return false;
+        }
+        if ($existingEmail !== '' && $existingEmail !== $emailIndicado) {
+            return false;
         }
 
         if ($existingCpf !== '' && $existingCpf === $cpfIndicado) {
             return true;
         }
-        if ($existingEmail !== '' && $existingEmail === strtolower(trim($emailIndicado))) {
-            return true;
-        }
-        if ($existingPhone !== '' && $existingPhone === $telefoneIndicado) {
+        if ($existingEmail !== '' && $existingEmail === $emailIndicado) {
             return true;
         }
 

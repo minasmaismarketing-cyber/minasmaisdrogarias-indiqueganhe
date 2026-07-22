@@ -422,7 +422,7 @@ function indicacao_friendly_reject_reason(?string $motivo): string
     $motivo = trim((string) $motivo);
 
     return match ($motivo) {
-        'TELEFONE_JA_CADASTRADO' => 'Este telefone já possui cadastro.',
+        'TELEFONE_JA_CADASTRADO' => 'Não foi possível validar esta indicação.',
         'CPF_JA_CADASTRADO', 'CPF_EXISTENTE', 'USUARIO_JA_CADASTRADO' => 'Este CPF já possui cadastro.',
         'CPF_JA_PARTICIPOU', 'JA_PARTICIPOU' => 'Este CPF já participou da campanha.',
         'EMAIL_JA_CADASTRADO' => 'Este e-mail já possui cadastro.',

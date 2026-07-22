@@ -178,7 +178,7 @@ $ariaLabel = match ($type) {
             <span class="indicacao-status-card__badge" aria-hidden="true">!</span>
             <div class="indicacao-status-card__heading">
                 <span class="indicacao-status-card__seal indicacao-status-card__seal--alert">Indicação não aprovada</span>
-                <h2 class="indicacao-status-card__title">Não foi possível validar esta indicação</h2>
+                <h2 class="indicacao-status-card__title"><?= e($title !== '' ? $title : 'Uma indicação não foi aprovada') ?></h2>
             </div>
         </div>
 
@@ -186,7 +186,10 @@ $ariaLabel = match ($type) {
             <?php if ($identifier !== ''): ?>
                 <p class="indicacao-status-card__identifier"><?= e($identifier) ?></p>
             <?php endif; ?>
-            <p class="indicacao-status-card__motivo"><?= e($motivo) ?></p>
+            <p class="indicacao-status-card__motivo"><?= e($body !== '' ? $body : 'Não foi possível validar esta indicação.') ?></p>
+            <?php if ($motivo !== '' && $motivo !== $body): ?>
+                <p class="indicacao-status-card__motivo indicacao-status-card__motivo--detail"><?= e($motivo) ?></p>
+            <?php endif; ?>
             <form
                 method="POST"
                 action="<?= url('/dashboard/status-card/dispensar') ?>"

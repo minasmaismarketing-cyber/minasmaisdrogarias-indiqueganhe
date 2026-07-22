@@ -22,51 +22,15 @@ class IndicacoesController extends Controller
         $historicoValidacoes = [];
         $validacaoStats = ['total' => 0, 'aprovados' => 0, 'reprovados' => 0, 'beneficios_liberados' => 0];
         $total = 0;
-        $timeline = [];
 
         try {
             $validacaoModel = new ValidacaoIndicacao();
             $validacaoStats = $validacaoModel->statsUsuarioIndicador($userId);
             $total = $validacaoModel->countByUsuarioIndicador($userId);
             $historicoValidacoes = $validacaoModel->listByUsuarioIndicador($userId, $limit, $offset);
-
-            foreach ($historicoValidacoes as $v) {
-                $createdAt = (string) ($v['indicacao_created_at'] ?? $v['created_at'] ?? '');
-                $timeline[] = [
-                    'kind' => 'indicacao',
-                    'sort_at' => $createdAt,
-                    'row' => $v,
-                ];
-            }
         } catch (Throwable $e) {
             Logger::warning('Falha ao carregar validacao_indicacoes', ['error' => $e->getMessage()]);
         }
-
-        // Compartilhamentos entram na 1ª página do histórico (atividades, não pessoas).
-        if ($page === 1) {
-            try {
-                $shares = (new Evento())->listLinkSharesByUsuario($userId, 30, 0);
-                foreach ($shares as $share) {
-                    $timeline[] = [
-                        'kind' => 'compartilhamento',
-                        'sort_at' => (string) ($share['created_at'] ?? ''),
-                        'row' => $share,
-                    ];
-                }
-            } catch (Throwable $e) {
-                Logger::warning('Falha ao carregar compartilhamentos', ['error' => $e->getMessage()]);
-            }
-        }
-
-        usort($timeline, static function (array $a, array $b): int {
-            $ta = strtotime((string) ($a['sort_at'] ?? '')) ?: 0;
-            $tb = strtotime((string) ($b['sort_at'] ?? '')) ?: 0;
-            if ($ta === $tb) {
-                return 0;
-            }
-
-            return $tb <=> $ta;
-        });
 
         $totalPages = $total > 0 ? (int) ceil($total / $limit) : 1;
 
@@ -74,7 +38,6 @@ class IndicacoesController extends Controller
             'title' => 'Minhas Indicações',
             'user' => $user,
             'historicoValidacoes' => $historicoValidacoes,
-            'timeline' => $timeline,
             'validacaoStats' => $validacaoStats,
             'currentPage' => $page,
             'totalPages' => $totalPages,

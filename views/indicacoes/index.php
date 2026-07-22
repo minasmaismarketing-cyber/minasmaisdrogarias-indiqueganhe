@@ -1,19 +1,17 @@
 <?php
 
 declare(strict_types=1);
-
-$timeline = $timeline ?? [];
 ?>
 <?php require BASE_PATH . '/views/partials/alerts.php'; ?>
 <section class="page-hero animate-slide">
     <h1 class="page-hero__title">Minhas indicações</h1>
-    <p class="page-hero__subtitle">Acompanhe compartilhamentos e o status de cada indicação vinculada ao seu código.</p>
+    <p class="page-hero__subtitle">Acompanhe o status de cada indicação vinculada ao seu código.</p>
 </section>
 
 <section class="mm-card">
     <div class="mm-card__header mm-card__header--stack">
         <h2 class="mm-card__title">Histórico de Participação</h2>
-        <p class="mm-card__subtitle">Atividades e indicações confirmadas, da mais recente para a mais antiga.</p>
+        <p class="mm-card__subtitle">Uma linha por indicação, da mais recente para a mais antiga.</p>
     </div>
 
     <?php if (($validacaoStats['total'] ?? 0) > 0): ?>
@@ -37,52 +35,22 @@ $timeline = $timeline ?? [];
         </div>
     <?php endif; ?>
 
-    <?php if (!empty($timeline)): ?>
+    <?php if (!empty($historicoValidacoes)): ?>
         <div class="validacao-historico">
-            <h3 class="validacao-historico__title">Suas atividades</h3>
+            <h3 class="validacao-historico__title">Suas indicações</h3>
             <ul class="validacao-list-compact">
-                <?php foreach ($timeline as $item): ?>
+                <?php foreach ($historicoValidacoes as $v): ?>
                     <?php
-                    $kind = (string) ($item['kind'] ?? '');
-                    $row = $item['row'] ?? [];
-                    if (!is_array($row)) {
-                        continue;
-                    }
-
-                    if ($kind === 'compartilhamento') {
-                        $createdAt = (string) ($row['created_at'] ?? '');
-                        $dateLabel = $createdAt !== '' && strtotime($createdAt) !== false
-                            ? date('d/m/Y', strtotime($createdAt)) . ' às ' . date('H:i', strtotime($createdAt))
-                            : '';
-                        ?>
-                        <li class="validacao-list-compact__item validacao-list-compact__item--share">
-                            <div class="validacao-list-compact__row">
-                                <div class="validacao-list-compact__status">
-                                    <span class="validacao-status-badge validacao-status-badge--compartilhamento">
-                                        Compartilhamento iniciado
-                                    </span>
-                                </div>
-                                <div class="validacao-list-compact__info">
-                                    <strong>Aguardando o cadastro do amigo</strong>
-                                    <?php if ($dateLabel !== ''): ?>
-                                        <span class="validacao-list-compact__date"><?= e($dateLabel) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <p class="validacao-list-compact__motivo">
-                                Link compartilhado — ainda sem retorno da validação.
-                            </p>
-                        </li>
-                        <?php
-                        continue;
-                    }
-
-                    $v = $row;
                     $vStatus = (string) ($v['status'] ?? '');
                     $iStatus = (string) ($v['indicacao_status'] ?? '');
                     $indicacaoId = (int) ($v['indicacao_id'] ?? 0);
                     $telefoneRaw = (string) ($v['telefone_indicado'] ?? '');
-                    $identifier = indicacao_display_identifier($v, (string) ($v['indicacao_created_at'] ?? $v['created_at'] ?? ''));
+                    $hasIdentity = trim((string) ($v['telefone_indicado'] ?? '')) !== ''
+                        || trim((string) ($v['email_indicado'] ?? '')) !== ''
+                        || trim((string) ($v['cpf_indicado'] ?? '')) !== '';
+                    $identifier = $hasIdentity
+                        ? indicacao_display_identifier($v, (string) ($v['indicacao_created_at'] ?? $v['created_at'] ?? ''))
+                        : 'Aguardando o cadastro do amigo';
                     $createdAt = (string) ($v['indicacao_created_at'] ?? $v['created_at'] ?? '');
                     $dateLabel = $createdAt !== '' && strtotime($createdAt) !== false
                         ? date('d/m/Y', strtotime($createdAt)) . ' às ' . date('H:i', strtotime($createdAt))
@@ -91,15 +59,18 @@ $timeline = $timeline ?? [];
                     $statusSummary = match (true) {
                         $vStatus === ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,
                         $vStatus === ValidacaoIndicacao::STATUS_APROVADO => 'Indicação aprovada',
-                        $vStatus === ValidacaoIndicacao::STATUS_REPROVADO => 'Não aprovada — ' . indicacao_friendly_reject_reason($motivoCode),
-                        $vStatus === ValidacaoIndicacao::STATUS_EM_ANALISE => 'Aguardando validação',
-                        default => 'Indicação recebida — aguardando validação',
+                        $vStatus === ValidacaoIndicacao::STATUS_REPROVADO => indicacao_friendly_reject_reason($motivoCode),
+                        $vStatus === ValidacaoIndicacao::STATUS_EM_ANALISE,
+                        $vStatus === ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO => 'Aguardando validação',
+                        default => 'Aguardando o cadastro do amigo',
                     };
                     $badgeLabel = match (true) {
                         $vStatus === ValidacaoIndicacao::STATUS_BENEFICIO_LIBERADO,
                         $vStatus === ValidacaoIndicacao::STATUS_APROVADO => 'Aprovada',
                         $vStatus === ValidacaoIndicacao::STATUS_REPROVADO => 'Reprovada',
-                        default => 'Aguardando validação',
+                        $vStatus === ValidacaoIndicacao::STATUS_EM_ANALISE,
+                        $vStatus === ValidacaoIndicacao::STATUS_AGUARDANDO_VALIDACAO => 'Aguardando validação',
+                        default => 'Aguardando',
                     };
                     $podeCompartilhar = $indicacaoId > 0
                         && is_indicacao_aprovada_para_beneficio($vStatus, $iStatus)
@@ -109,7 +80,7 @@ $timeline = $timeline ?? [];
                     <li class="validacao-list-compact__item">
                         <div class="validacao-list-compact__row">
                             <div class="validacao-list-compact__status">
-                                <span class="validacao-status-badge validacao-status-badge--<?= e(strtolower($vStatus)) ?>">
+                                <span class="validacao-status-badge validacao-status-badge--<?= e(strtolower($vStatus !== '' ? $vStatus : 'pendente')) ?>">
                                     <?= e($badgeLabel) ?>
                                 </span>
                             </div>
