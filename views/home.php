@@ -37,13 +37,13 @@ $isGuest = !auth_check();
 
             <div class="mm-home__hero-content">
                 <div class="mm-home__eyebrow">
-                    <span>Programa</span>
+                    <span>Campanha</span>
                     <strong>Indique e Ganhe</strong>
                 </div>
 
                 <h1 class="mm-home__title" id="home-title">
                     Indique amigos<br>
-                    e ganhe <span>benefícios!</span>
+                    e ganhe <span>10% de desconto!</span>
                 </h1>
 
                 <p class="mm-home__lead">
